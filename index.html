@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Social.Art</title>
+	<meta http-equiv="charset" content="utf-8">
+	<meta charset="UTF-8" />
+	<link rel="stylesheet" href="css/style.css" type="text/css" charset="utf-8"/>
+	<script src="js/jquery.js"></script>
+	<script charset="utf-8" type="text/javascript" src="js/app.js"></script>
+	<style>
+		#showEditor {
+			position: absolute;
+			bottom: 20px;
+			right: 50px;
+			display: none;
+		}
+	</style>
+</head>
+<body id="body" onLoad="App.Init()">
+	<div id="darkOverlay">&nbsp;</div>
+	<!-- DASHBOARD DASHBOARD DASHBOARD DASHBOARD DASHBOARD DASHBOARD -->
+	<div id="dashboardContainer">
+		<svg version="1.1" id="dashboard">
+			<defs>
+				<style>
+					image {
+						pointer-events: visiblePainted;
+					}
+					image {
+						cursor: pointer;
+					}
+				</style>
+				<filter id="contour">
+					<!-- su :hover -> filter: url(#contour); -->
+					<feMorphology in="SourceAlpha" operator="dilate" radius="1" style="stroke: yellow"/>
+					<feComposite in="SourceGraphic"/>
+				</filter>
+			</defs>
+			<g id="imageGroup"></g>
+			<rect id="zoomLabelCont" x="-10" y="-10" rx="10" ry="10" width="70" height="60"></rect>
+			<text id="zoomLabel" x="15" y="30">100%</text>
+		</svg>
+		<a id="showEditor" class="button">Modifica</a>
+	</div>
+	<!-- EDITOR EDITOR EDITOR EDITOR EDITOR EDITOR -->
+	<div id="editorContainer">
+		<canvas id="editor" class="useBrush"></canvas>
+		<div id="editorMenu">
+			<div><a id="editorMenu1" class="enabled selected"><div></div></a></div>
+			<div><a id="editorMenu2" class="enabled"><div></div></a></div>
+			<div><a id="editorMenu3" class="enabled"><div></div></a></div>
+			<div><a id="editorMenu4" class="enabled"><div></div></a></div>
+			<div><a id="editorMenu5" class="enabled"><div></div></a></div>
+			<div><a id="editorMenu6" class="enabled"><div></div></a></div>
+			<div><a id="editorMenu7" class="enabled"><div></div></a></div>
+			<div><a id="editorMenu8" class="enabled"><div></div></a></div>
+			<div><a id="editorMenu9" class="enabled"><div></div></a></div>
+		</div>
+		<!-- TOOLS TOOLS TOOLS TOOLS TOOLS TOOLS TOOLS TOOLS TOOLS TOOLS -->
+		<div id="pickerToolPreview">
+			<div id="pickerToolColor"></div>
+			<div id="pickerToolColor2"></div>
+		</div>
+		<div id="sizeToolContainer">
+			<div id="sizeToolPreview"></div>
+			<a id="sizeToolLabel"></a>
+		</div>
+		<div id="editorTools" align="center">
+			<div id="closeEditorTools"><img src="img/icon/x.png"></div>
+			<div id="editorToolsContainer">
+				<!-- INIZIO COLOR PICKER -->
+				<div id="colorPickerCont">
+					<div align="center" id="colorPickerContU">
+						<canvas id="colorPicker" width="285" height="180"></canvas> <div id="colorPreviewCont" align="center">
+							<a id="previewLabel"></a>
+							<div id="colorPreview" ></div><br>
+							<a id="randomColors" class="button"><img src="img/icon/yes.png"></a>
+						</div>
+					</div>
+					<div align="center" id="colorPickerContD">
+						<div id="oldColorsCont">
+							<div id="oldColor0"></div>
+							<div id="oldColor1"></div>
+							<div id="oldColor2"></div>
+							<div id="oldColor3"></div>
+							<div id="oldColor4"></div>
+							<div id="oldColor5"></div>
+							<div id="oldColor6"></div>
+							<div id="oldColor7"></div>
+							<div id="oldColor8"></div>
+							<div id="oldColor9"></div>
+						</div>
+					</div>
+				</div>
+				<!-- FINE COLOR PICKER -->
+			</div>
+			<!-- INIZIO MENU TOOLS -->
+			<div id="editorToolsMenu" align="center">
+				<div id="toolColor" class="tool selected">
+					<img src="img/tool/palette.png"><br>
+					<a></a>
+				</div>
+				<div id="toolBox" class="tool">
+					<img src="img/tool/box.png"><br>
+					<a></a>
+				</div>
+			<!-- FINE MENU TOOLS -->
+			</div>
+		</div>
+		<!-- OPTIONS OPTIONS OPTIONS OPTIONS OPTIONS -->
+		<div id="editorOptions" align="center">
+			<ul>
+				<li id="optionDraft" class="button"></li>
+				<li id="optionRestore" class="button"></li>
+				<li id="optionSquare" class="button"></li>
+				<li id="optionExport" class="button"></li>
+				<li id="optionClear" class="button"></li>
+				<li id="optionClose" class="button"></li>
+			</ul>
+			<div id="closeOptions"><img src="img/icon/x.png"></div>
+		</div>
+	</div>
+	<!-- EDITOR EDITOR EDITOR EDITOR EDITOR EDITOR -->
+</body>
+</html>
