@@ -233,7 +233,7 @@ var App = (function() {
 	Dashboard = (function() {
 		var _dom, _imageGroup = {}, _$buttonModify, _zoomLabel, _$zoomLabelDoms,
 		_draggable = true, _isMouseDown = false, _zoomable = true,
-		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1,
+		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 3,
 		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 400, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
 		_socket = Socket.oneOrNew(Config.services.dashboard),
 		
@@ -333,9 +333,9 @@ var App = (function() {
 			for (var i = _ids.length; i--; ) {
 				var _img = _cache.get(_ids[i]);
 				_img.x = _img.x + _deltaDragX;
-				_img.x = round(_img.x +(zx - _img.x) * (1 - z), 2);
+				_img.x = round(_img.x +(zx - _img.x) * (1 - z), _decimals);
 				_img.y = _img.y + _deltaDragY;
-				_img.y = round(_img.y + (zy - _img.y) * (1 - z), 2);
+				_img.y = round(_img.y + (zy - _img.y) * (1 - z), _decimals);
 				_img.w = round(_img.w * z, 2);
 				_img.h = round(_img.h * z, 2);
 				_cache.set(_img.id, _img);
@@ -343,32 +343,20 @@ var App = (function() {
 			}
 			_deltaDragX = _deltaDragY = 0;
 		},
-		_zoomTo = function(level, x, y) {	// KO --> funziona male il calcolo delle coordinate correnti dello schermo. _currentX è ridefinito a undefined porco dio
-			console.log([_currentX, _currentY]);
-			
+		_zoomTo = function(level, x, y) {	// OK !!!!!
 			if (level === _zoom || level > _zoomMax || level < 1) return;
 			var _deltaZoomLevel = level - _zoom,
 				_z = (_deltaZoomLevel > 0) ? MATH.pow(1 - _zoomScale, _deltaZoomLevel) : MATH.pow(1 / (1 - _zoomScale), -_deltaZoomLevel),
-				newp = _dom.createSVGPoint();
+				newp = _dom.createSVGPoint(),
+				_zz = (_deltaZoomLevel > 0) ? MATH.pow(1 - _zoomScale, -_deltaZoomLevel) : MATH.pow(1 / (1 - _zoomScale), _deltaZoomLevel);
 			_zoom = level;
 			newp.x = x >= 0 ? x : XX2;
 			newp.y = y >= 0 ? y : YY2;
 			newp = newp.matrixTransform(_imageGroup.tag.getScreenCTM().inverse());
 			newp.x = round(newp.x);
 			newp.y = round(newp.y);
-			
-			//_currentX = _currentX - round((XX2 - newp.x) * _zoomScale * _deltaZoomLevel);
-			//_currentY = _currentY + round((YY2 - newp.y) * _zoomScale * _deltaZoomLevel);
-			var oldX = _currentX, oldY = _currentY;
-			
-			var _zz = (_deltaZoomLevel > 0) ? MATH.pow(1 - _zoomScale, -_deltaZoomLevel) : MATH.pow(1 / (1 - _zoomScale), _deltaZoomLevel),
-			_currentX = round(_currentX - (x - XX2) * _z + (x - XX2), 2);
-			_currentY = round(_currentY + (y - YY2) * _z - (y - YY2), 2);
-			
-			
-			//console.log([oldX, _currentX, oldY,_currentY, _z, _zz]);
-			//console.log([_currentX, _currentY]);
-			
+			_currentX = round(_currentX - (XX2 - newp.x) * _zoomScale * _deltaZoomLevel, _decimals);
+			_currentY = round(_currentY + (YY2 - newp.y) * _zoomScale * _deltaZoomLevel, _decimals);
 			_imageGroup.matrix = _imageGroup.matrix.translate(-(newp.x * (_z-1)), -(newp.y * (_z-1)));
 			_imageGroup.matrix.a = _imageGroup.matrix.d = MATH.min(round(_imageGroup.matrix.a * _z * 10000) / 10000, 1);
 			_imageGroup.matrix.a >= 0.99 && (_imageGroup.matrix.a = _imageGroup.matrix.d = 1);
@@ -376,26 +364,22 @@ var App = (function() {
 			_updateCacheForZoom(_z, x, y);
 			(_deltaZoomLevel > 0) && _fillScreen(); 		// dopo lo zoom e l'aggiornamento delle imm, scarico e visualizzo le nuove. necessario solo se sto rimpicciolendo la schermata.
 			_zoomLabel.textContent = [round(100 - (95 / _zoomMax) * (level - 1)), "%"].join('');
-			
-			console.log([_currentX, _currentY]);
 		},
 		_drag = function(dx, dy, forceLoad) {	// OK. dx dy sono le differenze in px, non in coordinate (bisogna tenere conto dello zoom)
 			if (dx === 0 && dy === 0) return;
-			var _deltaX = round(dx / _imageGroup.matrix.a),
-				_deltaY = round(dy / _imageGroup.matrix.a);
+			var _deltaX = round(dx / _imageGroup.matrix.a, _decimals),
+				_deltaY = round(dy / _imageGroup.matrix.a, _decimals);
 			_deltaDragX = _deltaDragX + dx;
 			_deltaDragY = _deltaDragY + dy;
 			_imageGroup.matrix = _imageGroup.matrix.translate(_deltaX, _deltaY);
 			_setMatrix(_imageGroup.tag, _imageGroup.matrix);
-			_currentX = _currentX - _deltaX;
-			_currentY = _currentY + _deltaY;
+			_currentX = round(_currentX - _deltaX, _decimals);
+			_currentY = round(_currentY + _deltaY, _decimals);
 			if (forceLoad || MATH.abs(_deltaDragX) > _deltaDragMax || MATH.abs(_deltaDragY) > _deltaDragMax) {
 				_updateCacheForDrag(_deltaDragX, _deltaDragY);
 				_fillScreen(); // dopo il drag e l'aggiornamento delle imm, scarico e visualizzo le nuove
 				_deltaDragX = _deltaDragY = 0;
 			}
-			
-			console.log([_currentX, _currentY]);
 		},
 		_mousedown = function(e) {
 			if (e.button !== 0) return false;
@@ -425,7 +409,6 @@ var App = (function() {
 		_click = function(e) {
 			// se ho cliccato su un disegno lo evidenzio, con bordo proporzionale allo zoom corrente
 			_cache.log();
-			console.log([_currentX, _currentY]);
 			//console.log(_imagesVisibleIds);
 		},
 		_mouseend = function() {
@@ -447,13 +430,11 @@ var App = (function() {
 			}
 		},
 		__mouseWheel = function() {
-			console.log([_currentX, _currentY]);
 			_zoomTo(this[0] > 0 ? _zoom - 1 : _zoom + 1, this[1], this[2], _currentX);
-			console.log([_currentX, _currentY]);
 			_zoomable = true;	
 		},
 		_mouseWheel = function (e) {	// Test browser
-			if(e.preventDefault)
+			if (e.preventDefault)
 				e.preventDefault();
 			e.returnValue = false;
 			var _delta = e.wheelDelta ? e.wheelDeltaY : -e.detail;	// delta negativo --> scroll verso il basso --> le immagini si rimpiccioliscono e la lavagna si ingrandisce --> zoom + 1
