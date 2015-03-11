@@ -536,12 +536,14 @@ var App = (function() {
 			}
 		    return true;
 		},
-		_getVisibleArea = function() {	// OK
+		_getVisibleArea = function() {	// OK  in coordinate
+			var XX2Z = XX2 * 1 / _imageGroup.matrix.a,
+				YY2Z = YY2 * 1 / _imageGroup.matrix.a;
 			return {
-				minX : _currentX - XX2,
-				maxX : _currentX + XX2,
-				minY : _currentY - YY2,
-				maxY : _currentY + YY2
+				minX : _currentX - XX2Z,
+				maxX : _currentX + XX2Z,
+				minY : _currentY - YY2Z,
+				maxY : _currentY + YY2Z
 			}
 		},
 		_findInCache = function() {
@@ -569,9 +571,9 @@ var App = (function() {
 		goToXY = function(x, y) {	// OK
 			// calcolo la differenza in px invece che coord, e chiamo _drag. se si inseriscono coordinate poco distanti dalle attuali, forzo l'aggiornamento e il caricamento delle nuove
 			if (utility.areEmpty([x, y])) return;
-			if (_currentX === x && _currentY === y)	// se ho richiamato le stesse coordinate attuali, refresho la pagina per cercare le cose non ancora in cache
+			if (_currentX === x && _currentY === y)	{ // se ho richiamato le stesse coordinate attuali, refresho la pagina per cercare le cose non ancora in cache
 				_fillScreen();
-			else {									// altrimenti faccio drag, che fa tutto il resto
+			} else {									// altrimenti faccio drag, che fa tutto il resto
 				var dx = round((x - _currentX) * _imageGroup.matrix.a),
 					dy = round((y - _currentY) * _imageGroup.matrix.a);
 				_currentX = x;
