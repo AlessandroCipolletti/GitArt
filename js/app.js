@@ -623,12 +623,13 @@ var App = (function() {
 	
 	Editor = (function() {
 		var _dom, _$dom, _context, _$tools, _$toolContent, _$allDom, _$allDomContainer, _$allMenuTool, _$brushTool, _$pencilTool, _$eraserTool, _$pickerTool, _$editorUndo, _$editorRedo, 
-		_$ptions, _$overlays, _$pickerToolPreview, _$pickerToolColor, _$pickerToolColor2, _$editorShowTools, _$editorSave, _$sizeToolContainer,
+		_$ptions, _$overlays, _$pickerToolPreview, _$pickerToolColor, _$pickerToolColor2, _$editorShowTools, _$editorSave, _$sizeToolContainer, _$grayscaleContainer,
 		_$editorShowOptions, _$optionDraft, _$optionRestore, _$optionSquare, _$optionExport, _$optionClear, _$optionClose, _$closeButtons,
 		_minX, _minY, _maxX, _maxY, _oldX, _oldY, _mouseX = 0, _mouseY = 0, _numUndoStep = 31, _currentStep = 0, _oldMidX, _oldMidY, _$sizeToolPreview, _$sizeToolLabel,
 		_isInit, _isMouseDown, _isPressedShift, _restored = false, _toolsSizeX, _toolsSizeY, _randomColor = true, _overlay = false,
 		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0,
-		_color, _size, _pencilSize = 2, _pencilColor = "#333", _brushSize = 50, _eraserSize = 50, _brushColor, _maxToolSize = 200,
+		_color, _size, _pencilSize = 2, _pencilColorID = 12, _brushSize = 50, _eraserSize = 50, _brushColor, _maxToolSize = 200,
+		_grayscaleColors = ["#FFF", "#EEE", "#DDD", "#CCC", "#BBB", "#AAA", "#999", "#888", "#777", "#666", "#555", "#444", "#333", "#222", "#111", "#000"], 
 		_enableElement = utility.enableElement,
 		_disableElement = utility.disableElement,
 		_labelAnnulla = label["Annulla"],
@@ -676,12 +677,14 @@ var App = (function() {
 			_$closeButtons = $("#closeOptions, #closeEditorTools");
 			_$sizeToolLabel = $("#sizeToolLabel");
 			_$sizeToolContainer = $("#sizeToolContainer");
+			_$grayscaleContainer = $("#pencilGrayscaleCont");
 		},
 		_init = function() {
 			if (!_isInit) {
 				_isInit = true;
 				__init();
 				_saveStep();
+				_initGrayscale();
 				_colorPicker.init();
 				_onResize();
 				_selectBrush();
@@ -746,6 +749,14 @@ var App = (function() {
 			WINDOW.removeEventListener("resize", _onResize);
 			_dom.removeEventListener(_mouseWheelEvent, _mouseWheel, true);
 			_$sizeToolContainer[0].addEventListener(_mouseWheelEvent, _mouseWheel, true);
+		},
+		_initGrayscale = function() {
+			var length = _grayscaleColors.length;
+			for (var i = 0; i < length; i++) {
+				var div = $('<div>');
+				div.css('background-color', _grayscaleColors[i]);
+				_$grayscaleContainer.append(div);
+			}
 		},
 		_saveLayer = function() {
 			return {
@@ -835,7 +846,7 @@ var App = (function() {
 				_$pickerToolPreview.hide();
 				_$sizeToolContainer.hide();
 			}
-			_color = _pencilColor;
+			_color = _grayscaleColors[_pencilColorID];
 			_size = _pencilSize;
 		},
 		_selectEraser = function() {
@@ -922,6 +933,7 @@ var App = (function() {
 		_mousedown = function(e) {
 			var x = e.clientX, y = e.clientY;
 			_$sizeToolContainer.hide();
+			_$grayscaleContainer.hide();
 			if (e.button === 0 && !_overlay) {
 				_isMouseDown = true;
 				if (_toolSelected === 3)
@@ -998,14 +1010,22 @@ var App = (function() {
 			return delta;
 		},
 		_mouseWheel = function(e) {
-			if (_isMouseDown || (_toolSelected !== 0 && _toolSelected !== 2)) return;
-			var wheelY = Info.firefox ? -e.detail : e.wheelDeltaY
-				size = _toolSelected === 0 ? _brushSize : _eraserSize;
-			if ((wheelY > 0 && size < _maxToolSize) || (wheelY < 0 && size > 1))
-				_setSize(_toolSelected, size + _getMouseWheelDelta(wheelY));
-			_$sizeToolContainer.show();
+			if (_isMouseDown || [0, 1, 2].indexOf(_toolSelected) === -1) return;
+			var wheelY = Info.firefox ? -e.detail : e.wheelDeltaY;
+			if (_toolSelected === 1) { // matita, quindi color picker a scrollbar
+				_$grayscaleContainer.show();
+				_grayscaleScroll(_getMouseWheelDelta(wheelY));
+			} else {	// pennello o gomma, quindi size picker a cerchio
+				var size = _toolSelected === 0 ? _brushSize : _eraserSize;
+				if ((wheelY > 0 && size < _maxToolSize) || (wheelY < 0 && size > 1))
+					_setToolSize(_toolSelected, size + _getMouseWheelDelta(wheelY));
+				_$sizeToolContainer.show();
+			}
 		},
-		_setSize = function(tool, size) {
+		_grayscaleScroll = function(y) {
+			
+		},
+		_setToolSize = function(tool, size) {
 			// setta un valore per il picker del tool passato -> 0: brush, 2: eraser
 			size = MATH.min(size, 200);
 			size = MATH.max(size, 1);
