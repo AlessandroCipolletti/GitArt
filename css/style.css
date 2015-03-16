@@ -101,7 +101,7 @@ body {
 	-o-box-shadow:inset 0px 1px 0px #2ab7ec, 0px 5px 0px 0px #032b3a;
 	box-shadow:inset 0px 1px 0px #2ab7ec, 0px 5px 0px 0px #032b3a;
 }
-.button3DSelected:active {	
+.button3DSelected:active {
 	-webkit-box-shadow:inset 0px 1px 0px #2ab7ec, 0px 2px 0px 0px #032b3a;
 	-moz-box-shadow:inset 0px 1px 0px #2ab7ec, 0px 2px 0px 0px #032b3a;
 	-o-box-shadow:inset 0px 1px 0px #2ab7ec, 0px 2px 0px 0px #032b3a;
@@ -120,7 +120,7 @@ body {
 	FINE PULSANTI GENERICI ---------------------------------------------------------------------------------------------------------
 
 	*******************************************************************************************************************************
-	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR 
+	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR	EDITOR
 	*******************************************************************************************************************************
 */
 #editorContainer {
@@ -268,10 +268,10 @@ body {
 	content:"4";
 }
 #editorMenu5 div {
-	-webkit-mask-image: url(../img/icon/tools.png);
-    -o-mask-image: url(../img/icon/tools.png);
-    -moz-mask-image: url(../img/icon/tools.png);
-    mask-image: url(../img/icon/tools.png);
+	-webkit-mask-image: url(../img/icon/palette.png);
+    -o-mask-image: url(../img/icon/palette.png);
+    -moz-mask-image: url(../img/icon/palette.png);
+    mask-image: url(../img/icon/palette.png);
 }
 #editorMenu5::before {
 	content:"5";
@@ -375,7 +375,7 @@ body {
 	}
 	#closeOptions img, #closeEditorTools img {
 		width: 100%;
-	} 
+	}
 /*
 		INIZIO EDITOR TOOLS  ---------------------------------------------------------------------------------------------------------------------
 */
@@ -449,129 +449,86 @@ body {
 	}
 
 #editorTools {
-	width: 600px;
-	height: 450px;
+	width: 500px;
+	height: 320px;
 }
-	#editorToolsContainer, #editorToolsMenu {
-		width: 100%;
+
+/*	INIZIO COLOR PICKER -------------------------------------------------------------------------------------------------------------------*/
+	#colorPickerCont > div {
+		width: 90%;
+		margin: auto;
 	}
-#editorTools .tool img {
-	width: 50px;
-	cursor: pointer;
-	padding: 4px;
-	margin-top: 15px;
-}
-#editorTools .tool img:hover, #editorTools .selected img {
-	padding: 3px;
-	background-color: rgba(255, 255, 255, 0.5);
-	border-radius: 5px;
-	-moz-border-radius: 5px;
-	-webkit-border-radius: 5px;
-	-o-border-radius: 5px;
-	border: solid 1px #999;
-}
-	.tool {
-		width: 70px;
-		height: 70px;
-		padding: 6px 4px 0px 0px;
-		margin: 0px 5px;
-		display: inline-block;
-		text-align: center;
+	#colorPickerContU {
+		height: 220px;
+		padding-top: 20px;
 	}
-	.tool a {
-		color: black;
-		font-size: 12px;
-		line-height: 11px;
-		cursor: default;
-	}
-	#editorToolsContainer {
-		height: 320px;
-	}
-	#editorToolsContainer > div {
-		width: 100%;
-		height: 100%;
-	}
-	#editorToolsMenu {
-		height: 130px;
-		border-top: solid 1px #ccc;
-	}
-	
-/*		INIZIO COLOR PICKER -------------------------------------------------------------------------------------------------------------------*/
-		#colorPickerCont > div {
-			width: 80%;
-			margin-left: 10%;
+		#colorPicker, #colorPreviewCont {
+			margin-top: 20px;
 		}
-		#colorPickerContU {
-			height: 220px;
-			padding-top: 20px;
+		#colorPicker {
+			float: left;
+			cursor: url('../img/point.png') 5 5, auto;
+			background-color: white;
+			border: solid 1px grey;
+			margin-left: 15px;
 		}
-			#colorPicker, #colorPreviewCont {
-				margin-top: 20px;
+		#colorPreviewCont {
+			float: right;
+			width: 130px;
+			height: 180px;
+		}
+			#previewLabel {
+				font-size: 14px;
 			}
-			#colorPicker {
-				float: left;
-				cursor: url('../img/point.png') 5 5, auto;
-				background-color: white;
+			#colorPreview {
+				width: 100px;
+				height: 100px;
+				border-radius: 100px;
+				-webkit-border-radius: 100px;
+				-moz-border-radius: 100px;
+				-o-border-radius: 100px;
+				/*
 				border: solid 1px grey;
-				margin-left: 15px;
-			}
-			#colorPreviewCont {
-				float: right;
-				width: 130px;
-				height: 180px;
-			}
-				#previewLabel { 
-					font-size: 14px;
-				}
-				#colorPreview {
-					width: 100px;
-					height: 100px;
-					border-radius: 100px;
-					-webkit-border-radius: 100px;
-					-moz-border-radius: 100px;
-					-o-border-radius: 100px;
-					/*
-					border: solid 1px grey;
-					*/
-					-webkit-box-shadow: 0px 0px 4px #333 inset, 0px 0px 2px #333;
-					-moz-box-shadow:	0px 0px 4px #333 inset, 0px 0px 2px #333;
-					-o-box-shadow:		0px 0px 4px #333 inset, 0px 0px 2px #333;
-					box-shadow:			0px 0px 4px #333 inset, 0px 0px 2px #333;
-					
-					background-color: white;
-					margin-top: 10px;
-				}
-		#colorPickerContD {
-			height: 40px;
-			padding-top: 10px;
-		}
-			#oldColorsCont {
-				width: 96%;
-				height: 55px;
-			}
-			#oldColorsCont > div {
-				width: 35px;
-				height: 35px;
-				margin-top: 0px;
-				display: inline-block;
-				cursor: pointer;
-				background-color: rgba(255, 255, 255, 0);
-				border-radius: 			100px;
-				-webkit-border-radius:	100px;
-				-moz-border-radius:		100px;
-				-o-border-radius:		100px;
+				*/
+				-webkit-box-shadow: 0px 0px 4px #333 inset, 0px 0px 2px #333;
+				-moz-box-shadow:	0px 0px 4px #333 inset, 0px 0px 2px #333;
+				-o-box-shadow:		0px 0px 4px #333 inset, 0px 0px 2px #333;
+				box-shadow:			0px 0px 4px #333 inset, 0px 0px 2px #333;
+
 				background-color: white;
-				-webkit-box-shadow: 0px 0px 3px #333 inset, 0px 0px 2px #333;
-				-moz-box-shadow:	0px 0px 3px #333 inset, 0px 0px 2px #333;
-				-o-box-shadow:		0px 0px 3px #333 inset, 0px 0px 2px #333;
-				box-shadow:			0px 0px 3px #333 inset, 0px 0px 2px #333;
+				margin-top: 10px;
 			}
+	#colorPickerContD {
+		height: 40px;
+		padding-top: 10px;
+	}
+		#oldColorsCont {
+			width: 100%;
+			height: 55px;
+		}
+		#oldColorsCont > div {
+			width: 35px;
+			height: 35px;
+			margin-top: 0px;
+			display: inline-block;
+			cursor: pointer;
+			background-color: rgba(255, 255, 255, 0);
+			border-radius: 			100px;
+			-webkit-border-radius:	100px;
+			-moz-border-radius:		100px;
+			-o-border-radius:		100px;
+			background-color: white;
+			-webkit-box-shadow: 0px 0px 3px #333 inset, 0px 0px 2px #333;
+			-moz-box-shadow:	0px 0px 3px #333 inset, 0px 0px 2px #333;
+			-o-box-shadow:		0px 0px 3px #333 inset, 0px 0px 2px #333;
+			box-shadow:			0px 0px 3px #333 inset, 0px 0px 2px #333;
+		}
 /*	FINE COLOR PICKER -------------------------------------------------------------------------------------------------------------
 
 	*******************************************************************************************************************************
-	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR 
+	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR	/EDITOR
 	*******************************************************************************************************************************
-	
+
 	*********************************************************************************************************************************
 	DASHBOARD	DASHBOARD	DASHBOARD	DASHBOARD	DASHBOARD	DASHBOARD	DASHBOARD	DASHBOARD	DASHBOARD	DASHBOARD	DASHBOARD
 	*********************************************************************************************************************************
@@ -597,8 +554,3 @@ body {
 		font-size: 17px;
 		opacity: 0.7;
 	}
-	
-	
-	
-	
-	

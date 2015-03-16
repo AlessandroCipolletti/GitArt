@@ -61,8 +61,6 @@ var App = (function() {
 		_labels['ita'] = {
 			'closePrevent'				: 'Salva una bozza prima di uscire!',
 			"Dimensione"				: "Dimensione",
-			"Box"						: "Box",
-			"Colore"					: "Colore",
 			"Matita"					: "Matita",
 			"Pennello"					: "Pennello",
 			"Gomma"						: "Gomma",
@@ -625,11 +623,11 @@ var App = (function() {
 	
 	Editor = (function() {
 		var _dom, _$dom, _context, _$tools, _$toolContent, _$allDom, _$allDomContainer, _$allMenuTool, _$brushTool, _$pencilTool, _$eraserTool, _$pickerTool, _$editorUndo, _$editorRedo, 
-		_$ptions, _$overlays, _$pickerToolPreview, _$pickerToolColor, _$pickerToolColor2, _$toolColor, _$toolMenuItems, _$editorShowTools, _$editorSave, _$sizeToolContainer,
-		_$editorShowOptions, _$optionDraft, _$optionRestore, _$optionSquare, _$optionExport, _$optionClear, _$optionClose, _$closeButtons, _$toolColorImg, 
+		_$ptions, _$overlays, _$pickerToolPreview, _$pickerToolColor, _$pickerToolColor2, _$editorShowTools, _$editorSave, _$sizeToolContainer,
+		_$editorShowOptions, _$optionDraft, _$optionRestore, _$optionSquare, _$optionExport, _$optionClear, _$optionClose, _$closeButtons,
 		_minX, _minY, _maxX, _maxY, _oldX, _oldY, _mouseX = 0, _mouseY = 0, _numUndoStep = 31, _currentStep = 0, _oldMidX, _oldMidY, _$sizeToolPreview, _$sizeToolLabel,
 		_isInit, _isMouseDown, _isPressedShift, _restored = false, _toolsSizeX, _toolsSizeY, _randomColor = true, _overlay = false,
-		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0, _menuItemSelected = 0,
+		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0,
 		_color, _size, _pencilSize = 2, _pencilColor = "#333", _brushSize = 50, _eraserSize = 50, _brushColor, _maxToolSize = 200,
 		_enableElement = utility.enableElement,
 		_disableElement = utility.disableElement,
@@ -673,13 +671,8 @@ var App = (function() {
 			_$optionClear = $("#optionClear").html(label['Svuota']);
 			_$optionClose = $("#optionClose").html(label['Pausa']);
 			_disableElement(_$optionRestore);
-			_$toolColor = $("#toolColor");
-			_$toolMenuItems = $("#editorTools .tool");
 			_$sizeToolPreview = $("#sizeToolPreview");
-			$("a", _$toolColor).html(label['Colore']);
 			$("#toolSize a").html(label['Dimensione']);
-			$("#toolBox a").html(label['Box']);
-			_$toolColorImg = $("img", _$toolColor);
 			_$closeButtons = $("#closeOptions, #closeEditorTools");
 			_$sizeToolLabel = $("#sizeToolLabel");
 			_$sizeToolContainer = $("#sizeToolContainer");
@@ -718,7 +711,6 @@ var App = (function() {
 			_$optionClear.bind("click", clear);
 			_$optionClose.bind("click", _hide);
 			_$closeButtons.bind("click", _hideOverlays);
-			_$toolColorImg.bind("click", _showColorPicker);
 			_colorPicker.addEvents();
 			//WINDOW.onbeforeunload = function() { return label['closePrevent']; };
 			WINDOW.addEventListener("resize", _onResize, true);
@@ -749,7 +741,6 @@ var App = (function() {
 			_$optionClear.unbind("click", clear);
 			_$optionClose.unbind("click", _hide);
 			_$closeButtons.unbind("click", _hideOverlays);
-			_$toolColorImg.unbind("click", _showColorPicker);
 			_colorPicker.removeEvents();
 			WINDOW.onbeforeunload = undefined;
 			WINDOW.removeEventListener("resize", _onResize);
@@ -821,12 +812,6 @@ var App = (function() {
 			_oldX = X;
 			_oldY = Y;
 		},
-		_showColorPicker = function() {
-			_$toolMenuItems.removeClass("selected");
-			_$toolColor.addClass("selected");
-			_colorPicker.show();
-			_menuItemSelected = 0;
-		},
 		_selectBrush = function() {
 			if (_toolSelected !== 0) {
 				_toolSelected = 0; 			// PENNELLO
@@ -896,25 +881,14 @@ var App = (function() {
 				return e.ctrlKey;
 			},
 		_keyDown = function(e) {
-			//console.log("editor: " + e.keyCode + " - " + _menuItemSelected);
+			//console.log("editor: " + e.keyCode);
 			var keyCode = e.keyCode;
 			if (keyCode === 27) {
 				e.preventDefault();
 				e.stopPropagation();
 			}
 			if (_overlay) {
-				if (keyCode === 27)
-					_hideOverlays();
-				if (_$tools.is(':visible')) {
-					if (keyCode === 53)
-						_hideOverlays();
-					else if (keyCode === 37 && _menuItemSelected > 0) { // parto con le frecce a sx e dx
-						if (_menuItemSelected === 1)
-							_showColorPicker();
-					} else if (keyCode === 39 && _menuItemSelected < 1) {
-						if (_menuItemSelected === 0) {}
-					}
-				} else if (keyCode === 57)
+				if (keyCode === 27 || keyCode === 57 || (keyCode === 53 && _$tools.is(':visible')))
 					_hideOverlays();
 			} else {
 				if (keyCode >= 48 && keyCode <= (48 + _editorMenuActionsLength) && !_isPressedShift) {
@@ -1079,8 +1053,7 @@ var App = (function() {
 			_$tools.stop().fadeIn("fast");
 			_$pickerToolPreview.fadeOut("fast");
 			_$sizeToolContainer.fadeOut("fast");
-			if (_$toolColor.hasClass("selected"))
-				_colorPicker.show();
+			_colorPicker.show();
 		},
 		_showOptions = function() {
 			_overlay = true;
@@ -1369,16 +1342,16 @@ var App = (function() {
 				}
 			},
 			show = function() {
-				_$container.show();
+				//_$container.show();
 				if (!_newColor) {
 					_newColor = true;
 					for (var i = 0, len = _lastColors.length; i < len; i++)
 						_$oldColors[i].css("backgroundColor", _lastColors[i]);
 				}
 			},
-			hide = function() {
-				_$container.hide();
-			},
+			//hide = function() {
+			//	_$container.hide();
+			//},
 			setColor = function(__color) {
 				_$randomColors.html('<img src="img/icon/no.png">' + label["Casuale"]);
 				_color = __color;
@@ -1395,7 +1368,7 @@ var App = (function() {
 			return {
 				init:			init,
 				show: 			show,
-				hide:			hide,
+				//hide:			hide,
 				addEvents:		addEvents,
 				removeEvents:	removeEvents,
 				setColor:		setColor,
