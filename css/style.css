@@ -3,7 +3,7 @@
 	src: url('../font/font.ttf');
 }
 
-#editorMenu, #editor, #editorTools, #darkOverlay, #editorSmallTool, #editorOptions, #pickerToolPreview, #sizePickerCont, #sizeToolContainer {
+#editorMenu, #editor, #editorTools, #darkOverlay, #editorSmallTool, #editorOptions, #pickerToolPreview, #sizePickerCont, #sizeToolContainer, #pencilGrayscaleCont {
 	display: none;
 }
 
@@ -379,7 +379,7 @@ body {
 /*
 		INIZIO EDITOR TOOLS  ---------------------------------------------------------------------------------------------------------------------
 */
-#pickerToolPreview, #sizeToolPreview {
+#pickerToolPreview, #sizeToolPreview, #pencilGrayscaleCont {
 	position: absolute;
 	background-color: rgb(255, 255, 255);
 	z-index: 500;
@@ -388,6 +388,16 @@ body {
 	-webkit-box-shadow:	0px 0px 7px white, 0px 0px 5px grey;
 	-o-box-shadow:		0px 0px 7px white, 0px 0px 5px grey;
 }
+#pencilGrayscaleCont {
+	height: 320px;
+	width: 20px;
+	top: 50px;
+	left: 50px;
+}
+	#pencilGrayscaleCont div {
+		width: 20px;
+		height: 20px;
+	}
 #pickerToolPreview {
 	left: 30px;
 	width: 80px;
@@ -554,3 +564,8 @@ body {
 		font-size: 17px;
 		opacity: 0.7;
 	}
+
+
+
+
+
