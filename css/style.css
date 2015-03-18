@@ -394,9 +394,17 @@ body {
 	top: 50px;
 	left: 50px;
 }
-	#pencilGrayscaleCont div {
+	#pencilGrayscaleCont div:not(#grayscalePointer) {
 		width: 20px;
 		height: 20px;
+	}
+	#grayscalePointer {
+		position: absolute;
+		left: -25px;
+		width: 0px;
+		height: 0px;
+		border-style: solid;
+		border-width: 8px 0 8px 15px;
 	}
 #pickerToolPreview {
 	left: 30px;
@@ -564,8 +572,3 @@ body {
 		font-size: 17px;
 		opacity: 0.7;
 	}
-
-
-
-
-
