@@ -232,7 +232,7 @@ var App = (function() {
 		var _dom, _imageGroup = {}, _$buttonModify, _zoomLabel, _$zoomLabelDoms,
 		_draggable = true, _isMouseDown = false, _zoomable = true,
 		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 3,
-		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 400, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
+		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 200, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
 		_socket = Socket.oneOrNew(Config.services.dashboard),
 		
 		_cache = (function() {
@@ -343,13 +343,15 @@ var App = (function() {
 		},
 		_zoomTo = function(level, x, y) {	// OK !!!!!
 			if (level === _zoom || level > _zoomMax || level < 1) return;
-			var _deltaZoomLevel = level - _zoom,
+			var x = x || XX2,
+				y = y || YY2,
+				_deltaZoomLevel = level - _zoom,
 				_z = (_deltaZoomLevel > 0) ? MATH.pow(1 - _zoomScale, _deltaZoomLevel) : MATH.pow(1 / (1 - _zoomScale), -_deltaZoomLevel),
 				newp = _dom.createSVGPoint(),
 				_zz = (_deltaZoomLevel > 0) ? MATH.pow(1 - _zoomScale, -_deltaZoomLevel) : MATH.pow(1 / (1 - _zoomScale), _deltaZoomLevel);
 			_zoom = level;
-			newp.x = x >= 0 ? x : XX2;
-			newp.y = y >= 0 ? y : YY2;
+			newp.x = x;
+			newp.y = y;
 			newp = newp.matrixTransform(_imageGroup.tag.getScreenCTM().inverse());
 			newp.x = round(newp.x);
 			newp.y = round(newp.y);
