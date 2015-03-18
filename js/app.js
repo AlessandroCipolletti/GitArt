@@ -623,12 +623,12 @@ var App = (function() {
 	
 	Editor = (function() {
 		var _dom, _$dom, _context, _$tools, _$toolContent, _$allDom, _$allDomContainer, _$allMenuTool, _$brushTool, _$pencilTool, _$eraserTool, _$pickerTool, _$editorUndo, _$editorRedo, 
-		_$ptions, _$overlays, _$pickerToolPreview, _$pickerToolColor, _$pickerToolColor2, _$editorShowTools, _$editorSave, _$sizeToolContainer, _$grayscaleContainer,
+		_$ptions, _$overlays, _$pickerToolPreview, _$pickerToolColor, _$pickerToolColor2, _$editorShowTools, _$editorSave, _$sizeToolContainer, _$grayscaleContainer, _$grayscalePointer,
 		_$editorShowOptions, _$optionDraft, _$optionRestore, _$optionSquare, _$optionExport, _$optionClear, _$optionClose, _$closeButtons,
 		_minX, _minY, _maxX, _maxY, _oldX, _oldY, _mouseX = 0, _mouseY = 0, _numUndoStep = 31, _currentStep = 0, _oldMidX, _oldMidY, _$sizeToolPreview, _$sizeToolLabel,
 		_isInit, _isMouseDown, _isPressedShift, _restored = false, _toolsSizeX, _toolsSizeY, _randomColor = true, _overlay = false, _grayscaleIsScrolling = false,
 		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0,
-		_color, _size, _pencilSize = 2, _pencilColorID = 12, _brushSize = 50, _eraserSize = 50, _brushColor, _maxToolSize = 200,
+		_color, _size, _pencilSize = 2, _pencilColor = "", _pencilColorID = 12, _brushSize = 50, _eraserSize = 50, _brushColor, _maxToolSize = 200,
 		_grayscaleColors = ["#FFF", "#EEE", "#DDD", "#CCC", "#BBB", "#AAA", "#999", "#888", "#777", "#666", "#555", "#444", "#333", "#222", "#111", "#000"], 
 		_enableElement = utility.enableElement,
 		_disableElement = utility.disableElement,
@@ -678,6 +678,7 @@ var App = (function() {
 			_$sizeToolLabel = $("#sizeToolLabel");
 			_$sizeToolContainer = $("#sizeToolContainer");
 			_$grayscaleContainer = $("#pencilGrayscaleCont");
+			_$grayscalePointer = $("#grayscalePointer");
 		},
 		_init = function() {
 			if (!_isInit) {
@@ -757,6 +758,11 @@ var App = (function() {
 				div.css('background-color', _grayscaleColors[i]);
 				_$grayscaleContainer.append(div);
 			}
+			_pencilColor = _grayscaleColors[_pencilColorID];
+			_$grayscalePointer.css({
+				'top':			_pencilColorID * 20 + 2 + 'px',
+				'border-color':	["transparent transparent transparent ", _pencilColor].join('')
+			});
 		},
 		_saveLayer = function() {
 			return {
@@ -846,7 +852,7 @@ var App = (function() {
 				_$pickerToolPreview.hide();
 				_$sizeToolContainer.hide();
 			}
-			_color = _grayscaleColors[_pencilColorID];
+			_color = _pencilColor;
 			_size = _pencilSize;
 		},
 		_selectEraser = function() {
@@ -1029,13 +1035,15 @@ var App = (function() {
 			if (_grayscaleIsScrolling) return;
 			_grayscaleIsScrolling = true;
 			if (y < 0)
-				_pencilColorID = MATH.min(_pencilColorID++, 15);
+				_pencilColorID = MATH.min(_pencilColorID + 1, 15);
 			else 
-				_pencilColorID = MATH.max(_pencilColorID--, 0);
-			// _$grayscalePointer ancora da creare, sia come js che come img e css. da mettere con margin-left negativo e position absolute
-			_$grayscalePointer.css('top', _pencilColorID * 20 + 'px')
+				_pencilColorID = MATH.max(_pencilColorID - 1, 0);
+			_color = _pencilColor = _grayscaleColors[_pencilColorID];
+			_$grayscalePointer.css({
+				'top':			_pencilColorID * 20 + 2 + 'px',
+				'border-color':	["transparent transparent transparent ", _pencilColor].join('')
+			});
 			setTimeout(__grayscaleScroll, 100);
-			console.log(y);
 		},
 		_setToolSize = function(tool, size) {
 			// setta un valore per il picker del tool passato -> 0: brush, 2: eraser
