@@ -431,14 +431,14 @@ var App = (function() {
 		},
 		__mouseWheel = function() {
 			_zoomTo(this[0] > 0 ? _zoom - 1 : _zoom + 1, this[1], this[2], _currentX);
-			_zoomable = true;	
+			_zoomable = true;
 		},
 		_mouseWheel = function (e) {	// Test browser
 			if (e.preventDefault)
 				e.preventDefault();
 			e.returnValue = false;
 			var _delta = e.wheelDelta ? e.wheelDeltaY : -e.detail;	// delta negativo --> scroll verso il basso --> le immagini si rimpiccioliscono e la lavagna si ingrandisce --> zoom + 1
-			if (_zoomable) {
+			if (_zoomable && !_isMouseDown) {
 				_zoomable = false;
 				requestAnimationFrame(__mouseWheel.bind([_delta, e.clientX, e.clientY]));
 			}
