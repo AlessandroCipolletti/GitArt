@@ -385,6 +385,7 @@ var App = (function() {
 			if (e.button !== 0) return false;
 			var p = _dom.createSVGPoint();
 			_isMouseDown = true;
+			_dom.classList.toggle('dragging');
 			_mouseX = e.pageX;
 			_mouseY = e.pageY;
 			_imageGroup.matrix = _imageGroup.tag.getCTM();
@@ -415,6 +416,7 @@ var App = (function() {
 			_mouseX = 0;
 			_mouseY = 0;
 			_isMouseDown = false;
+			_dom.classList.toggle('dragging');
 		},
 		_mouseup = function(e) {
 			if (e.button !== 0) return false;
@@ -482,8 +484,7 @@ var App = (function() {
 			_imagesVisibleIds.splice(_imagesVisibleIds.indexOf(id), 1)
 			_oldDraw && _imageGroup.tag.removeChild(_oldDraw);
 		},
-		_appendDraw = function(draw, isNew) {	// OK
-			// aggiunge a video e salva un disegno preso dal server o già elaborato post editor
+		_appendDraw = function(draw, isNew) {	// OK	aggiunge a video e salva un disegno preso dal server o già elaborato post editor
 			if (!draw || !draw.id) return false;
 			isNew = isNew || false;
 			if (_imagesVisibleIds.indexOf(draw.id) === -1) {
