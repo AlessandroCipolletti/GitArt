@@ -27,9 +27,9 @@ var App = (function() {
 		
 	Config = (function() {
 		var debug = true,
-		services = {
-			dashboard	: "url servizio",
-			editor		: "url servizio",
+		sockets = {
+			draws		: "ws://localhost:9000/socket.php",
+			users		: "url servizio",
 			news		: "url servizio"	
 		},
 		workers = {
@@ -45,11 +45,11 @@ var App = (function() {
 	
 	Info = (function() {
 		var get_len = (function(len) {
-			return 'ita'; 	// da implementare per filtrare le lingue non supportate, e restituire il formato a 3 caratteri
+			return 'ita'; 	// TODO da implementare per filtrare le lingue non supportate, e restituire il formato a 3 caratteri
 		})(WINDOW.navigator.language);
 		return {
 			name 		: "Social.Art",
-			version 	: "0.2",
+			version 	: "0.5",
 			lenguage	: get_len,
 			macOS		: navigator.platform.toUpperCase().indexOf('MAC') !== -1,
 			firefox		: /Firefox/i.test(navigator.userAgent)
@@ -81,6 +81,7 @@ var App = (function() {
 			"Pennello"					: "Pennello",
 			"Gomma"						: "Gomma",
 			"salvoDisegno"				: " Salvo disegno...",
+			"nothingToSave"				: "Niente da salvare",
 			"editorSaveError"			: "Oooops :( Ora non &egrave; possibile salvare. Riprova pi&ugrave; tardi",
 			"editorSaveConfirm"			: "Dopo aver salvato non potrai più modificare il disegno. Confermi?"
 		};
@@ -160,6 +161,26 @@ var App = (function() {
 		}
 	})(),
 	
+	
+	/*
+		problema: se creo un socket unico per tutti i disegni posso mostrare gli aggiornamenti in tempo reale, perchè sia dashboard che editor
+					sono client dello stesso socket server. su onMessageServer di tipo SAVE pusho il disegno a tutte le dashboard collegate.
+					ma potrei legare un solo onMessageClient, quindi dovrei legare ovviamente la dashboard per mostrare i disegni, e non 
+					potrei ricevere conferme sull'editor dell'avvenuto salvataggio.
+				se faccio quindi due socket diversi per editor e dashboard avrebbero gli eventi client separati, ma fanculo gli aggiornamenti automatici.
+				allora devo salvare dentro il modulo Socket un dizionario di webSocket aperti, con anche un array di callback per ogni evento,
+					e offrire metodi per aggiungere una callback onMessage onError onClose per un socket già creato. 
+				cosi dentro i moduli che vogliono utilizzare un socket devo fare:
+					
+					var urlSocket = Config.sockets.mioSocket;
+					Socket.get(urlSocket);	// crea nuovo o restituisce quello già creato
+					Socket.onMessage(urlSocket, callback);
+					
+					e Socket.onMessage aggiunge callback all array di callback tipo onMessage;
+					la funzione onMessage da legare ad ogni socket gli farà andare dentro lo stack di socket creati, cercare se stessi in base 
+						al proprio .URL ed eseguire tutte le funzione nell'array di stack
+					
+	*/
 	Socket = (function() {
 		var _list = {},
 		__open = function(socket) {
@@ -503,7 +524,7 @@ var App = (function() {
 				else
 					_imageGroup.tag.appendChild(draw.data);
 				_imagesVisibleIds.push(draw.id);
-				draw.$ = $(["#", draw.id].join(''));
+				//draw.$ = $(["#", draw.id].join(''));
 				_cache.add(draw.id, draw);
 			}
 		},
@@ -533,7 +554,7 @@ var App = (function() {
 				delete draw.maxY;
 				draw.data = _newDraw;
 				_appendDraw(draw, true);
-				_newDraw = draw = null;
+				_newDraw = draw = undefined;
 			}
 		    return true;
 		},
@@ -588,7 +609,7 @@ var App = (function() {
 			if (_cache.exist(id)) {
 				var draw = _cache.get(id);
 			} else {
-				// prendo via socket il disegno passando l'id,
+				// TODO: prendo via socket il disegno passando l'id,
 				var draw = {
 					id	: id,
 					x	: 0,
@@ -597,8 +618,8 @@ var App = (function() {
 					h	: 0,
 					data: {}
 				};
-				draw.$ = $(["#", draw.id].join(''));
-				_cache.set(draw.id, draw);
+				//draw.$ = $(["#", draw.id].join(''));
+				_cache.set(id, draw);
 			}
 			goToXY(draw.x + draw.w / 2, draw.y + draw.h / 2);
 		},
@@ -1185,28 +1206,34 @@ var App = (function() {
 				//_draft = {};
 			}
 		},
-		_saveToServer = function() {
-			// e qui iniziano i cazzi
+		_saveToServer = function(draw) {
+			// TODO
 			// salvare lato server grazie ai socket (o per ora simularli)
 			// nella tab disegni decidere se salvare tutto l'oggetto draw in un solo campo stringato, o ogni informazione singolarmente.
-			var result = true;
+			var result = true,
+				data = JSON.stringify(draw);
 			
+
+			
+			
+			console.log(data);
 			result = random(1000);
 			
 			return result;
 		},
 		_save = function() {
 			if (_maxX === -1 || _maxY === -1)
-				Messages.alert("Niente da salvare");
+				Messages.alert(label["nothingToSave"]);
 			else {
 				if (Messages.confirm(label['editorSaveConfirm'])) {
 					Messages.loading(label['salvoDisegno'])
 					var draw = _saveLayer(),
-						resultSave = true,
+						resultSave,
 						_tempCanvas = document.createElement("canvas");
 					_tempCanvas.width = draw.data.width;
 					_tempCanvas.height = draw.data.height;
 					_tempCanvas.getContext("2d").putImageData(draw.data, 0, 0);
+					draw.data = undefined;
 					delete draw.data;
 					delete draw.oldX;
 					delete draw.oldY;
@@ -1238,7 +1265,7 @@ var App = (function() {
 				canvas.width = _maxX - _minX;
 				canvas.height = _maxY - _minY;
 				canvas.getContext("2d").putImageData(_context.getImageData(_minX, _minY, _maxX, _maxY), 0, 0);
-				window.open(canvas.toDataURL("image/png"), "_blank");
+				WINDOW.open(canvas.toDataURL("image/png"), "_blank");
 			}
 		},
 		clear = function(force) {
