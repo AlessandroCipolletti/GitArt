@@ -28,9 +28,9 @@ var App = (function() {
 	Config = (function() {
 		var debug = true,
 		sockets = {
-			draws		: "ws://localhost:9000/socket.php",
-			users		: "url servizio",
-			news		: "url servizio"	
+			draw : "ws://localhost:9000/socket.php",
+			user : "url servizio",
+			news : "url servizio"	
 		},
 		workers = {
 			blur		: "file blur.js",
@@ -38,7 +38,7 @@ var App = (function() {
 		};
 		return {
 			debug		: debug,
-			services	: services,
+			sockets		: sockets,
 			workers		: workers
 		}
 	})(),
@@ -82,6 +82,7 @@ var App = (function() {
 			"Gomma"						: "Gomma",
 			"salvoDisegno"				: " Salvo disegno...",
 			"nothingToSave"				: "Niente da salvare",
+			"errorSocket"				: "Errore aprendo il socket",
 			"editorSaveError"			: "Oooops :( Ora non &egrave; possibile salvare. Riprova pi&ugrave; tardi",
 			"editorSaveConfirm"			: "Dopo aver salvato non potrai più modificare il disegno. Confermi?"
 		};
@@ -92,7 +93,7 @@ var App = (function() {
 		return _lingua;
 	})(Info.lenguage),
 	
-	utility = (function() {
+	utils = (function() {
 		var _checkError = (function _checkError() {
 			var _function, errorMsg,
 			setFunc = function(func) {
@@ -109,8 +110,7 @@ var App = (function() {
 				} catch(error) {
 					if (Config.debug) {
 						var msg = errorMsg + "[" + error.code + " - " + error.message + "] {" + JSON.stringify(params) + "}";
-						console.log(msg);
-						// qui possiamo anche tentare una chiamata ajax per inviarci _msg per le statistiche sugli errori,
+						logError(msg);
 					}
 					return false;
 				}
@@ -149,6 +149,10 @@ var App = (function() {
 		},
 		disableElement = function(el) {
 			el.addClass("disabled").removeClass("enabled");
+		},
+		logError = function(msg) {
+			console.log(msg);
+			// qui possiamo anche tentare una chiamata ajax per inviarci _msg per le statistiche sugli errori,
 		};
 		return {
 			CK				: checkError,
@@ -161,69 +165,79 @@ var App = (function() {
 		}
 	})(),
 	
-	
-	/*
-		problema: se creo un socket unico per tutti i disegni posso mostrare gli aggiornamenti in tempo reale, perchè sia dashboard che editor
-					sono client dello stesso socket server. su onMessageServer di tipo SAVE pusho il disegno a tutte le dashboard collegate.
-					ma potrei legare un solo onMessageClient, quindi dovrei legare ovviamente la dashboard per mostrare i disegni, e non 
-					potrei ricevere conferme sull'editor dell'avvenuto salvataggio.
-				se faccio quindi due socket diversi per editor e dashboard avrebbero gli eventi client separati, ma fanculo gli aggiornamenti automatici.
-				allora devo salvare dentro il modulo Socket un dizionario di webSocket aperti, con anche un array di callback per ogni evento,
-					e offrire metodi per aggiungere una callback onMessage onError onClose per un socket già creato. 
-				cosi dentro i moduli che vogliono utilizzare un socket devo fare:
-					
-					var urlSocket = Config.sockets.mioSocket;
-					Socket.get(urlSocket);	// crea nuovo o restituisce quello già creato
-					Socket.onMessage(urlSocket, callback);
-					
-					e Socket.onMessage aggiunge callback all array di callback tipo onMessage;
-					la funzione onMessage da legare ad ogni socket gli farà andare dentro lo stack di socket creati, cercare se stessi in base 
-						al proprio .URL ed eseguire tutte le funzione nell'array di stack
-					
-	*/
+	/**
+	 * per ogni socket definisco un oggetto di config con url e tutte le callback. 
+	 * in questo modo ogni callback può accedere a handler di diversi moduli,
+	 * 		e ogni modulo può chiamare un send su ogni socket condiviso.
+	 * 	ogni modulo potrà recuperare un socket tramite il nome messo in config:
+	 * 		var socketDraw = Socket.get('draw');
+	 */
 	Socket = (function() {
-		var _list = {},
-		__open = function(socket) {
-			socket.open();
-		},
-		_open = function(socket) {
-			return utility.CK(__open,	"Error: socket not opened. ",	socket);
-		},
-		create = function(url) {
-			if (utility.isEmpty(url)) throw {message: "Empty url", code: "app:001"};
-			//var socket = new WebSocket(url);
-			//socket._open();
-			var socket = "'Oggetto Socket'";
-			_list[url] = socket;
-			return socket;
-		},
-		close = function(url) {
-			var socket = _list[url];
-			if (!utility.isEmpty(socket)) {
-				socket.close();
-				_list[url] = socket = null;
+		var _sockets = {},
+			_socketsConfig = {
+			draw: {
+				url: Config.sockets.draw,
+				onmessage: function(e) {
+					Editor.onSocketMessage(e);
+					Dashboard.onSocketMessage(e);
+				},
+				onopen: function(e) {
+				
+				},
+				onerror: function(e) {
+					console.log("porcamadonna");
+				},
+				onclose: function(e) {
+				
+				}
+			},
+			user: {
+			
 			}
-			return true;
 		},
-		one = function(url) {
-			if (utility.isEmpty(url))
-				return false; 
-			var temp = _list[url];
-			return (utility.isEmpty(temp) ? false : temp);
+		init = function() {
+			var _S = function() {};
+			_S.prototype.send = function(data) {
+				console.log(this);
+				(typeof data === "object") && (data = JSON.stringify(data));
+				this.obj.send(data);
+			}
+			for (socketName in _socketsConfig) {
+				var socket = _socketsConfig[socketName],
+					url = socket.url,
+					_s = new _S();
+				_s.url = url
+				if (url) {
+					try {
+						_s.obj = new WebSocket(url);
+						for (key in socket) {
+							if (key.indexOf('on') === 0 && typeof socket[key] === "function") {
+								_s.obj[key] = _s[key];
+							}
+						}
+						_s.good = true;
+						_sockets[socketName] = _s;
+					} catch (error) {
+						_S.good = false;
+						utils.logError(error);
+					}
+				}
+			}
+			console.log(_sockets.draw.send);
+			_socketsConfig = undefined;
 		},
-		oneOrNew = function(url) {
-			var socket;
-			if (utility.isEmpty(url))
+		get = function(name) {
+			var _socket = _sockets[name];
+			if (_socket && _socket.good) return _socket;
+			else {
+				utils.logError([label['errorSocket'], name],join(''));
 				return false;
-			if (utility.isEmpty(_list[url]))
-				socket = this.create(url);
-			return socket
+			}
 		};
+		
 		return {
-			create		: function(url) { return utility.CK(create,	"Error: socket not created. ",	url) },
-			close		: function(url) { return utility.CK(close,	"Error: socket not closed. ",	url) },
-			one			: one,
-			oneOrNew	: oneOrNew
+			init	: init,
+			get		: get
 		}
 	})(),
 	
@@ -242,8 +256,8 @@ var App = (function() {
 			// queste 2 funzioni che sono uguali in più moduli le possiamo aggiungere col metodo oggetto.method preso dal libro, cosi le scriviamo una volta sola
 		};
 		return {
-			create		: function(file) { return utility.CK(create,	"Error: Worker not created. ",	file) },
-			close		: function(file) { return utility.CK(close,		"Error: Worker not closed. ",	file) },
+			create		: function(file) { return utils.CK(create,	"Error: Worker not created. ",	file) },
+			close		: function(file) { return utils.CK(close,		"Error: Worker not closed. ",	file) },
 			one			: one,
 			oneOrNew	: oneOrNew
 		}
@@ -254,7 +268,7 @@ var App = (function() {
 		_draggable = true, _isMouseDown = false, _zoomable = true,
 		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 3,
 		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 200, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
-		_socket = Socket.oneOrNew(Config.services.dashboard),
+		_socket = {},
 		
 		_cache = (function() {
 			var _list = {},
@@ -592,7 +606,7 @@ var App = (function() {
 		},
 		goToXY = function(x, y) {	// OK
 			// calcolo la differenza in px invece che coord, e chiamo _drag. se si inseriscono coordinate poco distanti dalle attuali, forzo l'aggiornamento e il caricamento delle nuove
-			if (utility.areEmpty([x, y])) return;
+			if (utils.areEmpty([x, y])) return;
 			if (_currentX === x && _currentY === y)	{ // se ho richiamato le stesse coordinate attuali, refresho la pagina per cercare le cose non ancora in cache
 				_fillScreen();
 			} else {									// altrimenti faccio drag, che fa tutto il resto
@@ -605,7 +619,7 @@ var App = (function() {
 		}, 
 		goToDraw = function(id) {	// TODO
 			// precarica (se necessario) il disegno e poi va alle sue coordinate. in questo modo sono sicuro che sarà visualizzato per primo (importante visto che è stato richiesto specificamente)
-			if (utility.isEmpty(id)) return;
+			if (utils.isEmpty(id)) return;
 			if (_cache.exist(id)) {
 				var draw = _cache.get(id);
 			} else {
@@ -651,11 +665,11 @@ var App = (function() {
 		_$editorShowOptions, _$optionDraft, _$optionRestore, _$optionSquare, _$optionExport, _$optionClear, _$optionClose, _$closeButtons,
 		_minX, _minY, _maxX, _maxY, _oldX, _oldY, _mouseX = 0, _mouseY = 0, _numUndoStep = 31, _currentStep = 0, _oldMidX, _oldMidY, _$sizeToolPreview, _$sizeToolLabel,
 		_isInit, _isMouseDown, _isPressedShift, _restored = false, _toolsSizeX, _toolsSizeY, _randomColor = true, _overlay = false, _grayscaleIsScrolling = false,
-		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0,
+		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0, _socketDraw,
 		_color, _size, _pencilSize = 2, _pencilColor = "", _pencilColorID = 12, _brushSize = 50, _eraserSize = 50, _brushColor, _maxToolSize = 200,
 		_grayscaleColors = ["#FFF", "#EEE", "#DDD", "#CCC", "#BBB", "#AAA", "#999", "#888", "#777", "#666", "#555", "#444", "#333", "#222", "#111", "#000"], 
-		_enableElement = utility.enableElement,
-		_disableElement = utility.disableElement,
+		_enableElement = utils.enableElement,
+		_disableElement = utils.disableElement,
 		_labelAnnulla = label["Annulla"],
 		_labelRipeti = label["Ripeti"],
 		__init = function() {
@@ -713,6 +727,7 @@ var App = (function() {
 				_colorPicker.init();
 				_onResize();
 				_selectBrush();
+				_socketDraw = Socket.get('draw');
 			}
 		},
 		_addEvents = function() {
@@ -1206,20 +1221,20 @@ var App = (function() {
 				//_draft = {};
 			}
 		},
+		onSocketMessage = function(e) {
+			// qui riceviamo le risposte ai salvataggi
+			// bisogna filtrare i messaggi solo di tipo "SAVE_RESPONSE"
+			// gestire errori di salvataggio con messaggi 
+			var data = JSON.parse(e.data);
+			if (data.type === "SAVE_RESPONSE") {
+				
+			}
+		},
 		_saveToServer = function(draw) {
-			// TODO
-			// salvare lato server grazie ai socket (o per ora simularli)
-			// nella tab disegni decidere se salvare tutto l'oggetto draw in un solo campo stringato, o ogni informazione singolarmente.
-			var result = true,
-				data = JSON.stringify(draw);
-			
-
-			
-			
-			console.log(data);
-			result = random(1000);
-			
-			return result;
+			_socketDraw.send({
+				"type": "SAVE",
+				"data": draw
+			});
 		},
 		_save = function() {
 			if (_maxX === -1 || _maxY === -1)
@@ -1253,7 +1268,6 @@ var App = (function() {
 						_$dom.removeClass('semiTransparent');
 						_hide();
 					}
-					draw = null;
 				}
 			}
 		},
@@ -1451,10 +1465,11 @@ var App = (function() {
 		_isInit = _isMouseDown = _isPressedShift = false;
 		_brushColor = _getColor();
 		return {
-			show	: show,
-			setColor: setColor/*,
+			show			: show,
+			setColor		: setColor,
+			onSocketMessage	: onSocketMessage /*,
 			hide	: hide,
-			save	: function(data) { return utility.CK(save,	"Error: editor cannot save. ",	data) },
+			save	: function(data) { return utils.CK(save,	"Error: editor cannot save. ",	data) },
 			*/
 		} 
 	})(),
@@ -1516,11 +1531,11 @@ var App = (function() {
 			var params = {			// deve contenere l'identificativo di connessione, e tutto il necessario
 				query	: query	// se query è vuota, il lato server restituirà la pagina default con nuove news
 			};
-			var result = utility.getRemoteData(Config.services.news, params);
-			if (utility.isEmpty(result))
+			var result = utils.getRemoteData(Config.services.news, params);
+			if (utils.isEmpty(result))
 				Messages.error(label("ConnectionError"));
 			else {
-				var html = _render(result, utility.isEmpty(query));
+				var html = _render(result, utils.isEmpty(query));
 				Overlay.show(html);
 			}
 		};
@@ -1540,8 +1555,8 @@ var App = (function() {
 			var params = {			// deve contenere l'identificativo di connessione, e tutto il necessario
 				idUser	: idUser
 			};
-			var result = utility.getRemoteData(Config.services.news, params);
-			if (utility.isEmpty(result))
+			var result = utils.getRemoteData(Config.services.news, params);
+			if (utils.isEmpty(result))
 				Messages.error(label("ConnectionError"));
 			else {
 				var html = _render(result);
@@ -1631,6 +1646,9 @@ var App = (function() {
 			onGlobalResize = function() {
 				_onResize
 				// richiamare gli handler onResize di tutti i moduli
+			},
+			_initSockets = function() {
+			
 			};
 		_onResize();
 		_$dark = $('#darkOverlay');
@@ -1641,6 +1659,7 @@ var App = (function() {
 		DOCUMENT.body.addEventListener("mouseup", 	 preventDefault, true);
 		DOCUMENT.body.addEventListener("mouseout",  preventDefault, true);
 		var requestUrl = DOCUMENT.location.href;
+		Socket.init();
 		if (true) {	// url corrente corrispondente ad home
 			Dashboard.init();
 		}
