@@ -178,8 +178,12 @@ var App = (function() {
 			draw: {
 				url: Config.sockets.draw,
 				onmessage: function(e) {
-					Editor.onSocketMessage(e);
-					Dashboard.onSocketMessage(e);
+					var data = JSON.parse(e.data);
+					if (data.type === "SAVE_RESPONSE") {
+						Editor.onSocketMessage(data);
+					} else if (data.type === "DRAG") {
+						Dashboard.onSocketMessage(data);
+					}
 				},
 				onopen: function(e) {
 				
@@ -198,7 +202,6 @@ var App = (function() {
 		init = function() {
 			var _S = function() {};
 			_S.prototype.send = function(data) {
-				console.log(this);
 				(typeof data === "object") && (data = JSON.stringify(data));
 				this.obj.send(data);
 			}
@@ -212,7 +215,7 @@ var App = (function() {
 						_s.obj = new WebSocket(url);
 						for (key in socket) {
 							if (key.indexOf('on') === 0 && typeof socket[key] === "function") {
-								_s.obj[key] = _s[key];
+								_s.obj[key] = socket[key];
 							}
 						}
 						_s.good = true;
@@ -223,7 +226,6 @@ var App = (function() {
 					}
 				}
 			}
-			console.log(_sockets.draw.send);
 			_socketsConfig = undefined;
 		},
 		get = function(name) {
@@ -234,7 +236,6 @@ var App = (function() {
 				return false;
 			}
 		};
-		
 		return {
 			init	: init,
 			get		: get
@@ -665,7 +666,7 @@ var App = (function() {
 		_$editorShowOptions, _$optionDraft, _$optionRestore, _$optionSquare, _$optionExport, _$optionClear, _$optionClose, _$closeButtons,
 		_minX, _minY, _maxX, _maxY, _oldX, _oldY, _mouseX = 0, _mouseY = 0, _numUndoStep = 31, _currentStep = 0, _oldMidX, _oldMidY, _$sizeToolPreview, _$sizeToolLabel,
 		_isInit, _isMouseDown, _isPressedShift, _restored = false, _toolsSizeX, _toolsSizeY, _randomColor = true, _overlay = false, _grayscaleIsScrolling = false,
-		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0, _socketDraw,
+		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0, _socketDraw, _savedDraw = {},
 		_color, _size, _pencilSize = 2, _pencilColor = "", _pencilColorID = 12, _brushSize = 50, _eraserSize = 50, _brushColor, _maxToolSize = 200,
 		_grayscaleColors = ["#FFF", "#EEE", "#DDD", "#CCC", "#BBB", "#AAA", "#999", "#888", "#777", "#666", "#555", "#444", "#333", "#222", "#111", "#000"], 
 		_enableElement = utils.enableElement,
@@ -1221,53 +1222,51 @@ var App = (function() {
 				//_draft = {};
 			}
 		},
-		onSocketMessage = function(e) {
-			// qui riceviamo le risposte ai salvataggi
-			// bisogna filtrare i messaggi solo di tipo "SAVE_RESPONSE"
-			// gestire errori di salvataggio con messaggi 
-			var data = JSON.parse(e.data);
-			if (data.type === "SAVE_RESPONSE") {
-				
+		onSocketMessage = function(data) {	// qui riceviamo le risposte ai salvataggi
+			console.log("risposto - editor: ", data);
+			Messages.remove();
+			if (data.ok) {
+				_savedDraw.id = data.id;
+				Dashboard.addDraw(_savedDraw, true);
+				_savedDraw = undefined;
+				_clear();
+				_step = [];
+				_currentStep = 0;
+				_saveStep();
+				_draft = {};
+				_$dom.removeClass('semiTransparent');
+				_hide();
+			} else {
+				Messages.error(label("editorSaveError"));
 			}
 		},
 		_saveToServer = function(draw) {
 			_socketDraw.send({
 				"type": "SAVE",
-				"data": draw
+				"draw": draw
 			});
 		},
 		_save = function() {
-			if (_maxX === -1 || _maxY === -1)
+			if (_maxX === -1 || _maxY === -1) {
 				Messages.alert(label["nothingToSave"]);
-			else {
+			} else {
 				if (Messages.confirm(label['editorSaveConfirm'])) {
 					Messages.loading(label['salvoDisegno'])
-					var draw = _saveLayer(),
-						resultSave,
+					_savedDraw = _saveLayer();
+					var resultSave,
 						_tempCanvas = document.createElement("canvas");
-					_tempCanvas.width = draw.data.width;
-					_tempCanvas.height = draw.data.height;
-					_tempCanvas.getContext("2d").putImageData(draw.data, 0, 0);
-					draw.data = undefined;
-					delete draw.data;
-					delete draw.oldX;
-					delete draw.oldY;
-					draw.data = _tempCanvas.toDataURL("image/png");
-					resultSave = _saveToServer(draw);
-					Messages.remove();
-					if (!resultSave)
-						Messages.error(label("editorSaveError"));
-					else {
-						draw.id = resultSave;
-						Dashboard.addDraw(draw, true);
-						_clear();
-						_step = [];
-						_currentStep = 0;
-						_saveStep();
-						_draft = {};
-						_$dom.removeClass('semiTransparent');
-						_hide();
-					}
+					_tempCanvas.width = _savedDraw.data.width;
+					_tempCanvas.height = _savedDraw.data.height;
+					_tempCanvas.getContext("2d").putImageData(_savedDraw.data, 0, 0);
+					_savedDraw.data = undefined;
+					delete _savedDraw.data;
+					delete _savedDraw.oldX;
+					delete _savedDraw.oldY;
+					_savedDraw.data = _tempCanvas.toDataURL("image/png");
+					// DEVO PRENDERE DALLA DASHBOARD LE ATTUALI COORDINATE
+					// E SALVARE NELL'OGGETTO ANCHE COORDMINX COORDMINT COORDMAXX COORDMAXY
+					// E SALVARLE ANCHE LATO SERVER
+					_saveToServer(_savedDraw);
 				}
 			}
 		},
