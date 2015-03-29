@@ -28,11 +28,16 @@
 				$data = json_decode(unmask($buf));
 				if ($data->type == "SAVE") {
 					$base64 = $data->draw->data;
-					$maxX = $data->draw->maxX;
-					$maxY = $data->draw->maxY;
-					$minX = $data->draw->minX;
-					$minY = $data->draw->minY;
-					$sql = "INSERT INTO $tableDraw (data, maxX, maxY, minX, minY) VALUES ('$base64', '$maxX', '$maxY', '$minX', '$minY')";
+					$minX = $data->draw->coordX;
+					$minY = $data->draw->coordY;
+					$w = $data->draw->w;
+					$h = $data->draw->h;
+					$maxX = $minX + $w;
+					$maxY = $minY + $h;
+					$x = $data->x;
+					$y = $data->y;
+					
+					$sql = "INSERT INTO $tableDraw (data, maxX, maxY, minX, minY, x, y, w, h) VALUES ('$base64', '$maxX', '$maxY', '$minX', '$minY', '$x', '$y', '$w', '$h')";
 					if (mysql_query($sql)) {
 						$response = mask(json_encode(array('type'=>'SAVE_RESPONSE', 'ok'=>true, 'id'=>mysql_insert_id())));
 						error_log("salvato");
@@ -40,10 +45,42 @@
 						$response = mask(json_encode(array('type'=>'SAVE_RESPONSE', 'ok'=>false)));
 					}
 					send_message($_socket, $response);
+					
+				} else if ($data->type == "DRAG") {
+					$minX = $data->area->minX + 50;
+					$minY = $data->area->minY + 50;
+					$maxX = $data->area->maxX - 50;
+					$maxY = $data->area->maxY - 50;
+					$x = $data->area->x;
+					$y = $data->area->y;
+					$ids = implode($data->ids, ',');
+					if (strlen($ids)) {
+						$ids = "id NOT IN ($ids) AND";
+					} 
+					$sql = "SELECT * FROM $tableDraw WHERE $ids (maxX > $minX AND minX < $maxX AND maxY > $minY AND minY < $maxY)";
+					$q = mysql_query($sql);
+					if ($q) {
+						$d = mysql_fetch_array($q);
+						while ($d) {
+							$ris[] = array(
+								"id"		=> $d['id'],
+								"data"		=> $d['data'],
+								"w"			=> $d['w'],
+								"h"			=> $d['h'],
+								"minX"		=> $d['minX'],
+								"maxX"		=> $d['maxX']
+							);
+							$d = mysql_fetch_array($q);
+						}
+						$s = mask("{}");
+						send_message($_socket, $s);
+					} else {
+						error_log("ERRORE SELECT");
+					}
 				}
 				break 2;
 			}
-			// KO - non so perchè, ma la mia versione non rileva le disconnessioni
+			// KO - la disconnessione sufirefox e chrome avviene in ritardo
 			$buf = @socket_read($changed_socket, 1024, PHP_NORMAL_READ);
 			if ($buf === false) {
 				$found_socket = array_search($changed_socket, $clients);
@@ -51,7 +88,7 @@
 				error_log("disconnesso");
 			}
 		}
-		sleep(1);
+		sleep(0.5);
 	}
 	
 
@@ -81,7 +118,7 @@ function unmask($text) {
 }
 function mask($text) {
 	$b1 = 0x80 | (0x1 & 0x0f);
-	$length = strlen($text);	
+	$length = strlen($text);
 	if($length <= 125)
 		$header = pack('CC', $b1, $length);
 	elseif($length > 125 && $length < 65536)

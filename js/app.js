@@ -203,14 +203,20 @@ var App = (function() {
 			var _S = function() {};
 			_S.prototype.send = function(data) {
 				(typeof data === "object") && (data = JSON.stringify(data));
-				this.obj.send(data);
+				if (this.obj.readyState === 0) {
+					this.obj.onopen = function() {
+						this.obj.send(data);
+					}.bind(this);
+				} else {
+					this.obj.send(data);
+				}
 			}
 			for (socketName in _socketsConfig) {
 				var socket = _socketsConfig[socketName],
 					url = socket.url,
 					_s = new _S();
-				_s.url = url
 				if (url) {
+					_s.url = url;
 					try {
 						_s.obj = new WebSocket(url);
 						for (key in socket) {
@@ -230,8 +236,9 @@ var App = (function() {
 		},
 		get = function(name) {
 			var _socket = _sockets[name];
-			if (_socket && _socket.good) return _socket;
-			else {
+			if (_socket && _socket.good) {
+				return _socket;
+			} else {
 				utils.logError([label['errorSocket'], name],join(''));
 				return false;
 			}
@@ -269,7 +276,7 @@ var App = (function() {
 		_draggable = true, _isMouseDown = false, _zoomable = true,
 		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 3,
 		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 200, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
-		_socket = {},
+		_socketDraw,
 		
 		_cache = (function() {
 			var _list = {},
@@ -347,7 +354,7 @@ var App = (function() {
 			_zoomTo(1);
 			Editor.show();
 		},
-		_isVisible = function(img) {
+		_isVisible = function(img) {	// OK - TODO
 			// aggiungere controllo anche per non rimuovere il disegno se non è uscito per almeno tot % di px
 			return (img.x + img.w > 0 && img.y + img.h > 0 && img.x < XX && img.y < YY) ? true : false;
 		},
@@ -421,7 +428,7 @@ var App = (function() {
 			if (e.button !== 0) return false;
 			var p = _dom.createSVGPoint();
 			_isMouseDown = true;
-			_dom.classList.toggle('dragging');
+			_dom.classList.add('dragging');
 			_mouseX = e.pageX;
 			_mouseY = e.pageY;
 			_imageGroup.matrix = _imageGroup.tag.getCTM();
@@ -452,7 +459,7 @@ var App = (function() {
 			_mouseX = 0;
 			_mouseY = 0;
 			_isMouseDown = false;
-			_dom.classList.toggle('dragging');
+			_dom.classList.remove('dragging');
 		},
 		_mouseup = function(e) {
 			if (e.button !== 0) return false;
@@ -520,7 +527,7 @@ var App = (function() {
 			_imagesVisibleIds.splice(_imagesVisibleIds.indexOf(id), 1)
 			_oldDraw && _imageGroup.tag.removeChild(_oldDraw);
 		},
-		_appendDraw = function(draw, isNew) {	// OK	aggiunge a video e salva un disegno preso dal server o già elaborato post editor
+		_appendDraw = function(draw, isNew) {	// OK	aggiunge alla dashboard un svg image già elaborato 
 			if (!draw || !draw.id) return false;
 			isNew = isNew || false;
 			if (_imagesVisibleIds.indexOf(draw.id) === -1) {
@@ -539,34 +546,30 @@ var App = (function() {
 				else
 					_imageGroup.tag.appendChild(draw.data);
 				_imagesVisibleIds.push(draw.id);
-				//draw.$ = $(["#", draw.id].join(''));
 				_cache.add(draw.id, draw);
 			}
 		},
-		addDraw = function(draw, replace) {	// OK
-			// aggiunge e salva un disegno passato dall editor
+		onSocketMessage = function(data) {	// TODO	prende tutti i disegni e ne calcola x e y rispetto allo schermo partendo dalle coordinate assolute
+			console.log(data);
+		},
+		addDraw = function(draw, replace) {	// OK	aggiunge e salva un disegno passato dall editor
 			if (!draw || !draw.id) return false;
 			var _drawExist = _cache.exist(draw.id);
 			if (!_drawExist || replace) {
 				_drawExist && _removeDraw(draw.id, true);
 				var _newDraw = DOCUMENT.createElementNS("http://www.w3.org/2000/svg", "image");
-				draw.w = draw.maxX - draw.minX;
-				draw.h = draw.maxY - draw.minY;
-				draw.coordX = _currentX - XX2 + draw.minX;		// coordinate del px in alto a sx rispetto alle coordinate correnti della lavagna
-				draw.coordY = _currentY - YY2 + draw.minY;
-				draw.x = draw.minX;								// coordinate del px in alto a sx rispetto allo schermo
-				draw.y = draw.minY;
 				_newDraw.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", draw.data);
 				_newDraw.setAttribute('x', draw.x - _imageGroup.matrix.e);	// necessario sottrarre il delta del matrix perchè la posizione viene applicata sul <g>, e non sul <svg>
 				_newDraw.setAttribute('y', draw.y - _imageGroup.matrix.f);
 				_newDraw.setAttribute('width', draw.w);
 				_newDraw.setAttribute('height', draw.h);
 				_newDraw.id = draw.id;
-				
 				delete draw.minX;
 				delete draw.minY;
 				delete draw.maxX;
 				delete draw.maxY;
+				delete draw.coordX;
+				delete draw.coordY;
 				draw.data = _newDraw;
 				_appendDraw(draw, true);
 				_newDraw = draw = undefined;
@@ -574,13 +577,15 @@ var App = (function() {
 		    return true;
 		},
 		_getVisibleArea = function() {	// OK  in coordinate
-			var XX2Z = XX2 * 1 / _imageGroup.matrix.a,
-				YY2Z = YY2 * 1 / _imageGroup.matrix.a;
+			var XX2Z = XX2 / _imageGroup.matrix.a,
+				YY2Z = YY2 / _imageGroup.matrix.a;
 			return {
 				minX : _currentX - XX2Z,
 				maxX : _currentX + XX2Z,
 				minY : _currentY - YY2Z,
-				maxY : _currentY + YY2Z
+				maxY : _currentY + YY2Z,
+				x : _currentX,
+				y : _currentY
 			}
 		},
 		_findInCache = function() {
@@ -591,18 +596,20 @@ var App = (function() {
 				(_isVisible(_draw)) && _appendDraw(_draw, false);
 			}
 		},
-		_openSocketFor = function(area, notIds) {
-			
+		_openSocketFor = function(area, notIds) { // OK
+			_socketDraw.send({
+				"type": "DRAG",
+				"area": area,
+				"ids": notIds
+			});
 		},
-		_fillScreen = function() {	// TODO
-			// !° si occupa solo di mostrare disegni. non deve rimuovere niente. eventuali drag e zoom sono già stati fatti
+		_fillScreen = function() {	// OK
+			// !! si occupa solo di mostrare disegni. non deve rimuovere niente. eventuali drag e zoom sono già stati fatti
 			// 1° calcola la porzione da mostrare in base alle coordinate correnti, zoom e dimensioni schermo
 			var _area = _getVisibleArea();
 			// 2° visualizza subito quello che c'è già in cache
 			_findInCache();
-			// 3° blocca trasferimenti per ciò che non serve più ma che deve ancora arrivare
-			
-			// 4° avvia trasferimenti di ciò che non è in cache e che deve comparire
+			// 3° avvia trasferimenti di ciò che non è in cache e che deve comparire
 			_openSocketFor(_area, _cache.ids());
 		},
 		goToXY = function(x, y) {	// OK
@@ -633,10 +640,15 @@ var App = (function() {
 					h	: 0,
 					data: {}
 				};
-				//draw.$ = $(["#", draw.id].join(''));
 				_cache.set(id, draw);
 			}
 			goToXY(draw.x + draw.w / 2, draw.y + draw.h / 2);
+		},
+		getCoords = function() {
+			return {
+				x: _currentX,
+				y: _currentY
+			};
 		},
 		onResize = function () {	// TODO
 			// calcolo coordinate, punto in centro pagina, aggiungo o rimuovo disegni
@@ -646,6 +658,7 @@ var App = (function() {
 			//scelgo a che posizione aprire la lavagna
 			_initDom();
 			_addEvents();
+			_socketDraw = Socket.get('draw');
 			goToXY(0, 0);
 		};
 		_mouseX = _mouseY = _currentX = _currentY = 0;
@@ -655,6 +668,8 @@ var App = (function() {
 			goToXY			: goToXY,
 			goToDraw		: goToDraw,
 			addDraw			: addDraw,
+			getCoords		: getCoords,
+			onSocketMessage	: onSocketMessage,
 			onResize		: onResize,
 			init			: init
 		};
@@ -1222,8 +1237,7 @@ var App = (function() {
 				//_draft = {};
 			}
 		},
-		onSocketMessage = function(data) {	// qui riceviamo le risposte ai salvataggi
-			console.log("risposto - editor: ", data);
+		onSocketMessage = function(data) {	// OK - qui riceviamo le risposte ai salvataggi
 			Messages.remove();
 			if (data.ok) {
 				_savedDraw.id = data.id;
@@ -1240,33 +1254,37 @@ var App = (function() {
 				Messages.error(label("editorSaveError"));
 			}
 		},
-		_saveToServer = function(draw) {
+		_saveToServer = function(draw, coords) {
 			_socketDraw.send({
 				"type": "SAVE",
-				"draw": draw
+				"draw": draw,
+				"x": coords.x,
+				"y": coords.y
 			});
 		},
-		_save = function() {
+		_save = function() {	// CREDO OK
 			if (_maxX === -1 || _maxY === -1) {
 				Messages.alert(label["nothingToSave"]);
 			} else {
 				if (Messages.confirm(label['editorSaveConfirm'])) {
 					Messages.loading(label['salvoDisegno'])
 					_savedDraw = _saveLayer();
-					var resultSave,
+					var _coords = Dashboard.getCoords(),
 						_tempCanvas = document.createElement("canvas");
 					_tempCanvas.width = _savedDraw.data.width;
 					_tempCanvas.height = _savedDraw.data.height;
 					_tempCanvas.getContext("2d").putImageData(_savedDraw.data, 0, 0);
 					_savedDraw.data = undefined;
-					delete _savedDraw.data;
 					delete _savedDraw.oldX;
 					delete _savedDraw.oldY;
 					_savedDraw.data = _tempCanvas.toDataURL("image/png");
-					// DEVO PRENDERE DALLA DASHBOARD LE ATTUALI COORDINATE
-					// E SALVARE NELL'OGGETTO ANCHE COORDMINX COORDMINT COORDMAXX COORDMAXY
-					// E SALVARLE ANCHE LATO SERVER
-					_saveToServer(_savedDraw);
+					_savedDraw.w = _savedDraw.maxX - _savedDraw.minX;
+					_savedDraw.h = _savedDraw.maxY - _savedDraw.minY;
+					_savedDraw.x = _savedDraw.minX;
+					_savedDraw.y = _savedDraw.minY;
+					_savedDraw.coordX = _coords.x - XX2 + _savedDraw.minX;	// coordinate del px in alto a sx rispetto alle coordinate correnti della lavagna
+					_savedDraw.coordY = _coords.y - YY2 + _savedDraw.minY;
+					_saveToServer(_savedDraw, _coords);
 				}
 			}
 		},
