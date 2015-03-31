@@ -551,6 +551,9 @@ var App = (function() {
 		},
 		onSocketMessage = function(data) {	// TODO	prende tutti i disegni e ne calcola x e y rispetto allo schermo partendo dalle coordinate assolute
 			console.log(data);
+			for (var i = 0; i < data.data.length; i++) {
+				addDraw(data.data[i]);
+			}
 		},
 		addDraw = function(draw, replace) {	// OK	aggiunge e salva un disegno passato dall editor
 			if (!draw || !draw.id) return false;

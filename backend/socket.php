@@ -60,6 +60,7 @@
 					$sql = "SELECT * FROM $tableDraw WHERE $ids (maxX > $minX AND minX < $maxX AND maxY > $minY AND minY < $maxY)";
 					$q = mysql_query($sql);
 					if ($q) {
+						error_log(mysql_num_rows($q)." disegni for drag");
 						$d = mysql_fetch_array($q);
 						while ($d) {
 							$ris[] = array(
@@ -72,7 +73,12 @@
 							);
 							$d = mysql_fetch_array($q);
 						}
-						$s = mask("{}");
+						$ris = array(
+							"type" => "DRAG",
+							"data" => $ris
+						);
+						$s = mask(json_encode($ris));
+						$ris = $d = $q = $sql = false;
 						send_message($_socket, $s);
 					} else {
 						error_log("ERRORE SELECT");
@@ -80,7 +86,7 @@
 				}
 				break 2;
 			}
-			// KO - la disconnessione sufirefox e chrome avviene in ritardo
+			// KO - la disconnessione su firefox e chrome avviene in ritardo
 			$buf = @socket_read($changed_socket, 1024, PHP_NORMAL_READ);
 			if ($buf === false) {
 				$found_socket = array_search($changed_socket, $clients);
@@ -116,6 +122,7 @@ function unmask($text) {
 	}
 	return $text;
 }
+
 function mask($text) {
 	$b1 = 0x80 | (0x1 & 0x0f);
 	$length = strlen($text);
@@ -123,10 +130,30 @@ function mask($text) {
 		$header = pack('CC', $b1, $length);
 	elseif($length > 125 && $length < 65536)
 		$header = pack('CCn', $b1, 126, $length);
-	elseif($length >= 65536)
-		$header = pack('CCNN', $b1, 127, $length);
+	elseif($length >= 65536) {
+		
+		//$header = pack('CCNN', $b1, 127, $length);
+		$b1 = 1;
+		$length = strlen($text);
+		$b2 = 127;
+		$hexLength = dechex($length);
+		if (strlen($hexLength)%2 == 1) {
+			$hexLength = '0' . $hexLength;
+		}
+		$n = strlen($hexLength) - 2;
+
+		for ($i = $n; $i >= 0; $i=$i-2) {
+			$lengthField = chr(hexdec(substr($hexLength, $i, 2))) . $lengthField;
+		}
+		while (strlen($lengthField) < 8) {
+			$lengthField = chr(0) . $lengthField;
+		}
+		return chr($b1) . chr($b2) . $lengthField . $text;
+    
+	}
 	return $header.$text;
 }
+
 function perform_handshaking($receved_header,$client_conn, $host, $port) {
 	$headers = array();
 	$lines = preg_split("/\r\n/", $receved_header);
