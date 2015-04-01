@@ -64,22 +64,26 @@
 						$d = mysql_fetch_array($q);
 						while ($d) {
 							$ris[] = array(
-								"id"		=> $d['id'],
+								"id"		=> intval($d['id']),
 								"data"		=> $d['data'],
-								"w"			=> $d['w'],
-								"h"			=> $d['h'],
-								"minX"		=> $d['minX'],
-								"maxX"		=> $d['maxX']
+								"w"			=> intval($d['w']),
+								"h"			=> intval($d['h']),
+								"x"			=> intval($d['minX']),
+								"y"			=> intval($d['minY'])
 							);
 							$d = mysql_fetch_array($q);
 						}
-						$ris = array(
+						error_log('fine while: '.count($ris));
+						$response = array(
 							"type" => "DRAG",
-							"data" => $ris
+							"draws" => $ris
 						);
-						$s = mask(json_encode($ris));
-						$ris = $d = $q = $sql = false;
+						error_log('ris');
+						error_log("msg: ".json_encode($response));
+						$s = mask(json_encode($response));
+						error_log("S: ".$s);
 						send_message($_socket, $s);
+						$ris = $d = $q = $sql = $s = $response = false;
 					} else {
 						error_log("ERRORE SELECT");
 					}

@@ -275,7 +275,7 @@ var App = (function() {
 		var _dom, _imageGroup = {}, _$buttonModify, _zoomLabel, _$zoomLabelDoms,
 		_draggable = true, _isMouseDown = false, _zoomable = true,
 		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 3,
-		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 200, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
+		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 50, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
 		_socketDraw,
 		
 		_cache = (function() {
@@ -307,7 +307,7 @@ var App = (function() {
 				_updateIds();
 			},
 			log = function() {
-				console.log(_list)
+				console.log(_list);
 			},
 			ids = function() {
 				return _ids;
@@ -453,7 +453,6 @@ var App = (function() {
 		_click = function(e) {
 			// se ho cliccato su un disegno lo evidenzio, con bordo proporzionale allo zoom corrente
 			_cache.log();
-			//console.log(_imagesVisibleIds);
 		},
 		_mouseend = function() {
 			_mouseX = 0;
@@ -550,9 +549,14 @@ var App = (function() {
 			}
 		},
 		onSocketMessage = function(data) {	// TODO	prende tutti i disegni e ne calcola x e y rispetto allo schermo partendo dalle coordinate assolute
-			console.log(data);
-			for (var i = 0; i < data.data.length; i++) {
-				addDraw(data.data[i]);
+			var draws = data.draws,
+				draw;
+			console.log("disegni ricevuti: " + draws.length);
+			for (var i = 0, l = draws.length; i < l; i++) {
+				draw = draws[i];
+				draw.x = draw.x - _currentX + XX2;
+				draw.y = draw.y - _currentY + YY2;
+				addDraw(draw);
 			}
 		},
 		addDraw = function(draw, replace) {	// OK	aggiunge e salva un disegno passato dall editor
