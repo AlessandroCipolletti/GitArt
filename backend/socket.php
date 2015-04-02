@@ -25,8 +25,11 @@
 		}
 		foreach ($changed as $_socket) {
 			while(socket_recv($_socket, $buf, 1024 * 1024, 0) >= 1) {
+				error_log("ricevuto: ".strlen($buf));
 				$data = json_decode(unmask($buf));
+				error_log("unmasked: ".strlen(unmask($buf)));
 				if ($data->type == "SAVE") {
+					error_log("devo salvare");
 					$base64 = $data->draw->data;
 					$minX = $data->draw->coordX;
 					$minY = $data->draw->coordY;
@@ -71,18 +74,15 @@
 								"x"			=> intval($d['minX']),
 								"y"			=> intval($d['minY'])
 							);
+							$response = array(
+								"type" => "DRAG",
+								"draws" => $ris
+							);
+							$s = mask(json_encode($response));
+							send_message($_socket, $s);
+							$ris = NULL;
 							$d = mysql_fetch_array($q);
 						}
-						error_log('fine while: '.count($ris));
-						$response = array(
-							"type" => "DRAG",
-							"draws" => $ris
-						);
-						error_log('ris');
-						error_log("msg: ".json_encode($response));
-						$s = mask(json_encode($response));
-						error_log("S: ".$s);
-						send_message($_socket, $s);
 						$ris = $d = $q = $sql = $s = $response = false;
 					} else {
 						error_log("ERRORE SELECT");

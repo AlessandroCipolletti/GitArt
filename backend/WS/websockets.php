@@ -1,7 +1,7 @@
 <?php
 
 //require_once('./daemonize.php');
-require_once('./users.php');
+require_once('users.php');
 
 abstract class WebSocketServer {
 
@@ -42,6 +42,13 @@ abstract class WebSocketServer {
     $result = @socket_write($user->socket, $message, strlen($message));
   }
 
+	protected function sendAll($msg) {
+		foreach ($this->users as $user) {
+			$message = $this->frame($msg, $user);
+			$result = @socket_write($user->socket, $message, strlen($message));	
+		}
+	}
+	
   /**
    * Main processing loop
    */
@@ -71,6 +78,7 @@ abstract class WebSocketServer {
             throw new Exception('Socket error: ' . socket_strerror(socket_last_error($socket)));
           }
           elseif ($numBytes == 0) {
+          	echo "1\n";
             $this->disconnect($socket);
             $this->stdout("Client disconnected. TCP connection lost: " . $socket);
           } 
@@ -86,10 +94,12 @@ abstract class WebSocketServer {
             else {
               if (($message = $this->deframe($buffer, $user)) !== FALSE) {
                 if($user->hasSentClose) {
+	                echo "2\n";
                   $this->disconnect($user->socket);
                   $this->stdout("Client disconnected. Sent close: " . $socket);
                 }
                 else {
+                	echo "invio 1\n";
                   $this->process($user, $message); // todo: Re-check this.  Should already be UTF-8.
                 }
               } 
@@ -100,11 +110,14 @@ abstract class WebSocketServer {
                     $numByte = @socket_recv($socket,$buffer,$this->maxBufferSize,0);
                     if (($message = $this->deframe($buffer, $user)) !== FALSE) {
                       if($user->hasSentClose) {
+                      	echo "3\n";
                         $this->disconnect($user->socket);
                         $this->stdout("Client disconnected. Sent close: " . $socket);
                       }
                       else {
-                       $this->process($user,$message);
+                      echo "invio 1\n";
+                      
+                       $this->process($user,md5($message));
                       }
                     }
                   }
@@ -198,6 +211,7 @@ abstract class WebSocketServer {
 
     if (isset($handshakeResponse)) {
       socket_write($user->socket,$handshakeResponse,strlen($handshakeResponse));
+      echo "4\n";
       $this->disconnect($user->socket);
       return;
     }
@@ -352,6 +366,9 @@ abstract class WebSocketServer {
         break;
       case 8:
         // todo: close the connection
+        // TODO attenzione qui
+        // se metto il break la trasmissione funziona sempre, ma non intercetta piu bene la deconnessione quindi su refresh non si connette più
+        break;
         $user->hasSentClose = true;
         return "";
       case 9:
