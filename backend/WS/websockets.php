@@ -99,7 +99,6 @@ abstract class WebSocketServer {
                   $this->stdout("Client disconnected. Sent close: " . $socket);
                 }
                 else {
-                	echo "invio 1\n";
                   $this->process($user, $message); // todo: Re-check this.  Should already be UTF-8.
                 }
               } 
@@ -115,9 +114,7 @@ abstract class WebSocketServer {
                         $this->stdout("Client disconnected. Sent close: " . $socket);
                       }
                       else {
-                      echo "invio 1\n";
-                      
-                       $this->process($user,md5($message));
+                       $this->process($user, $message);
                       }
                     }
                   }
@@ -359,6 +356,7 @@ abstract class WebSocketServer {
     $headers = $this->extractHeaders($message);
     $pongReply = false;
     $willClose = false;
+    echo "flag: ".$headers['opcode']." " .strlen($message)." bytes\n";
     switch($headers['opcode']) {
       case 0:
       case 1:
@@ -368,6 +366,7 @@ abstract class WebSocketServer {
         // todo: close the connection
         // TODO attenzione qui
         // se metto il break la trasmissione funziona sempre, ma non intercetta piu bene la deconnessione quindi su refresh non si connette più
+        echo "dovrei uscire\n";
         break;
         $user->hasSentClose = true;
         return "";
