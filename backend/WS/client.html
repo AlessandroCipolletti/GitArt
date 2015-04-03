@@ -25,7 +25,7 @@ function init() {
 							   log("Welcome - status "+this.readyState); 
 						   };
 		socket.onmessage = function(msg) {
-								log("Recived: " + msg.data);
+								log("Recived: " + msg.data.length + " bytes");
 						   };
 		socket.onclose   = function(msg) { 
 							   log("Disconnected - status "+this.readyState); 
@@ -45,6 +45,7 @@ function send(){
 	msg = "CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO CIAO ";
 	msg = [msg, msg, msg, msg, msg, msg, msg, msg, msg].join('');
 	msg = [msg, msg, msg, msg, msg, msg, msg, msg, msg, msg, msg, msg, msg, msg].join('');
+	msg = [msg, msg, msg].join('');
 	if(!msg) { 
 		alert("Message can not be empty"); 
 		return; 

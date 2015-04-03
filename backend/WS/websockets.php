@@ -15,7 +15,7 @@ abstract class WebSocketServer {
   protected $headerSecWebSocketProtocolRequired   = false;
   protected $headerSecWebSocketExtensionsRequired = false;
 
-  function __construct($addr, $port, $bufferLength = 2048) {
+  function __construct($addr, $port, $bufferLength = 1048576) {
     $this->maxBufferSize = $bufferLength;
     $this->master = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)  or die("Failed: socket_create()");
     socket_set_option($this->master, SOL_SOCKET, SO_REUSEADDR, 1) or die("Failed: socket_option()");
@@ -61,6 +61,7 @@ abstract class WebSocketServer {
       $write = $except = null;
       @socket_select($read,$write,$except,null);
       foreach ($read as $socket) {
+      	echo "foreach: ".$socket->url."\n\n";
         if ($socket == $this->master) {
           $client = socket_accept($socket);
           if ($client < 0) {
@@ -73,12 +74,12 @@ abstract class WebSocketServer {
           }
         } 
         else {
-          $numBytes = @socket_recv($socket,$buffer,$this->maxBufferSize,0); 
+          $numBytes = @socket_recv($socket, $buffer, $this->maxBufferSize, 0); 
           if ($numBytes === false) {
             throw new Exception('Socket error: ' . socket_strerror(socket_last_error($socket)));
           }
           elseif ($numBytes == 0) {
-          	echo "1\n";
+          	echo "disconnect 1\n";
             $this->disconnect($socket);
             $this->stdout("Client disconnected. TCP connection lost: " . $socket);
           } 
@@ -86,7 +87,7 @@ abstract class WebSocketServer {
             $user = $this->getUserBySocket($socket);
             if (!$user->handshake) {
               $tmp = str_replace("\r", '', $buffer);
-              if (strpos($tmp, "\n\n") === false ) {
+              if (strpos($tmp, "\n\n") === false) {
                 continue; // If the client has not finished sending the header, then wait before sending our upgrade response.
               }
               $this->doHandshake($user,$buffer);
@@ -94,11 +95,12 @@ abstract class WebSocketServer {
             else {
               if (($message = $this->deframe($buffer, $user)) !== FALSE) {
                 if($user->hasSentClose) {
-	                echo "2\n";
+	                echo "disconnect 2\n";
                   $this->disconnect($user->socket);
                   $this->stdout("Client disconnected. Sent close: " . $socket);
                 }
                 else {
+	                echo "process 1\n";
                   $this->process($user, $message); // todo: Re-check this.  Should already be UTF-8.
                 }
               } 
@@ -109,11 +111,12 @@ abstract class WebSocketServer {
                     $numByte = @socket_recv($socket,$buffer,$this->maxBufferSize,0);
                     if (($message = $this->deframe($buffer, $user)) !== FALSE) {
                       if($user->hasSentClose) {
-                      	echo "3\n";
+                      	echo "disconnect 3\n";
                         $this->disconnect($user->socket);
                         $this->stdout("Client disconnected. Sent close: " . $socket);
                       }
                       else {
+                      	echo "process 2\n";
                        $this->process($user, $message);
                       }
                     }
@@ -367,7 +370,7 @@ abstract class WebSocketServer {
         // TODO attenzione qui
         // se metto il break la trasmissione funziona sempre, ma non intercetta piu bene la deconnessione quindi su refresh non si connette più
         echo "dovrei uscire\n";
-        break;
+    	break;
         $user->hasSentClose = true;
         return "";
       case 9:
@@ -383,6 +386,7 @@ abstract class WebSocketServer {
     if ($user->handlingPartialPacket) {
       $message = $user->partialBuffer . $message;
       $user->handlingPartialPacket = false;
+      echo "re-deframe\n";
       return $this->deframe($message, $user);
     }
 
