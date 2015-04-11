@@ -203,10 +203,10 @@ var App = (function() {
 			var _S = function() {};
 			_S.prototype.send = function(data) {
 				(typeof data === "object") && (data = JSON.stringify(data));
-				console.log("_salvo", data, data.length);
 				if (this.obj.readyState === 0) {
 					this.obj.onopen = function() {
 						this.obj.send(data);
+						this.obj.onopen = undefined;
 					}.bind(this);
 				} else {
 					this.obj.send(data);
