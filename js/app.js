@@ -26,20 +26,17 @@ var App = (function() {
 		_mouseWheelEvent,
 		
 	Config = (function() {
-		var debug = true,
-		sockets = {
-			draw : "ws://localhost:9000/socket.php",
-			user : "url servizio",
-			news : "url servizio"	
-		},
-		workers = {
-			blur		: "file blur.js",
-			scarica		: "file scarica.js"
-		};
 		return {
-			debug		: debug,
-			sockets		: sockets,
-			workers		: workers
+			debug : true,
+			socketUrl : "http://46.252.150.61:4000",
+			sockets : {
+				draw : "ws://localhost:9000/socket.php",
+				user : "url servizio"
+			},
+			workers : {
+				blur :		"file blur.js",
+				scarica :	"file scarica.js"
+			}
 		}
 	})(),
 	
@@ -165,14 +162,7 @@ var App = (function() {
 		}
 	})(),
 	
-	/**
-	 * per ogni socket definisco un oggetto di config con url e tutte le callback. 
-	 * in questo modo ogni callback può accedere a handler di diversi moduli,
-	 * 		e ogni modulo può chiamare un send su ogni socket condiviso.
-	 * 	ogni modulo potrà recuperare un socket tramite il nome messo in config:
-	 * 		var socketDraw = Socket.get('draw');
-	 */
-	Socket = (function() {
+	Old_Socket = (function() {
 		var _sockets = {},
 			_socketsConfig = {
 			draw: {
@@ -245,9 +235,30 @@ var App = (function() {
 			}
 		};
 		return {
-			init	: init,
-			get		: get
+			init: 	init,
+			get:	get
 		}
+	})(),
+	
+	Socket = (function() {
+		var _socket = {},
+			init = function() {
+				var url = Config.socketUrl;
+				_socket = {
+					url: url,
+					obj: io(url),
+					send: function() {
+					
+					}
+				};
+			},
+			get = function() {
+				return _socket;
+			};		
+		return {
+			init:	init,
+			get:	get
+		};
 	})(),
 	
 	Worker = (function() {
