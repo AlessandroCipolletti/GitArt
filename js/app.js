@@ -29,10 +29,6 @@ var App = (function() {
 		return {
 			debug : true,
 			socketUrl : "http://46.252.150.61:4000",
-			sockets : {
-				draw : "ws://localhost:9000/socket.php",
-				user : "url servizio"
-			},
 			workers : {
 				blur :		"file blur.js",
 				scarica :	"file scarica.js"
@@ -79,8 +75,8 @@ var App = (function() {
 			"Gomma"						: "Gomma",
 			"salvoDisegno"				: " Salvo disegno...",
 			"nothingToSave"				: "Niente da salvare",
-			"errorSocket"				: "Errore aprendo il socket",
 			"editorSaveError"			: "Oooops :( Ora non &egrave; possibile salvare. Riprova pi&ugrave; tardi",
+			"socketError"				: "Errore di connessione nel Socket",
 			"editorSaveConfirm"			: "Dopo aver salvato non potrai più modificare il disegno. Confermi?"
 		};
 		_labels['eng'] = {
@@ -147,8 +143,11 @@ var App = (function() {
 		disableElement = function(el) {
 			el.addClass("disabled").removeClass("enabled");
 		},
+		log = function(msg) {
+			Config.debug && console.log(msg);
+		},
 		logError = function(msg) {
-			console.log(msg);
+			utils.log(msg);
 			// qui possiamo anche tentare una chiamata ajax per inviarci _msg per le statistiche sugli errori,
 		};
 		return {
@@ -158,106 +157,57 @@ var App = (function() {
 			getRemoteData	: getRemoteData,
 			cancelEvent		: cancelEvent,
 			enableElement	: enableElement,
-			disableElement	: disableElement
-		}
-	})(),
-	
-	Old_Socket = (function() {
-		var _sockets = {},
-			_socketsConfig = {
-			draw: {
-				url: Config.sockets.draw,
-				onmessage: function(e) {
-					var data = JSON.parse(e.data);
-					if (data.type === "SAVE_RESPONSE") {
-						Editor.onSocketMessage(data);
-					} else if (data.type === "DRAG") {
-						Dashboard.onSocketMessage(data);
-					}
-				},
-				onopen: function(e) {
-				
-				},
-				onerror: function(e) {
-					console.log("porcamadonna");
-				},
-				onclose: function(e) {
-				
-				}
-			},
-			user: {
-			
-			}
-		},
-		init = function() {
-			var _S = function() {};
-			_S.prototype.send = function(data) {
-				(typeof data === "object") && (data = JSON.stringify(data));
-				if (this.obj.readyState === 0) {
-					this.obj.onopen = function() {
-						this.obj.send(data);
-						this.obj.onopen = undefined;
-					}.bind(this);
-				} else {
-					this.obj.send(data);
-				}
-			}
-			for (socketName in _socketsConfig) {
-				var socket = _socketsConfig[socketName],
-					url = socket.url,
-					_s = new _S();
-				if (url) {
-					_s.url = url;
-					try {
-						_s.obj = new WebSocket(url);
-						for (key in socket) {
-							if (key.indexOf('on') === 0 && typeof socket[key] === "function") {
-								_s.obj[key] = socket[key];
-							}
-						}
-						_s.good = true;
-						_sockets[socketName] = _s;
-					} catch (error) {
-						_S.good = false;
-						utils.logError(error);
-					}
-				}
-			}
-			_socketsConfig = undefined;
-		},
-		get = function(name) {
-			var _socket = _sockets[name];
-			if (_socket && _socket.good) {
-				return _socket;
-			} else {
-				utils.logError([label['errorSocket'], name],join(''));
-				return false;
-			}
-		};
-		return {
-			init: 	init,
-			get:	get
+			disableElement	: disableElement,
+			log				: log
 		}
 	})(),
 	
 	Socket = (function() {
 		var _socket = {},
+			_onError = function() {
+				
+			}
 			init = function() {
 				var url = Config.socketUrl;
 				_socket = {
 					url: url,
-					obj: io(url),
-					send: function() {
-					
+					io: io(url)
+				},
+				_buffer = [],
+				_onConnect = function() {
+					var data;
+					for (var i = _buffer.length; i--; ) {
+						data = _buffer.pop();
+						_socket.io.emit(data[0], data[1]);
 					}
 				};
+				_socket.io.on("error", function() {
+					utils.log(label['socketError']);
+				});
+				_socket.io.on("disconnect", function() {
+					utils.log("socket disconnect");
+				});
+				_socket.io.on("reconnect", function() {
+					_onConnect();
+				});
+				_socket.io.on("connect", function() {
+					utils.log("Socket Connect OK");
+					_onConnect();
+				});
+				_socket.io.on("dashboard drag", Dashboard.onSocketMessage);
+				_socket.io.on("editor save", Editor.onSocketMessage);
 			},
-			get = function() {
-				return _socket;
-			};		
+			emit = function(event, data) {
+				(typeof data === "object") && (data = JSON.stringify(data));
+				if (_socket.io.connected) {
+					_socket.io.emit(event, data);
+				} else {
+					_buffer.push([event, data]);
+				}
+			};
 		return {
 			init:	init,
-			get:	get
+			emit:	emit
 		};
 	})(),
 	
@@ -288,7 +238,6 @@ var App = (function() {
 		_draggable = true, _isMouseDown = false, _zoomable = true,
 		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 3,
 		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 50, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
-		_socketDraw,
 		
 		_cache = (function() {
 			var _list = {},
@@ -319,7 +268,7 @@ var App = (function() {
 				_updateIds();
 			},
 			log = function() {
-				console.log(_list);
+				utils.log(_list);
 			},
 			ids = function() {
 				return _ids;
@@ -532,7 +481,7 @@ var App = (function() {
 			_$zoomLabelDoms.fadeIn("fast");
 		},
 		_removeDraw = function(id, del) {	// OK
-			console.log("rimuovo:" + id);
+			utils.log("rimuovo:" + id);
 			var _oldDraw = DOCUMENT.getElementById(id);
 			(del || false) && _cache.del(id);
 			_imagesVisibleIds.splice(_imagesVisibleIds.indexOf(id), 1)
@@ -542,7 +491,7 @@ var App = (function() {
 			if (!draw || !draw.id) return false;
 			isNew = isNew || false;
 			if (_imagesVisibleIds.indexOf(draw.id) === -1) {
-				console.log(["aggiungo", draw]);
+				utils.log(["aggiungo", draw]);
 				if (_imagesVisibleIds.length)
 					if (isNew)
 						_imageGroup.tag.insertBefore(draw.data, _imageGroup.tag.firstChild);
@@ -563,7 +512,7 @@ var App = (function() {
 		onSocketMessage = function(data) {	// TODO	prende tutti i disegni e ne calcola x e y rispetto allo schermo partendo dalle coordinate assolute
 			var draws = data.draws,
 				draw;
-			console.log("disegni ricevuti: " + draws.length);
+			utils.log("disegni ricevuti: " + draws.length);
 			for (var i = 0, l = draws.length; i < l; i++) {
 				draw = draws[i];
 				draw.x = draw.x - _currentX + XX2;
@@ -615,8 +564,8 @@ var App = (function() {
 				(_isVisible(_draw)) && _appendDraw(_draw, false);
 			}
 		},
-		_openSocketFor = function(area, notIds) { // OK
-			_socketDraw.send({
+		_callSocketFor = function(area, notIds) { // OK
+			Socket.emit("dashboard drag", {
 				"type": "DRAG",
 				"area": area,
 				"ids": notIds
@@ -629,7 +578,7 @@ var App = (function() {
 			// 2° visualizza subito quello che c'è già in cache
 			_findInCache();
 			// 3° avvia trasferimenti di ciò che non è in cache e che deve comparire
-			_openSocketFor(_area, _cache.ids());
+			_callSocketFor(_area, _cache.ids());
 		},
 		goToXY = function(x, y) {	// OK
 			// calcolo la differenza in px invece che coord, e chiamo _drag. se si inseriscono coordinate poco distanti dalle attuali, forzo l'aggiornamento e il caricamento delle nuove
@@ -677,7 +626,6 @@ var App = (function() {
 			//scelgo a che posizione aprire la lavagna
 			_initDom();
 			_addEvents();
-			_socketDraw = Socket.get('draw');
 			goToXY(0, 0);
 		};
 		_mouseX = _mouseY = _currentX = _currentY = 0;
@@ -700,7 +648,7 @@ var App = (function() {
 		_$editorShowOptions, _$optionDraft, _$optionRestore, _$optionSquare, _$optionExport, _$optionClear, _$optionClose, _$closeButtons,
 		_minX, _minY, _maxX, _maxY, _oldX, _oldY, _mouseX = 0, _mouseY = 0, _numUndoStep = 31, _currentStep = 0, _oldMidX, _oldMidY, _$sizeToolPreview, _$sizeToolLabel,
 		_isInit, _isMouseDown, _isPressedShift, _restored = false, _toolsSizeX, _toolsSizeY, _randomColor = true, _overlay = false, _grayscaleIsScrolling = false,
-		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0, _socketDraw, _savedDraw = {},
+		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0, _savedDraw = {},
 		_color, _size, _pencilSize = 2, _pencilColor = "", _pencilColorID = 12, _brushSize = 50, _eraserSize = 50, _brushColor, _maxToolSize = 200,
 		_grayscaleColors = ["#FFF", "#EEE", "#DDD", "#CCC", "#BBB", "#AAA", "#999", "#888", "#777", "#666", "#555", "#444", "#333", "#222", "#111", "#000"], 
 		_enableElement = utils.enableElement,
@@ -762,7 +710,6 @@ var App = (function() {
 				_colorPicker.init();
 				_onResize();
 				_selectBrush();
-				_socketDraw = Socket.get('draw');
 			}
 		},
 		_addEvents = function() {
@@ -972,7 +919,7 @@ var App = (function() {
 				return e.ctrlKey;
 			},
 		_keyDown = function(e) {
-			//console.log("editor: " + e.keyCode);
+			//utils.log("editor: " + e.keyCode);
 			var keyCode = e.keyCode;
 			if (keyCode === 27) {
 				e.preventDefault();
@@ -1274,8 +1221,8 @@ var App = (function() {
 			}
 		},
 		_saveToServer = function(draw, coords) {
-			console.log("salvo: ", draw);
-			_socketDraw.send({
+			utils.log("salvo: ", draw);
+			Socket.emit("editor save", {
 				"type": "SAVE",
 				"draw": draw,
 				"x": coords.x,
