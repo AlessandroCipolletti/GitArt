@@ -143,8 +143,8 @@ var App = (function() {
 		disableElement = function(el) {
 			el.addClass("disabled").removeClass("enabled");
 		},
-		log = function(msg) {
-			Config.debug && console.log(msg);
+		log = function() {
+			Config.debug && console.log(arguments);
 		},
 		logError = function(msg) {
 			utils.log(msg);
@@ -1223,7 +1223,6 @@ var App = (function() {
 		_saveToServer = function(draw, coords) {
 			utils.log("salvo: ", draw);
 			Socket.emit("editor save", {
-				"type": "SAVE",
 				"draw": draw,
 				"x": coords.x,
 				"y": coords.y

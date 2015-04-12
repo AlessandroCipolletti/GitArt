@@ -2,33 +2,51 @@ var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
-/*
-app.get('/', function(req, res){
-  res.sendFile(__dirname + '/client.html');
-});
-
-app.get('/save', function(req, res){
-  res.send('<h1>Hello Save</h1>');
-});
-*/
-
 io.on('connection', function(socket) {
+  
+	socket.on('editor save', function(data) {
 
-	console.log('a user connected');
+		data = JSON.parse(data);
+		
+		var base64 = data.draw.data,
+			minX = data.draw.coordX,
+			minY = data.draw.coordY,
+			w = data.draw.w,
+			h = data.draw.h,
+			maxX = minX + w,
+			maxY = minY + h,
+			x = data.x,
+			y = data.y;
+		
+		// inserimento di un oggetto mongodb con tutte queste chiavi, e recuperare l'id o index
+		
+		socket.emit('editor save', JSON.stringify({
+			ok: true,
+			id: 1000
+		}));
+		
+	});
 	
-	socket.on('disconnect', function() {
-		console.log('user disconnected');
+	socket.on('dashboard drag', function(data) {
+		
+		var minX = data.area.minX + 50;
+			minY = data.area.minY + 50,
+			maxX = data.area.maxX - 50,
+			maxY = data.area.maxY - 50,
+			x = data.area.x,
+			y = data.area.y,
+			ids = data.ids.join();
+		
+		// query di select e inviare un disegno alla volta al client
+		
+		var draw = {};
+		
+		socket.emit('dashboard drag', JSON.stringify(draw));
+			
 	});
-  
-	socket.on('nome evento', function(msg) {
-		console.log('message: ' + msg);
-	});
-  
+	
 });
-
 
 http.listen(4000, function(){
   console.log('listening on *:4000');
 });
-
-
