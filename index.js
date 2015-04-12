@@ -7,7 +7,6 @@ io.on('connection', function(socket) {
 	socket.on('editor save', function(data) {
 
 		data = JSON.parse(data);
-		
 		var base64 = data.draw.data,
 			minX = data.draw.coordX,
 			minY = data.draw.coordY,
@@ -29,6 +28,7 @@ io.on('connection', function(socket) {
 	
 	socket.on('dashboard drag', function(data) {
 		
+		data = JSON.parse(data);
 		var minX = data.area.minX + 50;
 			minY = data.area.minY + 50,
 			maxX = data.area.maxX - 50,

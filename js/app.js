@@ -510,7 +510,8 @@ var App = (function() {
 			}
 		},
 		onSocketMessage = function(data) {	// TODO	prende tutti i disegni e ne calcola x e y rispetto allo schermo partendo dalle coordinate assolute
-			var draws = data.draws,
+			data = JSON.parse(data);
+			var draws = data.draws || [],
 				draw;
 			utils.log("disegni ricevuti: " + draws.length);
 			for (var i = 0, l = draws.length; i < l; i++) {
@@ -1205,6 +1206,7 @@ var App = (function() {
 		},
 		onSocketMessage = function(data) {	// OK - qui riceviamo le risposte ai salvataggi
 			Messages.remove();
+			data = JSON.parse(data);
 			if (data.ok) {
 				_savedDraw.id = data.id;
 				Dashboard.addDraw(_savedDraw, true);
@@ -1217,7 +1219,7 @@ var App = (function() {
 				_$dom.removeClass('semiTransparent');
 				_hide();
 			} else {
-				Messages.error(label("editorSaveError"));
+				Messages.error(label["editorSaveError"]);
 			}
 		},
 		_saveToServer = function(draw, coords) {
@@ -1516,7 +1518,7 @@ var App = (function() {
 			};
 			var result = utils.getRemoteData(Config.services.news, params);
 			if (utils.isEmpty(result))
-				Messages.error(label("ConnectionError"));
+				Messages.error(label["ConnectionError"]);
 			else {
 				var html = _render(result, utils.isEmpty(query));
 				Overlay.show(html);
@@ -1540,7 +1542,7 @@ var App = (function() {
 			};
 			var result = utils.getRemoteData(Config.services.news, params);
 			if (utils.isEmpty(result))
-				Messages.error(label("ConnectionError"));
+				Messages.error(label["ConnectionError"]);
 			else {
 				var html = _render(result);
 				Overlay.show(html);
