@@ -1,6 +1,18 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var mongojs = require('mongojs');
+/*
+var db = mongojs("46.252.150.61/socialart", ["draws"]);
+
+db.on('error', function(err) {
+    console.log('database error', err);
+});
+
+db.on('ready', function() {
+    console.log('database connected');
+});
+*/
 
 io.on('connection', function(socket) {
   
