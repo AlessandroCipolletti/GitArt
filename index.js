@@ -2,8 +2,8 @@ var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var mongojs = require('mongojs');
-/*
-var db = mongojs("46.252.150.61/socialart", ["draws"]);
+
+var db = mongojs("localhost/socialart", ["draws"]);
 
 db.on('error', function(err) {
     console.log('database error', err);
@@ -12,52 +12,93 @@ db.on('error', function(err) {
 db.on('ready', function() {
     console.log('database connected');
 });
-*/
+
+
+	db.draws.find({}, function(err, draws) {
+		if (err || !draws) {
+			console.log("query error: ", err);
+		} else if (draws.length === 0) {
+			console.log("0 rows found");
+		} else {
+			draws.forEach(function(draw) {
+				console.log(draw._id);
+			});
+		}
+	});
+
 
 io.on('connection', function(socket) {
   
 	socket.on('editor save', function(data) {
 
 		data = JSON.parse(data);
-		var base64 = data.draw.data,
-			minX = data.draw.coordX,
+		var minX = data.draw.coordX,
 			minY = data.draw.coordY,
 			w = data.draw.w,
 			h = data.draw.h,
-			maxX = minX + w,
-			maxY = minY + h,
-			x = data.x,
-			y = data.y;
+			draw = {
+				base64: data.draw.data,
+				minX: minX,
+				minY: minY,
+				w: w,
+				h: h,
+				maxX: minX + w,
+				maxY: minY + h,
+				x: data.x,
+				y: data.y
+			};
 		
-		// inserimento di un oggetto mongodb con tutte queste chiavi, e recuperare l'id o index
-		
-		socket.emit('editor save', JSON.stringify({
-			ok: true,
-			id: 1000
-		}));
-		
+		var a = db.draws.insert(draw, function(err, item) {
+			
+			socket.emit('editor save', JSON.stringify({
+				ok: true,
+				id: item._id
+			}));
+			
+		});
+
 	});
 	
 	socket.on('dashboard drag', function(data) {
 		
 		data = JSON.parse(data);
-		var minX = data.area.minX + 50;
-			minY = data.area.minY + 50,
-			maxX = data.area.maxX - 50,
-			maxY = data.area.maxY - 50,
+		var areaMinX = data.area.minX + 50,
+			areaMinY = data.area.minY + 50,
+			areaMaxX = data.area.maxX - 50,
+			areaMaxY = data.area.maxY - 50,
 			x = data.area.x,
 			y = data.area.y,
-			ids = data.ids.join();
+			ids = data.ids;
 		
-		// query di select e inviare un disegno alla volta al client
+		var obj = {
 		
-		var draw = {};
+			_id		: { $nin : ids },
+			maxX	: { $gt : areaMinX },
+			maxY	: { $gt : areaMinY },
+			minX	: { $lt : areaMaxX },
+			minY	: { $lt : areaMaxY }
 		
-		socket.emit('dashboard drag', JSON.stringify(draw));
+		};
+		console.log(obj);
+		db.draws.find(obj, function(err, draws) {
+			
+			if (err || !draws) {
+				console.log("query error: ", err);
+			} else if (draws.length === 0) {
+				console.log("0 rows found");
+			} else {
+				draws.forEach(function(draw) {
+					socket.emit('dashboard drag', JSON.stringify([draw]));
+				});
+			}
+		
+		});
 			
 	});
 	
 });
+
+
 
 http.listen(4000, function(){
   console.log('listening on *:4000');

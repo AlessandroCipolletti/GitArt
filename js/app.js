@@ -143,11 +143,8 @@ var App = (function() {
 		disableElement = function(el) {
 			el.addClass("disabled").removeClass("enabled");
 		},
-		log = function() {
-			Config.debug && console.log(arguments);
-		},
 		logError = function(msg) {
-			utils.log(msg);
+			console.log(msg);
 			// qui possiamo anche tentare una chiamata ajax per inviarci _msg per le statistiche sugli errori,
 		};
 		return {
@@ -157,8 +154,7 @@ var App = (function() {
 			getRemoteData	: getRemoteData,
 			cancelEvent		: cancelEvent,
 			enableElement	: enableElement,
-			disableElement	: disableElement,
-			log				: log
+			disableElement	: disableElement
 		}
 	})(),
 	
@@ -182,16 +178,16 @@ var App = (function() {
 					}
 				};
 				_socket.io.on("error", function() {
-					utils.log(label['socketError']);
+					console.log(label['socketError']);
 				});
 				_socket.io.on("disconnect", function() {
-					utils.log("socket disconnect");
+					console.log("socket disconnect");
 				});
 				_socket.io.on("reconnect", function() {
 					_onConnect();
 				});
 				_socket.io.on("connect", function() {
-					utils.log("Socket Connect OK");
+					console.log("Socket Connect OK");
 					_onConnect();
 				});
 				_socket.io.on("dashboard drag", Dashboard.onSocketMessage);
@@ -237,17 +233,14 @@ var App = (function() {
 		var _dom, _imageGroup = {}, _$buttonModify, _zoomLabel, _$zoomLabelDoms,
 		_draggable = true, _isMouseDown = false, _zoomable = true,
 		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 3,
-		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 50, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
+		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 400, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
 		
 		_cache = (function() {
 			var _list = {},
 				_ids = [],
 				_maxCacheSize = 100,	// forse sarebbe cool parametrizzare questo in base alle prestazioni locali
 			_updateIds = function() {
-				_ids = Object.keys(_list).map(function(i) {
-					return parseInt(i, 10);
-				});
-				return _ids;
+				_ids = Object.keys(_list);
 			},
 			add = function(id, data) {
 				// se la cache html5 può fare al caso nostro, salviamo data in cache, e id nella lista cosi sappiamo cosa abbiamo e cosa no
@@ -268,7 +261,7 @@ var App = (function() {
 				_updateIds();
 			},
 			log = function() {
-				utils.log(_list);
+				console.log(_list);
 			},
 			ids = function() {
 				return _ids;
@@ -481,7 +474,7 @@ var App = (function() {
 			_$zoomLabelDoms.fadeIn("fast");
 		},
 		_removeDraw = function(id, del) {	// OK
-			utils.log("rimuovo:" + id);
+			console.log("rimuovo:" + id);
 			var _oldDraw = DOCUMENT.getElementById(id);
 			(del || false) && _cache.del(id);
 			_imagesVisibleIds.splice(_imagesVisibleIds.indexOf(id), 1)
@@ -491,7 +484,7 @@ var App = (function() {
 			if (!draw || !draw.id) return false;
 			isNew = isNew || false;
 			if (_imagesVisibleIds.indexOf(draw.id) === -1) {
-				utils.log(["aggiungo", draw]);
+				console.log(["aggiungo", draw]);
 				if (_imagesVisibleIds.length)
 					if (isNew)
 						_imageGroup.tag.insertBefore(draw.data, _imageGroup.tag.firstChild);
@@ -510,14 +503,19 @@ var App = (function() {
 			}
 		},
 		onSocketMessage = function(data) {	// TODO	prende tutti i disegni e ne calcola x e y rispetto allo schermo partendo dalle coordinate assolute
-			data = JSON.parse(data);
-			var draws = data.draws || [],
-				draw;
-			utils.log("disegni ricevuti: " + draws.length);
+			draws = JSON.parse(data);
+			var draw;
+			console.log("disegni ricevuti: " + draws.length);
 			for (var i = 0, l = draws.length; i < l; i++) {
 				draw = draws[i];
 				draw.x = draw.x - _currentX + XX2;
 				draw.y = draw.y - _currentY + YY2;
+				draw.id = draw._id;
+				draw.data = draw.base64;
+				draw.base64 = undefined;
+				delete draw._id;
+				delete draw.base64;
+				console.log(draw);
 				addDraw(draw);
 			}
 		},
@@ -566,8 +564,8 @@ var App = (function() {
 			}
 		},
 		_callSocketFor = function(area, notIds) { // OK
+			console.log(notIds);
 			Socket.emit("dashboard drag", {
-				"type": "DRAG",
 				"area": area,
 				"ids": notIds
 			});
@@ -920,7 +918,7 @@ var App = (function() {
 				return e.ctrlKey;
 			},
 		_keyDown = function(e) {
-			//utils.log("editor: " + e.keyCode);
+			//console.log("editor: " + e.keyCode);
 			var keyCode = e.keyCode;
 			if (keyCode === 27) {
 				e.preventDefault();
@@ -1223,7 +1221,7 @@ var App = (function() {
 			}
 		},
 		_saveToServer = function(draw, coords) {
-			utils.log("salvo: ", draw);
+			console.log("salvo: ", draw);
 			Socket.emit("editor save", {
 				"draw": draw,
 				"x": coords.x,
