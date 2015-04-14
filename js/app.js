@@ -510,12 +510,7 @@ var App = (function() {
 				draw = draws[i];
 				draw.x = draw.x - _currentX + XX2;
 				draw.y = draw.y - _currentY + YY2;
-				draw.id = draw._id;
-				draw.data = draw.base64;
-				draw.base64 = undefined;
-				delete draw._id;
-				delete draw.base64;
-				console.log(draw);
+				//console.log(draw);
 				addDraw(draw);
 			}
 		},
@@ -564,7 +559,7 @@ var App = (function() {
 			}
 		},
 		_callSocketFor = function(area, notIds) { // OK
-			console.log(notIds);
+			//console.log(notIds);
 			Socket.emit("dashboard drag", {
 				"area": area,
 				"ids": notIds
