@@ -2,6 +2,7 @@ var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var mongojs = require('mongojs');
+var ObjectId = mongojs.ObjectId;
 
 var db = mongojs("localhost/socialart", ["draws"]);
 
@@ -13,8 +14,15 @@ db.on('ready', function() {
     console.log('database connected');
 });
 
-
-	db.draws.find({}, function(err, draws) {
+/*
+	// TEST
+	var ids = [, "552c5551148d64da0837719a"];
+	for (var i = ids.length; i--; ) {
+		ids[i] = ObjectId(ids[i]);
+	}
+	db.draws.find({
+		_id : { $nin: ids},
+	}, function(err, draws) {
 		if (err || !draws) {
 			console.log("query error: ", err);
 		} else if (draws.length === 0) {
@@ -25,6 +33,7 @@ db.on('ready', function() {
 			});
 		}
 	});
+*/
 
 
 io.on('connection', function(socket) {
@@ -68,27 +77,38 @@ io.on('connection', function(socket) {
 			areaMaxY = data.area.maxY - 50,
 			x = data.area.x,
 			y = data.area.y,
-			ids = data.ids;
+			_ids = data.ids,
+			ids = [];
 		
-		var obj = {
-		
+		for (var i = _ids.length; i--; ) {
+			_ids[i].length && ids.push(ObjectId(_ids[i]));
+		}
+
+		db.draws.find({
 			_id		: { $nin : ids },
 			maxX	: { $gt : areaMinX },
 			maxY	: { $gt : areaMinY },
 			minX	: { $lt : areaMaxX },
 			minY	: { $lt : areaMaxY }
-		
-		};
-		console.log(obj);
-		db.draws.find(obj, function(err, draws) {
+		}, {}, {limit: 100}, function(err, draws) {
 			
 			if (err || !draws) {
 				console.log("query error: ", err);
 			} else if (draws.length === 0) {
 				console.log("0 rows found");
 			} else {
+				console.log(draws.length + " rows found");
 				draws.forEach(function(draw) {
-					socket.emit('dashboard drag', JSON.stringify([draw]));
+					var ris = {
+						id		: draw._id,
+						data	: draw.base64,
+						w		: draw.w,
+						h		: draw.h,
+						x		: draw.minX,
+						y		: draw.minY
+					};
+					socket.emit('dashboard drag', JSON.stringify([ris]));
+					draw = undefined;
 				});
 			}
 		
@@ -103,3 +123,4 @@ io.on('connection', function(socket) {
 http.listen(4000, function(){
   console.log('listening on *:4000');
 });
+
