@@ -39,31 +39,14 @@ db.on('ready', function() {
 io.on('connection', function(socket) {
   
 	socket.on('editor save', function(data) {
-
-		data = JSON.parse(data);
-		var minX = data.draw.coordX,
-			minY = data.draw.coordY,
-			w = data.draw.w,
-			h = data.draw.h,
-			draw = {
-				base64: data.draw.data,
-				minX: minX,
-				minY: minY,
-				w: w,
-				h: h,
-				maxX: minX + w,
-				maxY: minY + h,
-				x: data.x,
-				y: data.y
-			};
-		
+	
+		var draw = JSON.parse(data);
+		console.log(draw);
 		var a = db.draws.insert(draw, function(err, item) {
-			
 			socket.emit('editor save', JSON.stringify({
 				ok: true,
 				id: item._id
 			}));
-			
 		});
 
 	});
@@ -75,8 +58,6 @@ io.on('connection', function(socket) {
 			areaMinY = data.area.minY + 50,
 			areaMaxX = data.area.maxX - 50,
 			areaMaxY = data.area.maxY - 50,
-			x = data.area.x,
-			y = data.area.y,
 			_ids = data.ids,
 			ids = [];
 		
@@ -86,10 +67,10 @@ io.on('connection', function(socket) {
 
 		db.draws.find({
 			_id		: { $nin : ids },
+			x		: { $lt : areaMaxX },
+			y		: { $lt : areaMaxY },
 			maxX	: { $gt : areaMinX },
-			maxY	: { $gt : areaMinY },
-			minX	: { $lt : areaMaxX },
-			minY	: { $lt : areaMaxY }
+			maxY	: { $gt : areaMinY }
 		}, {}, {limit: 100}, function(err, draws) {
 			
 			if (err || !draws) {
@@ -106,8 +87,8 @@ io.on('connection', function(socket) {
 						data	: draw.base64,
 						w		: draw.w,
 						h		: draw.h,
-						x		: draw.minX,
-						y		: draw.minY
+						x		: draw.x,
+						y		: draw.y
 					};
 					console.log([ris.x, ris.y]);
 					socket.emit('dashboard drag', JSON.stringify([ris]));

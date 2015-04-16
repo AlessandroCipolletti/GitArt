@@ -230,7 +230,7 @@ var App = (function() {
 	})(),
 	
 	Dashboard = (function() {
-		var _dom, _imageGroup = {}, _$buttonModify, _zoomLabel, _$zoomLabelDoms, _$coordsLabel,
+		var _dom, _imageGroup = {}, _$buttonModify, _zoomLabel, _$zoomLabelDoms, _$coordsLabel, _$allDom,
 		_draggable = true, _isMouseDown = false, _zoomable = true,
 		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 3, _socketCallsEnCours = 0,
 		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 400, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
@@ -299,10 +299,12 @@ var App = (function() {
 			}
 			_imageGroup.matrix = _imageGroup.tag.getCTM();
 			_$buttonModify = $("#showEditor");
+			_$allDom = $("#showEditor, #zoomLabel, #zoomLabelCont");
 			_$buttonModify.css({display: "block"});
 			if (Config.debug) {
 				$("#dashboardCoords").css("display", "block");
 				_$coordsLabel = $("#dashboardCoords span");
+				_$allDom = $("#showEditor, #zoomLabel, #zoomLabelCont, #dashboardCoords");
 				_updateCoordsLabel(_currentX, _currentY);
 			}
 		},
@@ -481,14 +483,12 @@ var App = (function() {
 		overshadow = function() {	// mette in secondo piano e blocca la dashboard per mostrare l'editor
 			_draggable = _zoomable = false;
 			_removeEvents();
-			_$buttonModify.fadeOut("fast");
-			_$zoomLabelDoms.fadeOut("fast");
+			_$allDom.fadeOut("fast");
 		},
 		foreground = function() {	// riporta in primo piano la dashboard e la rende funzionante
 			_draggable = _zoomable = true;
 			_addEvents();
-			_$buttonModify.fadeIn("fast");
-			_$zoomLabelDoms.fadeIn("fast");
+			_$allDom.fadeIn("fast");
 		},
 		_removeDraw = function(id, del) {	// OK
 			console.log("rimuovo:" + id);
@@ -538,6 +538,7 @@ var App = (function() {
 			}
 		},
 		addDraw = function(draw, replace) {	// OK	aggiunge e salva un disegno passato dall editor o dal socket
+			console.log(["ricevuto: ", draw]);
 			if (!draw || !draw.id) return false;
 			var _drawExist = _cache.exist(draw.id);
 			if (!_drawExist || replace) {
@@ -1242,15 +1243,21 @@ var App = (function() {
 				Messages.error(label["editorSaveError"]);
 			}
 		},
-		_saveToServer = function(draw, coords) {
-			console.log("salvo: ", draw);
-			Socket.emit("editor save", {
-				"draw": draw,
-				"x": coords.x,
-				"y": coords.y
-			});
+		_saveToServer = function(draw) {
+			var data = {
+				x		: draw.coordX,
+				y		: draw.coordY,
+				w		: draw.w,
+				h		: draw.h,
+				maxX	: draw.coordX + draw.w,
+				maxY	: draw.coordY + draw.h,
+				base64	: draw.data
+			};
+			console.log("salvo: ", data);
+			debugger;
+			Socket.emit("editor save", data);
 		},
-		_save = function() {	// CREDO OK
+		_save = function() {	// TODO : CREDO OK
 			if (_maxX === -1 || _maxY === -1) {
 				Messages.alert(label["nothingToSave"]);
 			} else {
@@ -1266,13 +1273,13 @@ var App = (function() {
 					delete _savedDraw.oldX;
 					delete _savedDraw.oldY;
 					_savedDraw.data = _tempCanvas.toDataURL("image/png");
-					_savedDraw.w = _savedDraw.maxX - _savedDraw.minX;
-					_savedDraw.h = _savedDraw.maxY - _savedDraw.minY;
 					_savedDraw.x = _savedDraw.minX;
 					_savedDraw.y = _savedDraw.minY;
+					_savedDraw.w = _savedDraw.maxX - _savedDraw.minX;
+					_savedDraw.h = _savedDraw.maxY - _savedDraw.minY;
 					_savedDraw.coordX = _coords.x - XX2 + _savedDraw.minX;	// coordinate del px in alto a sx rispetto alle coordinate correnti della lavagna
 					_savedDraw.coordY = _coords.y - YY2 + _savedDraw.minY;
-					_saveToServer(_savedDraw, _coords);
+					_saveToServer(_savedDraw);
 				}
 			}
 		},
