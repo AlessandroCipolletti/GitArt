@@ -94,8 +94,10 @@ io.on('connection', function(socket) {
 			
 			if (err || !draws) {
 				console.log("query error: ", err);
+				socket.emit('dashboard drag', "error");
 			} else if (draws.length === 0) {
 				console.log("0 rows found");
+				socket.emit('dashboard drag', "none");
 			} else {
 				console.log(draws.length + " rows found");
 				draws.forEach(function(draw) {
@@ -110,6 +112,7 @@ io.on('connection', function(socket) {
 					socket.emit('dashboard drag', JSON.stringify([ris]));
 					draw = undefined;
 				});
+				socket.emit('dashboard drag', "end");
 			}
 		
 		});

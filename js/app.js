@@ -3,7 +3,7 @@ var App = (function() {
 		_body = DOCUMENT.body,
 		WINDOW = window,
 		_$dark,
-		XX, YY, XX2, YY2,
+		XX, YY, XX2, YY2, DXX, DYY,
 		MATH = Math,
 		round = function(n, d) {
             var m = d ? MATH.pow(10, d) : 1;
@@ -232,7 +232,7 @@ var App = (function() {
 	Dashboard = (function() {
 		var _dom, _imageGroup = {}, _$buttonModify, _zoomLabel, _$zoomLabelDoms,
 		_draggable = true, _isMouseDown = false, _zoomable = true,
-		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 3,
+		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 3, _socketCallsEnCours = 0,
 		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 400, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
 		
 		_cache = (function() {
@@ -308,11 +308,13 @@ var App = (function() {
 			_zoomTo(1);
 			Editor.show();
 		},
-		_isVisible = function(img) {	// OK - TODO
-			// aggiungere controllo anche per non rimuovere il disegno se non è uscito per almeno tot % di px
-			return (img.x + img.w > 0 && img.y + img.h > 0 && img.x < XX && img.y < YY) ? true : false;
+		_isVisible = function(img) {	// OK
+			// deve considerare non solo la schermata visibile sullo schermo, ma anche le schermate intorno come sorta di "cache"
+			// la zona "visibile" sarà quella attualmente a video, più una schermata per ogni lato
+			return (img.x + img.w > -XX && img.y + img.h > -YY && img.x < DXX && img.y < DYY) ? true : false;
 		},
-		_updateCacheForDrag = function(dx, dy) {	// OK
+		_updateCacheForDrag = function(dx, dy) {	// OK - aggiorna le posizioni relative salvate nella cache, e rimuove i non più visibili
+			// TODO verificare se non convenga salvare in locale solo le cordinate assolute di ogni disegno, e trasformarle in relative solo al momento della visualizzazione
 			var _ids = _cache.ids();
 			for (var i = _ids.length; i--; ) {
 				var _img = _cache.get(_ids[i]);
@@ -431,7 +433,7 @@ var App = (function() {
 			_zoomTo(this[0] > 0 ? _zoom - 1 : _zoom + 1, this[1], this[2], _currentX);
 			_zoomable = true;
 		},
-		_mouseWheel = function (e) {	// Test browser
+		_mouseWheel = function (e) {	// TODO: Test browser
 			if (e.preventDefault)
 				e.preventDefault();
 			e.returnValue = false;
@@ -502,10 +504,16 @@ var App = (function() {
 				_cache.add(draw.id, draw);
 			}
 		},
-		onSocketMessage = function(data) {	// TODO	prende tutti i disegni e ne calcola x e y rispetto allo schermo partendo dalle coordinate assolute
-			draws = JSON.parse(data);
-			var draw;
+		onSocketMessage = function(data) {
+			if (["end", "none", "error"].indexOf(data) >= 0) {
+				_socketCallsEnCours--;
+			} else {
+				_addDraws(JSON.parse(data));
+			}
+		},
+		_addDraws = function(draws) {	// aggiunge uno ad uno i disegni ricevuti dal socket
 			console.log("disegni ricevuti: " + draws.length);
+			var draw;
 			for (var i = 0, l = draws.length; i < l; i++) {
 				draw = draws[i];
 				draw.x = draw.x - _currentX + XX2;
@@ -514,7 +522,7 @@ var App = (function() {
 				addDraw(draw);
 			}
 		},
-		addDraw = function(draw, replace) {	// OK	aggiunge e salva un disegno passato dall editor
+		addDraw = function(draw, replace) {	// OK	aggiunge e salva un disegno passato dall editor o dal socket
 			if (!draw || !draw.id) return false;
 			var _drawExist = _cache.exist(draw.id);
 			if (!_drawExist || replace) {
@@ -538,14 +546,19 @@ var App = (function() {
 			}
 		    return true;
 		},
-		_getVisibleArea = function() {	// OK  in coordinate
-			var XX2Z = XX2 / _imageGroup.matrix.a,
-				YY2Z = YY2 / _imageGroup.matrix.a;
+		_getVisibleArea = function() {	// OK - in coordinate assolute
+			// TODO - per adesso cambio qui la dimensione dell'area da scaricare per scaricare tutto in un colpo,
+			//			ma in futuro sarà meglio fare prima la chiamata per la schermata a video e poi un'altra chiamata per la zona intorno
+			var z = _imageGroup.matrix.a,
+				XX2Z = XX2 / z,
+				YY2Z = YY2 / z;
+			var XXZ = XX / z,
+				YYZ = YY / z;
 			return {
-				minX : _currentX - XX2Z,
-				maxX : _currentX + XX2Z,
-				minY : _currentY - YY2Z,
-				maxY : _currentY + YY2Z,
+				minX : _currentX - XXZ,
+				maxX : _currentX + XXZ,
+				minY : _currentY - YYZ,
+				maxY : _currentY + YYZ,
 				x : _currentX,
 				y : _currentY
 			}
@@ -559,7 +572,7 @@ var App = (function() {
 			}
 		},
 		_callSocketFor = function(area, notIds) { // OK
-			//console.log(notIds);
+			_socketCallsEnCours++;
 			Socket.emit("dashboard drag", {
 				"area": area,
 				"ids": notIds
@@ -1620,6 +1633,8 @@ var App = (function() {
 				YY = WINDOW.innerHeight;
 				XX2 = XX / 2;
 				YY2 = YY / 2;
+				DXX = 2 * XX;
+				DYY = 2 * YY;
 			},
 			onGlobalResize = function() {
 				_onResize
