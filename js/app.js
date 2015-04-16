@@ -230,7 +230,7 @@ var App = (function() {
 	})(),
 	
 	Dashboard = (function() {
-		var _dom, _imageGroup = {}, _$buttonModify, _zoomLabel, _$zoomLabelDoms,
+		var _dom, _imageGroup = {}, _$buttonModify, _zoomLabel, _$zoomLabelDoms, _$coordsLabel,
 		_draggable = true, _isMouseDown = false, _zoomable = true,
 		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 3, _socketCallsEnCours = 0,
 		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 400, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
@@ -300,6 +300,19 @@ var App = (function() {
 			_imageGroup.matrix = _imageGroup.tag.getCTM();
 			_$buttonModify = $("#showEditor");
 			_$buttonModify.css({display: "block"});
+			if (Config.debug) {
+				$("#dashboardCoords").css("display", "block");
+				_$coordsLabel = $("#dashboardCoords span");
+				_updateCoordsLabel(_currentX, _currentY);
+			}
+		},
+		_updateCoordsLabel = Config.debug ? function(x, y) {
+			_$coordsLabel.html(["(", x, ", ", y, ")"].join(''));
+		} : function(){},
+		_updateCurrentCoords = function(x, y) {
+			_currentX = x;
+			_currentY = y;
+			_updateCoordsLabel(x, y);
 		},
 		_setMatrix = function(element, matrix) {
 			element.setAttribute("transform", "matrix(" + matrix.a + "," + matrix.b + "," + matrix.c + "," + matrix.d + "," + round(matrix.e) + "," + round(matrix.f) + ")");
@@ -354,8 +367,9 @@ var App = (function() {
 			newp = newp.matrixTransform(_imageGroup.tag.getScreenCTM().inverse());
 			newp.x = round(newp.x);
 			newp.y = round(newp.y);
-			_currentX = round(_currentX - (XX2 - newp.x) * _zoomScale * _deltaZoomLevel, _decimals);
-			_currentY = round(_currentY + (YY2 - newp.y) * _zoomScale * _deltaZoomLevel, _decimals);
+			var _newX = round(_currentX - (XX2 - newp.x) * _zoomScale * _deltaZoomLevel, _decimals),
+				_newY = round(_currentY + (YY2 - newp.y) * _zoomScale * _deltaZoomLevel, _decimals);
+			_updateCurrentCoords(_newX, _newY);
 			_imageGroup.matrix = _imageGroup.matrix.translate(-(newp.x * (_z-1)), -(newp.y * (_z-1)));
 			_imageGroup.matrix.a = _imageGroup.matrix.d = MATH.min(round(_imageGroup.matrix.a * _z * 10000) / 10000, 1);
 			_imageGroup.matrix.a >= 0.99 && (_imageGroup.matrix.a = _imageGroup.matrix.d = 1);
@@ -372,8 +386,9 @@ var App = (function() {
 			_deltaDragY = _deltaDragY + dy;
 			_imageGroup.matrix = _imageGroup.matrix.translate(_deltaX, _deltaY);
 			_setMatrix(_imageGroup.tag, _imageGroup.matrix);
-			_currentX = round(_currentX - _deltaX, _decimals);
-			_currentY = round(_currentY + _deltaY, _decimals);
+			var _newX = round(_currentX - _deltaX, _decimals),
+				_newY = round(_currentY + _deltaY, _decimals);
+			_updateCurrentCoords(_newX, _newY);
 			if (forceLoad || MATH.abs(_deltaDragX) > _deltaDragMax || MATH.abs(_deltaDragY) > _deltaDragMax) {
 				_updateCacheForDrag(_deltaDragX, _deltaDragY);
 				_fillScreen(); // dopo il drag e l'aggiornamento delle imm, scarico e visualizzo le nuove
@@ -595,8 +610,7 @@ var App = (function() {
 			} else {									// altrimenti faccio drag, che fa tutto il resto
 				var dx = round((x - _currentX) * _imageGroup.matrix.a),
 					dy = round((y - _currentY) * _imageGroup.matrix.a);
-				_currentX = x;
-				_currentY = y;
+				_updateCurrentCoords(x, y);
 				_drag(dx, dy, true);
 			}
 		}, 

@@ -96,7 +96,7 @@ io.on('connection', function(socket) {
 				console.log("query error: ", err);
 				socket.emit('dashboard drag', "error");
 			} else if (draws.length === 0) {
-				console.log("0 rows found");
+				//console.log("0 rows found");
 				socket.emit('dashboard drag', "none");
 			} else {
 				console.log(draws.length + " rows found");
@@ -109,9 +109,11 @@ io.on('connection', function(socket) {
 						x		: draw.minX,
 						y		: draw.minY
 					};
+					console.log([ris.x, ris.y]);
 					socket.emit('dashboard drag', JSON.stringify([ris]));
 					draw = undefined;
 				});
+				console.log("\n");
 				socket.emit('dashboard drag', "end");
 			}
 		
@@ -124,6 +126,5 @@ io.on('connection', function(socket) {
 
 
 http.listen(4000, function(){
-  console.log('listening on *:4000');
+  console.log('listening on *:4000\n');
 });
-

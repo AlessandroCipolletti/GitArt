@@ -578,3 +578,31 @@ body {
 		font-size: 17px;
 		opacity: 0.7;
 	}
+	
+	#dashboardCoords {
+		position: absolute;
+		height: 20px;
+		width: 200px;
+		top: calc(50% - 10px);
+		left: calc(50% - 10px);
+		display: none;
+		z-index: 10000;
+	}	
+		#dashboardCoords * {
+			float: left;
+		}
+		#dashboardCoords div {
+			width: 5px;
+			height: 5px;
+			margin: 5px;
+			-webkit-border-radius: 50%;
+			-moz-border-radius: 50%;
+			border-radius: 50%;
+			border-radius: 50%;
+			background-color: black;
+		}
+		#dashboardCoords span {
+			height 20px;
+			line-height: 20px;
+			font-size: 10px;
+		}
