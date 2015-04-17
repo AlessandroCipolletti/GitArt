@@ -304,7 +304,7 @@ var App = (function() {
 			if (Config.debug) {
 				$("#dashboardCoords").css("display", "block");
 				_$coordsLabel = $("#dashboardCoords span");
-				_$allDom = $("#showEditor, #zoomLabel, #zoomLabelCont, #dashboardCoords");
+				_$allDom = $("#showEditor, #zoomLabel, #zoomLabelCont");
 				_updateCoordsLabel(_currentX, _currentY);
 			}
 		},
@@ -368,7 +368,6 @@ var App = (function() {
 				_z = (_deltaZoomLevel > 0) ? MATH.pow(1 - _zoomScale, _deltaZoomLevel) : MATH.pow(1 / (1 - _zoomScale), -_deltaZoomLevel),
 				_currentScale = 1 / _imageGroup.matrix.a,
 				_currentScaleAndZoom = _currentScale * (_zz - 1);
-			console.log(_zz - 1);
 			_zoom = level;
 			newp.x = x;
 			newp.y = y;
@@ -505,7 +504,8 @@ var App = (function() {
 			_imagesVisibleIds.splice(_imagesVisibleIds.indexOf(id), 1)
 			_oldDraw && _imageGroup.tag.removeChild(_oldDraw);
 		},
-		_appendDraw = function(draw, isNew) {	// OK	aggiunge alla dashboard un svg image già elaborato 
+		_appendDraw = function(draw, isNew) {	// aggiunge alla dashboard un svg image già elaborato 
+			// TODO l'ordine degli id non viene preso correttamente
 			if (!draw || !draw.id) return false;
 			isNew = isNew || false;
 			if (_imagesVisibleIds.indexOf(draw.id) === -1) {
@@ -540,9 +540,9 @@ var App = (function() {
 			var draw;
 			for (var i = 0, l = draws.length; i < l; i++) {
 				draw = draws[i];
-				if (_cache.exist(draw.id)) continue;
+				if (_cache.exist(draw.id)) continue;	// questo controllo dovrebbe essere inutile, ma meglio evitarsi il lavoro di aggiungere un disegno per sbaglio
 				draw.x = draw.x - _currentX + XX2;
-				draw.y = draw.y - _currentY + YY2;
+				draw.y = draw.y + _currentY + YY2;
 				addDraw(draw);
 			}
 		},
@@ -558,12 +558,14 @@ var App = (function() {
 				_newDraw.setAttribute('width', draw.w);
 				_newDraw.setAttribute('height', draw.h);
 				_newDraw.id = draw.id;
+				draw.base64 = undefined;
 				delete draw.minX;
 				delete draw.minY;
 				delete draw.maxX;
 				delete draw.maxY;
 				delete draw.coordX;
 				delete draw.coordY;
+				delete draw.base64;
 				draw.data = _newDraw;
 				_appendDraw(draw, true);
 				_newDraw = draw = undefined;
@@ -644,8 +646,8 @@ var App = (function() {
 		},
 		getCoords = function() {
 			return {
-				x: _currentX,
-				y: _currentY
+				x: round(_currentX),
+				y: round(_currentY)
 			};
 		},
 		onResize = function () {	// TODO
@@ -1237,8 +1239,15 @@ var App = (function() {
 			Messages.remove();
 			data = JSON.parse(data);
 			if (data.ok) {
-				_savedDraw.id = data.id;
-				Dashboard.addDraw(_savedDraw, true);
+				var _draw = {
+					base64	: _savedDraw.base64,
+					x		: _savedDraw.x,
+					y		: _savedDraw.y,
+					w		: _savedDraw.w,
+					h		: _savedDraw.h,
+					id		: data.id
+				};
+				Dashboard.addDraw(_draw, true);
 				_savedDraw = undefined;
 				_clear();
 				_step = [];
