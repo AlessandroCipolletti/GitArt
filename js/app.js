@@ -340,6 +340,7 @@ var App = (function() {
 			}
 		},
 		_updateCacheForZoom = function(z, zx, zy) {	// OK!!
+			// ripensare se conviene avere le coordinate assolute o relative in cache, anche in base a isVisible
 			var _ids = _cache.ids(),
 				offset;
 			for (var i = _ids.length; i--; ) {
@@ -355,22 +356,27 @@ var App = (function() {
 			}
 			_deltaDragX = _deltaDragY = 0;
 		},
-		_zoomTo = function(level, x, y) {	// OK !!!!!
+		_zoomTo = function(level, x, y) {	// OK, porco dio
+			// posso provare a correggere gli arrotondamenti facendo i calcoli fissando un numero di decimali
+			// 0.08813953822521545 11.345646007865245
 			if (level === _zoom || level > _zoomMax || level < 1) return;
 			var x = x || XX2,
 				y = y || YY2,
 				_deltaZoomLevel = level - _zoom,
-				_z = (_deltaZoomLevel > 0) ? MATH.pow(1 - _zoomScale, _deltaZoomLevel) : MATH.pow(1 / (1 - _zoomScale), -_deltaZoomLevel),
 				newp = _dom.createSVGPoint(),
-				_zz = (_deltaZoomLevel > 0) ? MATH.pow(1 - _zoomScale, -_deltaZoomLevel) : MATH.pow(1 / (1 - _zoomScale), _deltaZoomLevel);
+				_zz = (_deltaZoomLevel > 0) ? MATH.pow(1 - _zoomScale, -_deltaZoomLevel) : MATH.pow(1 / (1 - _zoomScale), _deltaZoomLevel)
+				_z = (_deltaZoomLevel > 0) ? MATH.pow(1 - _zoomScale, _deltaZoomLevel) : MATH.pow(1 / (1 - _zoomScale), -_deltaZoomLevel),
+				_currentScale = 1 / _imageGroup.matrix.a,
+				_currentScaleAndZoom = _currentScale * (_zz - 1);
+			console.log(_zz - 1);
 			_zoom = level;
 			newp.x = x;
 			newp.y = y;
 			newp = newp.matrixTransform(_imageGroup.tag.getScreenCTM().inverse());
 			newp.x = round(newp.x);
 			newp.y = round(newp.y);
-			var _newX = round(_currentX - (XX2 - newp.x) * _zoomScale * _deltaZoomLevel, _decimals),
-				_newY = round(_currentY + (YY2 - newp.y) * _zoomScale * _deltaZoomLevel, _decimals);
+			var _newX = round(_currentX + ((XX2 - x) * _currentScaleAndZoom), _decimals),
+				_newY = round(_currentY - ((YY2 - y) * _currentScaleAndZoom), _decimals);
 			_updateCurrentCoords(_newX, _newY);
 			_imageGroup.matrix = _imageGroup.matrix.translate(-(newp.x * (_z-1)), -(newp.y * (_z-1)));
 			_imageGroup.matrix.a = _imageGroup.matrix.d = MATH.min(round(_imageGroup.matrix.a * _z * 10000) / 10000, 1);
@@ -425,7 +431,9 @@ var App = (function() {
 		},
 		_click = function(e) {
 			// se ho cliccato su un disegno lo evidenzio, con bordo proporzionale allo zoom corrente
-			_cache.log();
+			if (e.target.id === "dashboard") {
+				_cache.log();
+			}
 		},
 		_mouseend = function() {
 			_mouseX = 0;
@@ -447,7 +455,7 @@ var App = (function() {
 			}
 		},
 		__mouseWheel = function() {
-			_zoomTo(this[0] > 0 ? _zoom - 1 : _zoom + 1, this[1], this[2], _currentX);
+			_zoomTo(this[0] > 0 ? _zoom - 1 : _zoom + 1, this[1], this[2]);
 			_zoomable = true;
 		},
 		_mouseWheel = function (e) {	// TODO: Test browser
@@ -502,10 +510,10 @@ var App = (function() {
 			isNew = isNew || false;
 			if (_imagesVisibleIds.indexOf(draw.id) === -1) {
 				console.log(["aggiungo", draw]);
-				if (_imagesVisibleIds.length)
-					if (isNew)
+				if (_imagesVisibleIds.length) {
+					if (isNew) {
 						_imageGroup.tag.insertBefore(draw.data, _imageGroup.tag.firstChild);
-					else {
+					} else {
 						_imagesVisibleIds = _imagesVisibleIds.sort(function(a,b){return a-b});
 						var index = _imagesVisibleIds.indexOf(draw.id);
 						if (index === _imagesVisibleIds.length)
@@ -513,8 +521,9 @@ var App = (function() {
 						else
 							_imageGroup.tag.insertBefore(draw.data, DOCUMENT.getElementById(_imagesVisibleIds[index + 1]));
 					}
-				else
+				} else {
 					_imageGroup.tag.appendChild(draw.data);
+				}
 				_imagesVisibleIds.push(draw.id);
 				_cache.add(draw.id, draw);
 			}
@@ -531,20 +540,19 @@ var App = (function() {
 			var draw;
 			for (var i = 0, l = draws.length; i < l; i++) {
 				draw = draws[i];
+				if (_cache.exist(draw.id)) continue;
 				draw.x = draw.x - _currentX + XX2;
 				draw.y = draw.y - _currentY + YY2;
-				//console.log(draw);
 				addDraw(draw);
 			}
 		},
 		addDraw = function(draw, replace) {	// OK	aggiunge e salva un disegno passato dall editor o dal socket
-			console.log(["ricevuto: ", draw]);
 			if (!draw || !draw.id) return false;
 			var _drawExist = _cache.exist(draw.id);
 			if (!_drawExist || replace) {
 				_drawExist && _removeDraw(draw.id, true);
 				var _newDraw = DOCUMENT.createElementNS("http://www.w3.org/2000/svg", "image");
-				_newDraw.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", draw.data);
+				_newDraw.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", draw.base64);
 				_newDraw.setAttribute('x', draw.x - _imageGroup.matrix.e);	// necessario sottrarre il delta del matrix perchè la posizione viene applicata sul <g>, e non sul <svg>
 				_newDraw.setAttribute('y', draw.y - _imageGroup.matrix.f);
 				_newDraw.setAttribute('width', draw.w);
@@ -1251,10 +1259,8 @@ var App = (function() {
 				h		: draw.h,
 				maxX	: draw.coordX + draw.w,
 				maxY	: draw.coordY + draw.h,
-				base64	: draw.data
+				base64	: draw.base64
 			};
-			console.log("salvo: ", data);
-			debugger;
 			Socket.emit("editor save", data);
 		},
 		_save = function() {	// TODO : CREDO OK
@@ -1272,7 +1278,7 @@ var App = (function() {
 					_savedDraw.data = undefined;
 					delete _savedDraw.oldX;
 					delete _savedDraw.oldY;
-					_savedDraw.data = _tempCanvas.toDataURL("image/png");
+					_savedDraw.base64 = _tempCanvas.toDataURL("image/png");
 					_savedDraw.x = _savedDraw.minX;
 					_savedDraw.y = _savedDraw.minY;
 					_savedDraw.w = _savedDraw.maxX - _savedDraw.minX;

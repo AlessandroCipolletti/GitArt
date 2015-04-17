@@ -84,7 +84,7 @@ io.on('connection', function(socket) {
 				draws.forEach(function(draw) {
 					var ris = {
 						id		: draw._id,
-						data	: draw.base64,
+						base64	: draw.base64,
 						w		: draw.w,
 						h		: draw.h,
 						x		: draw.x,
