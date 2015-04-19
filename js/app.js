@@ -232,7 +232,9 @@ var App = (function() {
 	Dashboard = (function() {
 		var _dom, _imageGroup = {}, _$buttonModify, _zoomLabel, _$zoomLabelDoms, _$coordsLabel, _$allDom,
 		_draggable = true, _isMouseDown = false, _zoomable = true,
-		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 3, _socketCallsEnCours = 0,
+		_zoomScaleLevelsDown = [ 1, 0.88, 0.7744, 0.681472, 0.59969536, 0.5277319168, 0.464404086783, 0.408675596397, 0.359634524806, 0.316478381829, 0.278500976009, 0.245080858888, 0.215671155822, 0.189790617123, 0.167015743068, 0.146973853900, 0.129336991432, 0.113816552460, 0.100158566165, 0.088139538225 ],
+		_zoomScaleLevelsUp = [ 1, 1.136363636364, 1.291322314050, 1.467411720511, 1.667513318762, 1.894901498594, 2.153297157493, 2.446928588060, 2.780600668250, 3.159773486648, 3.590651689372, 4.080286010650, 4.636688648466, 5.268964373257, 5.987459515065, 6.803931267119, 7.731740076272, 8.786068268491, 9.984168486921, 11.34564600787 ],
+		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 2, _socketCallsEnCours = 0,
 		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 400, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
 		
 		_cache = (function() {
@@ -356,18 +358,23 @@ var App = (function() {
 			}
 			_deltaDragX = _deltaDragY = 0;
 		},
-		_zoomTo = function(level, x, y) {	// OK, porco dio
+		ZOOM = function() {
+			_zoomTo(_zoom + 1, XX2 , YY);
+		},
+		_zoomTo = function(level, x, y) {	// "OK", porco dio
 			// posso provare a correggere gli arrotondamenti facendo i calcoli fissando un numero di decimali
-			// 0.08813953822521545 11.345646007865245
 			if (level === _zoom || level > _zoomMax || level < 1) return;
-			var x = x || XX2,
-				y = y || YY2,
+			var x = typeof x === "undefined" ? XX2 : x,
+				y = typeof y === "undefined" ? YY2 : y,
 				_deltaZoomLevel = level - _zoom,
 				newp = _dom.createSVGPoint(),
-				_zz = (_deltaZoomLevel > 0) ? MATH.pow(1 - _zoomScale, -_deltaZoomLevel) : MATH.pow(1 / (1 - _zoomScale), _deltaZoomLevel)
-				_z = (_deltaZoomLevel > 0) ? MATH.pow(1 - _zoomScale, _deltaZoomLevel) : MATH.pow(1 / (1 - _zoomScale), -_deltaZoomLevel),
+				//_zz = (_deltaZoomLevel > 0) ? MATH.pow(1 - _zoomScale, -_deltaZoomLevel) : MATH.pow(1 / (1 - _zoomScale), _deltaZoomLevel),
+				//_z = (_deltaZoomLevel > 0) ? MATH.pow(1 - _zoomScale, _deltaZoomLevel) : MATH.pow(1 / (1 - _zoomScale), -_deltaZoomLevel),
+				_scaleLevelIndex = MATH.abs(_deltaZoomLevel),
+				_zz = (_deltaZoomLevel > 0) ? _zoomScaleLevelsUp[_scaleLevelIndex] : _zoomScaleLevelsDown[_scaleLevelIndex],
+				_z = (_deltaZoomLevel > 0) ? _zoomScaleLevelsDown[_scaleLevelIndex] : _zoomScaleLevelsUp[_scaleLevelIndex],
 				_currentScale = 1 / _imageGroup.matrix.a,
-				_currentScaleAndZoom = _currentScale * (_zz - 1);
+				_currentScaleAndZoom = _currentScale * round(_zz - 1, 12);
 			_zoom = level;
 			newp.x = x;
 			newp.y = y;
@@ -378,11 +385,10 @@ var App = (function() {
 				_newY = round(_currentY - ((YY2 - y) * _currentScaleAndZoom), _decimals);
 			_updateCurrentCoords(_newX, _newY);
 			_imageGroup.matrix = _imageGroup.matrix.translate(-(newp.x * (_z-1)), -(newp.y * (_z-1)));
-			_imageGroup.matrix.a = _imageGroup.matrix.d = MATH.min(round(_imageGroup.matrix.a * _z * 10000) / 10000, 1);
-			_imageGroup.matrix.a >= 0.99 && (_imageGroup.matrix.a = _imageGroup.matrix.d = 1);
+			_imageGroup.matrix.a = _imageGroup.matrix.d = _zoomScaleLevelsDown[_zoom - 1];
 			_setMatrix(_imageGroup.tag, _imageGroup.matrix);
 			_updateCacheForZoom(_z, x, y);
-			(_deltaZoomLevel > 0) && _fillScreen(); 		// dopo lo zoom e l'aggiornamento delle imm, scarico e visualizzo le nuove. necessario solo se sto rimpicciolendo la schermata.
+			(_deltaZoomLevel > 0) && _fillScreen(); 	// dopo lo zoom e l'aggiornamento delle imm, scarico e visualizzo le nuove. necessario solo se sto rimpicciolendo la schermata.
 			_zoomLabel.textContent = [round(100 - (95 / _zoomMax) * (level - 1)), "%"].join('');
 		},
 		_drag = function(dx, dy, forceLoad) {	// OK. dx dy sono le differenze in px, non in coordinate (bisogna tenere conto dello zoom)
@@ -431,7 +437,8 @@ var App = (function() {
 		_click = function(e) {
 			// se ho cliccato su un disegno lo evidenzio, con bordo proporzionale allo zoom corrente
 			if (e.target.id === "dashboard") {
-				_cache.log();
+				//_cache.log();
+				console.log([_imageGroup.tag]);
 			}
 		},
 		_mouseend = function() {
@@ -497,37 +504,6 @@ var App = (function() {
 			_addEvents();
 			_$allDom.fadeIn("fast");
 		},
-		_removeDraw = function(id, del) {	// OK
-			console.log("rimuovo:" + id);
-			var _oldDraw = DOCUMENT.getElementById(id);
-			(del || false) && _cache.del(id);
-			_imagesVisibleIds.splice(_imagesVisibleIds.indexOf(id), 1)
-			_oldDraw && _imageGroup.tag.removeChild(_oldDraw);
-		},
-		_appendDraw = function(draw, isNew) {	// aggiunge alla dashboard un svg image già elaborato 
-			// TODO l'ordine degli id non viene preso correttamente
-			if (!draw || !draw.id) return false;
-			isNew = isNew || false;
-			if (_imagesVisibleIds.indexOf(draw.id) === -1) {
-				console.log(["aggiungo", draw]);
-				if (_imagesVisibleIds.length) {
-					if (isNew) {
-						_imageGroup.tag.insertBefore(draw.data, _imageGroup.tag.firstChild);
-					} else {
-						_imagesVisibleIds = _imagesVisibleIds.sort(function(a,b){return a-b});
-						var index = _imagesVisibleIds.indexOf(draw.id);
-						if (index === _imagesVisibleIds.length)
-							_imageGroup.tag.appendChild(draw.data);
-						else
-							_imageGroup.tag.insertBefore(draw.data, DOCUMENT.getElementById(_imagesVisibleIds[index + 1]));
-					}
-				} else {
-					_imageGroup.tag.appendChild(draw.data);
-				}
-				_imagesVisibleIds.push(draw.id);
-				_cache.add(draw.id, draw);
-			}
-		},
 		onSocketMessage = function(data) {
 			if (["end", "none", "error"].indexOf(data) >= 0) {
 				_socketCallsEnCours--;
@@ -537,12 +513,13 @@ var App = (function() {
 		},
 		_addDraws = function(draws) {	// aggiunge uno ad uno i disegni ricevuti dal socket
 			console.log("disegni ricevuti: " + draws.length);
-			var draw;
+			var draw,
+				scale = _imageGroup.matrix.a;
 			for (var i = 0, l = draws.length; i < l; i++) {
 				draw = draws[i];
 				if (_cache.exist(draw.id)) continue;	// questo controllo dovrebbe essere inutile, ma meglio evitarsi il lavoro di aggiungere un disegno per sbaglio
-				draw.x = draw.x - _currentX + XX2;
-				draw.y = draw.y + _currentY + YY2;
+				draw.x = round((draw.x - _currentX) * scale + XX2);
+				draw.y = round((_currentY - draw.y) * scale - YY2);
 				addDraw(draw);
 			}
 		},
@@ -571,6 +548,37 @@ var App = (function() {
 				_newDraw = draw = undefined;
 			}
 		    return true;
+		},
+		_removeDraw = function(id, del) {	// OK
+			console.log("rimuovo:" + id);
+			(del || false) && _cache.del(id);
+			_imagesVisibleIds.splice(_imagesVisibleIds.indexOf(id), 1);
+			var _oldDraw = DOCUMENT.getElementById(id);
+			_oldDraw && _imageGroup.tag.removeChild(_oldDraw);
+		},
+		_appendDraw = function(draw, isNew) {	// aggiunge alla dashboard un svg image già elaborato 
+			// TODO l'ordine degli id non viene preso correttamente
+			if (!draw || !draw.id) return false;
+			isNew = isNew || false;
+			if (_imagesVisibleIds.indexOf(draw.id) === -1) {
+				console.log(["aggiungo", draw]);
+				if (_imagesVisibleIds.length) {
+					if (isNew) {
+						_imageGroup.tag.insertBefore(draw.data, _imageGroup.tag.firstChild);
+					} else {
+						_imagesVisibleIds = _imagesVisibleIds.sort(function(a,b){return a-b});
+						var index = _imagesVisibleIds.indexOf(draw.id);
+						if (index === _imagesVisibleIds.length)
+							_imageGroup.tag.appendChild(draw.data);
+						else
+							_imageGroup.tag.insertBefore(draw.data, DOCUMENT.getElementById(_imagesVisibleIds[index + 1]));
+					}
+				} else {
+					_imageGroup.tag.appendChild(draw.data);
+				}
+				_imagesVisibleIds.push(draw.id);
+				_cache.add(draw.id, draw);
+			}
 		},
 		_getVisibleArea = function() {	// OK - in coordinate assolute
 			// TODO - per adesso cambio qui la dimensione dell'area da scaricare per scaricare tutto in un colpo,
@@ -670,7 +678,8 @@ var App = (function() {
 			getCoords		: getCoords,
 			onSocketMessage	: onSocketMessage,
 			onResize		: onResize,
-			init			: init
+			init			: init,
+			zoom			: ZOOM
 		};
 	})(),
 	
