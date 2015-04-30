@@ -37,13 +37,13 @@ var App = (function() {
 	})(),
 	
 	Info = (function() {
-		var get_len = (function(len) {
+		var get_len = function(len) {
 			return 'ita'; 	// TODO da implementare per filtrare le lingue non supportate, e restituire il formato a 3 caratteri
-		})(WINDOW.navigator.language);
+		};
 		return {
 			name 		: "Social.Art",
 			version 	: "0.5",
-			lenguage	: get_len,
+			lenguage	: get_len(WINDOW.navigator.language),
 			macOS		: navigator.platform.toUpperCase().indexOf('MAC') !== -1,
 			firefox		: /Firefox/i.test(navigator.userAgent)
 		}
@@ -259,6 +259,7 @@ var App = (function() {
 				add(id, data);
 			},
 			del = function(id) {
+				_list[id] = undefined;
 				delete _list[id];
 				_updateIds();
 			},
@@ -318,20 +319,17 @@ var App = (function() {
 			_currentY = y;
 			_updateCoordsLabel(x, y);
 		},
-		_setMatrix = function(element, matrix) {
-			element.setAttribute("transform", "matrix(" + matrix.a + "," + matrix.b + "," + matrix.c + "," + matrix.d + "," + round(matrix.e) + "," + round(matrix.f) + ")");
+		_setMatrix = function(matrix) {
+			_imageGroup.tag.setAttribute("transform", ["matrix(", matrix.a, ",", matrix.b, ",", matrix.c, ",", matrix.d, ",", round(matrix.e), ",", round(matrix.f), ")"].join(''));
 		},
 		_buttonModifyClick = function() {
 			_zoomTo(1);
 			Editor.show();
 		},
-		_isVisible = function(img) {	// OK
-			// deve considerare non solo la schermata visibile sullo schermo, ma anche le schermate intorno come sorta di "cache"
-			// la zona "visibile" sarà quella attualmente a video, più una schermata per ogni lato
-			return (img.x + img.w > -XX && img.y + img.h > -YY && img.x < DXX && img.y < DYY) ? true : false;
+		_isVisible = function(img) {	// OK - la zona "visibile" è quella attualmente a video, più una schermata per ogni lato, come sorta di 'cache'
+			return (img.x + img.w > -XX && img.y + img.h > -YY && img.x < DXX && img.y < DYY);
 		},
-		_updateCacheForDrag = function(dx, dy) {	// OK - aggiorna le posizioni relative salvate nella cache, e rimuove i non più visibili
-			// TODO verificare se non convenga salvare in locale solo le cordinate assolute di ogni disegno, e trasformarle in relative solo al momento della visualizzazione
+		_updateCacheForDrag = function(dx, dy) {	// TODO da rifare con pxx pxy pxw pxh - aggiorna le posizioni relative salvate nella cache, e rimuove i non più visibili
 			var _ids = _cache.ids();
 			for (var i = _ids.length; i--; ) {
 				var _img = _cache.get(_ids[i]);
@@ -341,8 +339,7 @@ var App = (function() {
 				_imagesVisibleIds.indexOf(_img.id) >= 0 && !_isVisible(_img) && _removeDraw(_img.id, false);
 			}
 		},
-		_updateCacheForZoom = function(z, zx, zy) {	// OK!!
-			// ripensare se conviene avere le coordinate assolute o relative in cache, anche in base a isVisible
+		_updateCacheForZoom = function(z, zx, zy) {	// TODO - da rifare con pxx pxy pxw pxh
 			var _ids = _cache.ids(),
 				offset;
 			for (var i = _ids.length; i--; ) {
@@ -386,7 +383,7 @@ var App = (function() {
 			_updateCurrentCoords(_newX, _newY);
 			_imageGroup.matrix = _imageGroup.matrix.translate(-(newp.x * (_z-1)), -(newp.y * (_z-1)));
 			_imageGroup.matrix.a = _imageGroup.matrix.d = _zoomScaleLevelsDown[_zoom - 1];
-			_setMatrix(_imageGroup.tag, _imageGroup.matrix);
+			_setMatrix(_imageGroup.matrix);
 			_updateCacheForZoom(_z, x, y);
 			(_deltaZoomLevel > 0) && _fillScreen(); 	// dopo lo zoom e l'aggiornamento delle imm, scarico e visualizzo le nuove. necessario solo se sto rimpicciolendo la schermata.
 			_zoomLabel.textContent = [round(100 - (95 / _zoomMax) * (level - 1)), "%"].join('');
@@ -398,7 +395,7 @@ var App = (function() {
 			_deltaDragX = _deltaDragX + dx;
 			_deltaDragY = _deltaDragY + dy;
 			_imageGroup.matrix = _imageGroup.matrix.translate(_deltaX, _deltaY);
-			_setMatrix(_imageGroup.tag, _imageGroup.matrix);
+			_setMatrix(_imageGroup.matrix);
 			var _newX = round(_currentX - _deltaX, _decimals),
 				_newY = round(_currentY + _deltaY, _decimals);
 			_updateCurrentCoords(_newX, _newY);
@@ -437,8 +434,8 @@ var App = (function() {
 		_click = function(e) {
 			// se ho cliccato su un disegno lo evidenzio, con bordo proporzionale allo zoom corrente
 			if (e.target.id === "dashboard") {
-				//_cache.log();
-				console.log([_imageGroup.tag]);
+				_cache.log();
+				//console.log([_imageGroup.tag]);
 			}
 		},
 		_mouseend = function() {
@@ -518,8 +515,8 @@ var App = (function() {
 			for (var i = 0, l = draws.length; i < l; i++) {
 				draw = draws[i];
 				if (_cache.exist(draw.id)) continue;	// questo controllo dovrebbe essere inutile, ma meglio evitarsi il lavoro di aggiungere un disegno per sbaglio
-				draw.x = round((draw.x - _currentX) * scale + XX2);
-				draw.y = round((_currentY - draw.y) * scale - YY2);
+				draw.pxx = round((draw.x - _currentX) * scale + XX2);
+				draw.pxy = round((_currentY - draw.y) * scale - YY2);
 				addDraw(draw);
 			}
 		},
@@ -527,11 +524,13 @@ var App = (function() {
 			if (!draw || !draw.id) return false;
 			var _drawExist = _cache.exist(draw.id);
 			if (!_drawExist || replace) {
+				draw.pxw = draw.w * _imageGroup.matrix.a;
+				draw.pxh = draw.h * _imageGroup.matrix.a;
 				_drawExist && _removeDraw(draw.id, true);
 				var _newDraw = DOCUMENT.createElementNS("http://www.w3.org/2000/svg", "image");
 				_newDraw.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", draw.base64);
-				_newDraw.setAttribute('x', draw.x - _imageGroup.matrix.e);	// necessario sottrarre il delta del matrix perchè la posizione viene applicata sul <g>, e non sul <svg>
-				_newDraw.setAttribute('y', draw.y - _imageGroup.matrix.f);
+				_newDraw.setAttribute('x', draw.pxx - _imageGroup.matrix.e);	// necessario sottrarre il delta del matrix perchè la posizione viene applicata sul <g>, e non sul <svg>
+				_newDraw.setAttribute('y', draw.pxy - _imageGroup.matrix.f);
 				_newDraw.setAttribute('width', draw.w);
 				_newDraw.setAttribute('height', draw.h);
 				_newDraw.id = draw.id;
@@ -566,6 +565,7 @@ var App = (function() {
 					if (isNew) {
 						_imageGroup.tag.insertBefore(draw.data, _imageGroup.tag.firstChild);
 					} else {
+						// TODO mettere la funzione di ordinamento come variabile di utils globale
 						_imagesVisibleIds = _imagesVisibleIds.sort(function(a,b){return a-b});
 						var index = _imagesVisibleIds.indexOf(draw.id);
 						if (index === _imagesVisibleIds.length)
@@ -1254,6 +1254,8 @@ var App = (function() {
 					y		: _savedDraw.y,
 					w		: _savedDraw.w,
 					h		: _savedDraw.h,
+					pxx		: _savedDraw.pxx,
+					pxy		: _savedDraw.pxy,
 					id		: data.id
 				};
 				Dashboard.addDraw(_draw, true);
@@ -1271,12 +1273,12 @@ var App = (function() {
 		},
 		_saveToServer = function(draw) {
 			var data = {
-				x		: draw.coordX,
-				y		: draw.coordY,
+				x		: draw.x,
+				y		: draw.y,
 				w		: draw.w,
 				h		: draw.h,
-				maxX	: draw.coordX + draw.w,
-				maxY	: draw.coordY + draw.h,
+				maxX	: draw.x + draw.w,
+				maxY	: draw.y + draw.h,
 				base64	: draw.base64
 			};
 			Socket.emit("editor save", data);
@@ -1297,12 +1299,12 @@ var App = (function() {
 					delete _savedDraw.oldX;
 					delete _savedDraw.oldY;
 					_savedDraw.base64 = _tempCanvas.toDataURL("image/png");
-					_savedDraw.x = _savedDraw.minX;
-					_savedDraw.y = _savedDraw.minY;
+					_savedDraw.pxx = _savedDraw.minX;
+					_savedDraw.pxy = _savedDraw.minY;
 					_savedDraw.w = _savedDraw.maxX - _savedDraw.minX;
 					_savedDraw.h = _savedDraw.maxY - _savedDraw.minY;
-					_savedDraw.coordX = _coords.x - XX2 + _savedDraw.minX;	// coordinate del px in alto a sx rispetto alle coordinate correnti della lavagna
-					_savedDraw.coordY = _coords.y - YY2 + _savedDraw.minY;
+					_savedDraw.x = _coords.x - XX2 + _savedDraw.minX;	// coordinate del px in alto a sx rispetto alle coordinate correnti della lavagna
+					_savedDraw.y = _coords.y - YY2 + _savedDraw.minY;
 					_saveToServer(_savedDraw);
 				}
 			}
