@@ -602,7 +602,7 @@ body {
 			background-color: black;
 		}
 		#dashboardCoords span {
-			height 20px;
+			height: 20px;
 			line-height: 20px;
 			font-size: 10px;
 		}
