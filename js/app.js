@@ -16,6 +16,8 @@ var App = (function() {
 			n = n.toString(16);
 			return (n.length === 1 ? "0" + n : n);
 		},
+		orderNumberUp = function(a, b) { return a - b; },
+		orderNumberDown = function(a, b) { return b - a; },
 		preventDefault = function(e) {
 			e.preventDefault();
 		},
@@ -231,7 +233,7 @@ var App = (function() {
 	
 	Dashboard = (function() {
 		var _dom, _imageGroup = {}, _$buttonModify, _zoomLabel, _$zoomLabelDoms, _$coordsLabel, _$allDom,
-		_draggable = true, _isMouseDown = false, _zoomable = true,
+		_draggable = true, _isMouseDown = false, _zoomable = true, _allVisibleCoordX = [], _allVisibleCoordY = [], _groupCoordX = 0, _groupCoordY = 0,
 		_zoomScaleLevelsDown = [ 1, 0.88, 0.7744, 0.681472, 0.59969536, 0.5277319168, 0.464404086783, 0.408675596397, 0.359634524806, 0.316478381829, 0.278500976009, 0.245080858888, 0.215671155822, 0.189790617123, 0.167015743068, 0.146973853900, 0.129336991432, 0.113816552460, 0.100158566165, 0.088139538225 ],
 		_zoomScaleLevelsUp = [ 1, 1.136363636364, 1.291322314050, 1.467411720511, 1.667513318762, 1.894901498594, 2.153297157493, 2.446928588060, 2.780600668250, 3.159773486648, 3.590651689372, 4.080286010650, 4.636688648466, 5.268964373257, 5.987459515065, 6.803931267119, 7.731740076272, 8.786068268491, 9.984168486921, 11.34564600787 ],
 		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 2, _socketCallsEnCours = 0,
@@ -329,30 +331,56 @@ var App = (function() {
 		_isVisible = function(img) {	// OK - la zona "visibile" è quella attualmente a video, più una schermata per ogni lato, come sorta di 'cache'
 			return (img.x + img.w > -XX && img.y + img.h > -YY && img.x < DXX && img.y < DYY);
 		},
+		_updateGroupCoords= function() {
+			_allVisibleCoordX.sort(orderNumberUp);
+			_allVisibleCoordY.sort(orderNumberUp);
+			_groupCoordX = _allVisibleCoordX[0] || 0;
+			_groupCoordY = _allVisibleCoordY[0] || 0;
+		},
 		_updateCacheForDrag = function(dx, dy) {	// TODO da rifare con pxx pxy pxw pxh - aggiorna le posizioni relative salvate nella cache, e rimuove i non più visibili
 			var _ids = _cache.ids();
+			_allVisibleCoordX = [];
+			_allVisibleCoordY = [];
 			for (var i = _ids.length; i--; ) {
 				var _img = _cache.get(_ids[i]);
-				_img.x = _img.x + dx;
-				_img.y = _img.y + dy;
+				_img.pxx = _img.pxx + dx;
+				_img.pxy = _img.pxy + dy;
+				if (_isVisible(_img)) {
+					_allVisibleCoordX.push(_img.pxx);
+					_allVisibleCoordY.push(_img.pxy);
+					_img.isVisible = true;
+				} else if (_imagesVisibleIds.indexOf(_img.id) >= 0) {
+					_img.isVisible = false;
+					_removeDraw(_img.id, false);
+				}
 				_cache.set(_img.id, _img);
-				_imagesVisibleIds.indexOf(_img.id) >= 0 && !_isVisible(_img) && _removeDraw(_img.id, false);
 			}
+			_updateGroupCoords();
 		},
 		_updateCacheForZoom = function(z, zx, zy) {	// TODO - da rifare con pxx pxy pxw pxh
 			var _ids = _cache.ids(),
 				offset;
+			_allVisibleCoordX = [];
+			_allVisibleCoordY = [];
 			for (var i = _ids.length; i--; ) {
 				var _img = _cache.get(_ids[i]);
-				_img.x = _img.x + _deltaDragX;
-				_img.x = round(_img.x +(zx - _img.x) * (1 - z), _decimals);
-				_img.y = _img.y + _deltaDragY;
-				_img.y = round(_img.y + (zy - _img.y) * (1 - z), _decimals);
-				_img.w = round(_img.w * z, 2);
-				_img.h = round(_img.h * z, 2);
+				_img.pxx = _img.pxx + _deltaDragX;
+				_img.pxx = round(_img.pxx +(zx - _img.pxx) * (1 - z), _decimals);
+				_img.pxy = _img.pxy + _deltaDragY;
+				_img.pxy = round(_img.pxy + (zy - _img.pxy) * (1 - z), _decimals);
+				_img.pxw = round(_img.pxw * z, _decimals);
+				_img.pxh = round(_img.pxh * z, _decimals);
+				if (_isVisible(_img)) {
+					_allVisibleCoordX.push(_img.pxx);
+					_allVisibleCoordY.push(_img.pxy);
+					_img.isVisible = true;
+				} else if (_imagesVisibleIds.indexOf(_img.id) >= 0) {
+					_img.isVisible = false;
+					_removeDraw(_img.id, false);
+				}
 				_cache.set(_img.id, _img);
-				_imagesVisibleIds.indexOf(_img.id) >= 0 && !_isVisible(_img) && _removeDraw(_img.id, false);
 			}
+			_updateGroupCoords();
 			_deltaDragX = _deltaDragY = 0;
 		},
 		ZOOM = function() {
@@ -515,8 +543,8 @@ var App = (function() {
 			for (var i = 0, l = draws.length; i < l; i++) {
 				draw = draws[i];
 				if (_cache.exist(draw.id)) continue;	// questo controllo dovrebbe essere inutile, ma meglio evitarsi il lavoro di aggiungere un disegno per sbaglio
-				draw.pxx = round((draw.x - _currentX) * scale + XX2);
-				draw.pxy = round((_currentY - draw.y) * scale - YY2);
+				draw.pxx = round((draw.x - _currentX) * scale + XX2, 1);
+				draw.pxy = round(-(_currentY - draw.y) * scale + YY2, 1);
 				addDraw(draw);
 			}
 		},
@@ -524,8 +552,8 @@ var App = (function() {
 			if (!draw || !draw.id) return false;
 			var _drawExist = _cache.exist(draw.id);
 			if (!_drawExist || replace) {
-				draw.pxw = draw.w * _imageGroup.matrix.a;
-				draw.pxh = draw.h * _imageGroup.matrix.a;
+				draw.pxw = round(draw.w * _imageGroup.matrix.a, 1);
+				draw.pxh = round(draw.h * _imageGroup.matrix.a, 1);
 				_drawExist && _removeDraw(draw.id, true);
 				var _newDraw = DOCUMENT.createElementNS("http://www.w3.org/2000/svg", "image");
 				_newDraw.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", draw.base64);
@@ -577,6 +605,7 @@ var App = (function() {
 					_imageGroup.tag.appendChild(draw.data);
 				}
 				_imagesVisibleIds.push(draw.id);
+				draw.isVisible = true;
 				_cache.add(draw.id, draw);
 			}
 		},
@@ -625,6 +654,7 @@ var App = (function() {
 			// calcolo la differenza in px invece che coord, e chiamo _drag. se si inseriscono coordinate poco distanti dalle attuali, forzo l'aggiornamento e il caricamento delle nuove
 			if (utils.areEmpty([x, y])) return;
 			if (_currentX === x && _currentY === y)	{ // se ho richiamato le stesse coordinate attuali, refresho la pagina per cercare le cose non ancora in cache
+				// TODO forse questo non è necessario perchè potrei pushare i disegni direttamente dal server
 				_fillScreen();
 			} else {									// altrimenti faccio drag, che fa tutto il resto
 				var dx = round((x - _currentX) * _imageGroup.matrix.a),
