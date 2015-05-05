@@ -329,25 +329,34 @@ var App = (function() {
 			Editor.show();
 		},
 		_isVisible = function(img) {	// OK - la zona "visibile" è quella attualmente a video, più una schermata per ogni lato, come sorta di 'cache'
-			return (img.x + img.w > -XX && img.y + img.h > -YY && img.x < DXX && img.y < DYY);
+			return (img.pxx + img.pxw > -XX && img.pxy + img.pxh > -YY && img.pxx < DXX && img.pxy < DYY);
 		},
-		_updateGroupCoords= function() {
+		_updateGroupCoords = function() {
+			_allVisibleCoordX = [];
+			_allVisibleCoordY = [];
+			var _ids = _cache.ids();
+			for (var i = _ids.length; i--; ) {
+				var _img = _cache.get(_ids[i]);
+				//_img.pxx = _img.pxx + _deltaDragX;
+				//_img.pxy = _img.pxy + _deltaDragY;
+				if (_img.isVisible) {
+					_allVisibleCoordX.push(_img.pxx);
+					_allVisibleCoordY.push(_img.pxy);
+				}
+			}
 			_allVisibleCoordX.sort(orderNumberUp);
 			_allVisibleCoordY.sort(orderNumberUp);
 			_groupCoordX = _allVisibleCoordX[0] || 0;
 			_groupCoordY = _allVisibleCoordY[0] || 0;
+			console.log(_allVisibleCoordX, _allVisibleCoordY);
 		},
-		_updateCacheForDrag = function(dx, dy) {	// TODO da rifare con pxx pxy pxw pxh - aggiorna le posizioni relative salvate nella cache, e rimuove i non più visibili
+		_updateCacheForDrag = function(dx, dy) {	// OK
 			var _ids = _cache.ids();
-			_allVisibleCoordX = [];
-			_allVisibleCoordY = [];
 			for (var i = _ids.length; i--; ) {
 				var _img = _cache.get(_ids[i]);
 				_img.pxx = _img.pxx + dx;
 				_img.pxy = _img.pxy + dy;
 				if (_isVisible(_img)) {
-					_allVisibleCoordX.push(_img.pxx);
-					_allVisibleCoordY.push(_img.pxy);
 					_img.isVisible = true;
 				} else if (_imagesVisibleIds.indexOf(_img.id) >= 0) {
 					_img.isVisible = false;
@@ -355,24 +364,19 @@ var App = (function() {
 				}
 				_cache.set(_img.id, _img);
 			}
-			_updateGroupCoords();
 		},
-		_updateCacheForZoom = function(z, zx, zy) {	// TODO - da rifare con pxx pxy pxw pxh
-			var _ids = _cache.ids(),
-				offset;
-			_allVisibleCoordX = [];
-			_allVisibleCoordY = [];
+		_updateCacheForZoom = function(z, zx, zy) {	// KOOOOOO TODO 
+			console.log(arguments);
+			var _ids = _cache.ids();
 			for (var i = _ids.length; i--; ) {
 				var _img = _cache.get(_ids[i]);
 				_img.pxx = _img.pxx + _deltaDragX;
-				_img.pxx = round(_img.pxx +(zx - _img.pxx) * (1 - z), _decimals);
+				_img.pxx = round(_img.pxx + (zx - _img.pxx) * (1 - z), _decimals);
 				_img.pxy = _img.pxy + _deltaDragY;
 				_img.pxy = round(_img.pxy + (zy - _img.pxy) * (1 - z), _decimals);
 				_img.pxw = round(_img.pxw * z, _decimals);
 				_img.pxh = round(_img.pxh * z, _decimals);
 				if (_isVisible(_img)) {
-					_allVisibleCoordX.push(_img.pxx);
-					_allVisibleCoordY.push(_img.pxy);
 					_img.isVisible = true;
 				} else if (_imagesVisibleIds.indexOf(_img.id) >= 0) {
 					_img.isVisible = false;
@@ -380,11 +384,7 @@ var App = (function() {
 				}
 				_cache.set(_img.id, _img);
 			}
-			_updateGroupCoords();
 			_deltaDragX = _deltaDragY = 0;
-		},
-		ZOOM = function() {
-			_zoomTo(_zoom + 1, XX2 , YY);
 		},
 		_zoomTo = function(level, x, y) {	// "OK", porco dio
 			// posso provare a correggere gli arrotondamenti facendo i calcoli fissando un numero di decimali
@@ -463,6 +463,7 @@ var App = (function() {
 			// se ho cliccato su un disegno lo evidenzio, con bordo proporzionale allo zoom corrente
 			if (e.target.id === "dashboard") {
 				_cache.log();
+				_updateGroupCoords();
 				//console.log([_imageGroup.tag]);
 			}
 		},
@@ -545,20 +546,26 @@ var App = (function() {
 				if (_cache.exist(draw.id)) continue;	// questo controllo dovrebbe essere inutile, ma meglio evitarsi il lavoro di aggiungere un disegno per sbaglio
 				draw.pxx = round((draw.x - _currentX) * scale + XX2, 1);
 				draw.pxy = round(-(_currentY - draw.y) * scale + YY2, 1);
-				addDraw(draw);
+				addDraw(draw, false);
 			}
 		},
-		addDraw = function(draw, replace) {	// OK	aggiunge e salva un disegno passato dall editor o dal socket
+		ZOOM = function() {
+			_zoomTo(_zoom + 18, XX2 , YY);
+		},
+		addDraw = function(draw, isNew, replace) {	// OK	aggiunge e salva un disegno passato dall editor o dal socket
 			if (!draw || !draw.id) return false;
-			var _drawExist = _cache.exist(draw.id);
+			var _drawExist = _cache.exist(draw.id),
+				isNew = isNew || false;
 			if (!_drawExist || replace) {
+				_updateGroupCoords();
 				draw.pxw = round(draw.w * _imageGroup.matrix.a, 1);
 				draw.pxh = round(draw.h * _imageGroup.matrix.a, 1);
 				_drawExist && _removeDraw(draw.id, true);
 				var _newDraw = DOCUMENT.createElementNS("http://www.w3.org/2000/svg", "image");
 				_newDraw.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", draw.base64);
-				_newDraw.setAttribute('x', draw.pxx - _imageGroup.matrix.e);	// necessario sottrarre il delta del matrix perchè la posizione viene applicata sul <g>, e non sul <svg>
-				_newDraw.setAttribute('y', draw.pxy - _imageGroup.matrix.f);
+				// necessario sottrarre il delta del matrix perchè la posizione viene applicata sul <g>, e non sul <svg>
+				_newDraw.setAttribute('x', draw.pxx - _groupCoordX);
+				_newDraw.setAttribute('y', draw.pxy - _groupCoordY);
 				_newDraw.setAttribute('width', draw.w);
 				_newDraw.setAttribute('height', draw.h);
 				_newDraw.id = draw.id;
@@ -571,7 +578,7 @@ var App = (function() {
 				delete draw.coordY;
 				delete draw.base64;
 				draw.data = _newDraw;
-				_appendDraw(draw, true);
+				_appendDraw(draw, isNew);
 				_newDraw = draw = undefined;
 			}
 		    return true;
@@ -586,7 +593,7 @@ var App = (function() {
 		_appendDraw = function(draw, isNew) {	// aggiunge alla dashboard un svg image già elaborato 
 			// TODO l'ordine degli id non viene preso correttamente
 			if (!draw || !draw.id) return false;
-			isNew = isNew || false;
+			var isNew = isNew || false;
 			if (_imagesVisibleIds.indexOf(draw.id) === -1) {
 				console.log(["aggiungo", draw]);
 				if (_imagesVisibleIds.length) {
@@ -594,7 +601,11 @@ var App = (function() {
 						_imageGroup.tag.insertBefore(draw.data, _imageGroup.tag.firstChild);
 					} else {
 						// TODO mettere la funzione di ordinamento come variabile di utils globale
-						_imagesVisibleIds = _imagesVisibleIds.sort(function(a,b){return a-b});
+						_imagesVisibleIds = _imagesVisibleIds.sort(function(a,b) {
+							if (a < b) return -1;
+							if (a > b) return +1;
+							return 0;
+						});
 						var index = _imagesVisibleIds.indexOf(draw.id);
 						if (index === _imagesVisibleIds.length)
 							_imageGroup.tag.appendChild(draw.data);
@@ -1288,7 +1299,7 @@ var App = (function() {
 					pxy		: _savedDraw.pxy,
 					id		: data.id
 				};
-				Dashboard.addDraw(_draw, true);
+				Dashboard.addDraw(_draw, true, true);
 				_savedDraw = undefined;
 				_clear();
 				_step = [];
@@ -1334,7 +1345,7 @@ var App = (function() {
 					_savedDraw.w = _savedDraw.maxX - _savedDraw.minX;
 					_savedDraw.h = _savedDraw.maxY - _savedDraw.minY;
 					_savedDraw.x = _coords.x - XX2 + _savedDraw.minX;	// coordinate del px in alto a sx rispetto alle coordinate correnti della lavagna
-					_savedDraw.y = _coords.y - YY2 + _savedDraw.minY;
+					_savedDraw.y = _coords.y + YY2 + _savedDraw.minY;
 					_saveToServer(_savedDraw);
 				}
 			}
