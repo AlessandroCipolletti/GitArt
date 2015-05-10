@@ -334,6 +334,10 @@ var App = (function() {
 		_updateGroupCoords = function() {
 			_allVisibleCoordX = [];
 			_allVisibleCoordY = [];
+			if (_deltaDragX !== 0 || _deltaDragY !== 0) {
+				_updateCacheForDrag(_deltaDragX, _deltaDragY);
+				_deltaDragX = _deltaDragY = 0;
+			}
 			var _ids = _cache.ids();
 			for (var i = _ids.length; i--; ) {
 				var _img = _cache.get(_ids[i]);
@@ -346,9 +350,9 @@ var App = (function() {
 			}
 			_allVisibleCoordX.sort(orderNumberUp);
 			_allVisibleCoordY.sort(orderNumberUp);
-			_groupCoordX = _allVisibleCoordX[0] || 0;
-			_groupCoordY = _allVisibleCoordY[0] || 0;
-			console.log(_allVisibleCoordX, _allVisibleCoordY);
+			_groupCoordX = _allVisibleCoordX[0] || _imageGroup.matrix.e || 0;
+			_groupCoordY = _allVisibleCoordY[0] || _imageGroup.matrix.f|| 0;
+			//console.log(_allVisibleCoordX, _allVisibleCoordY);
 		},
 		_updateCacheForDrag = function(dx, dy) {	// OK
 			var _ids = _cache.ids();
@@ -366,7 +370,7 @@ var App = (function() {
 			}
 		},
 		_updateCacheForZoom = function(z, zx, zy) {	// KOOOOOO TODO 
-			console.log(arguments);
+			//console.log(arguments);
 			var _ids = _cache.ids();
 			for (var i = _ids.length; i--; ) {
 				var _img = _cache.get(_ids[i]);
@@ -538,14 +542,16 @@ var App = (function() {
 			}
 		},
 		_addDraws = function(draws) {	// aggiunge uno ad uno i disegni ricevuti dal socket
-			console.log("disegni ricevuti: " + draws.length);
+			//console.log("disegni ricevuti: " + draws.length);
 			var draw,
 				scale = _imageGroup.matrix.a;
 			for (var i = 0, l = draws.length; i < l; i++) {
 				draw = draws[i];
-				if (_cache.exist(draw.id)) continue;	// questo controllo dovrebbe essere inutile, ma meglio evitarsi il lavoro di aggiungere un disegno per sbaglio
+				if (_cache.exist(draw.id)) continue;	// questo controllo dovrebbe essere inutile, ma meglio evitarsi il lavoro di aggiungere un disegno per sbaglio				
 				draw.pxx = round((draw.x - _currentX) * scale + XX2, 1);
-				draw.pxy = round(-(_currentY - draw.y) * scale + YY2, 1);
+				console.log(_currentY, draw.y, YY2);
+				draw.pxy = round((_currentY - draw.y) * scale + YY2, 1);
+				console.log("disegno ricevuto. calcolo coordinate in px: ", draw.pxx, draw.pxy, " e lo scale attuale è: ", scale);
 				addDraw(draw, false);
 			}
 		},
@@ -555,17 +561,21 @@ var App = (function() {
 		addDraw = function(draw, isNew, replace) {	// OK	aggiunge e salva un disegno passato dall editor o dal socket
 			if (!draw || !draw.id) return false;
 			var _drawExist = _cache.exist(draw.id),
-				isNew = isNew || false;
+				isNew = isNew || false,
+				scale = _imageGroup.matrix.a;
 			if (!_drawExist || replace) {
 				_updateGroupCoords();
-				draw.pxw = round(draw.w * _imageGroup.matrix.a, 1);
-				draw.pxh = round(draw.h * _imageGroup.matrix.a, 1);
+				draw.pxw = round(draw.w * scale, _decimals);
+				draw.pxh = round(draw.h * scale, _decimals);
 				_drawExist && _removeDraw(draw.id, true);
 				var _newDraw = DOCUMENT.createElementNS("http://www.w3.org/2000/svg", "image");
 				_newDraw.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", draw.base64);
 				// necessario sottrarre il delta del matrix perchè la posizione viene applicata sul <g>, e non sul <svg>
-				_newDraw.setAttribute('x', draw.pxx - _groupCoordX);
-				_newDraw.setAttribute('y', draw.pxy - _groupCoordY);
+				_newDraw.setAttribute('x', round((draw.pxx - _groupCoordX) / scale, _decimals));
+				_newDraw.setAttribute('y', round((draw.pxy - _groupCoordY) / scale, _decimals));
+				console.log("GroupX:", _groupCoordX, "GroupY:", _groupCoordY, "DrawY:", _newDraw.getAttribute('y'));
+				console.log(_imageGroup.tag);
+				debugger;
 				_newDraw.setAttribute('width', draw.w);
 				_newDraw.setAttribute('height', draw.h);
 				_newDraw.id = draw.id;
@@ -615,6 +625,7 @@ var App = (function() {
 				} else {
 					_imageGroup.tag.appendChild(draw.data);
 				}
+				//console.log("ho visualizzato il disegno con coordinate: ", draw.pxx, draw.pxy, " e lo scale attuale è: ", _imageGroup.matrix.a);
 				_imagesVisibleIds.push(draw.id);
 				draw.isVisible = true;
 				_cache.add(draw.id, draw);
@@ -631,7 +642,7 @@ var App = (function() {
 			return {
 				minX : _currentX - XXZ,
 				maxX : _currentX + XXZ,
-				minY : _currentY - YYZ,
+				minY : _currentY - YYZ * 10,
 				maxY : _currentY + YYZ,
 				x : _currentX,
 				y : _currentY
