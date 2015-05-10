@@ -4,6 +4,7 @@ var io = require('socket.io')(http);
 var mongojs = require('mongojs');
 var ObjectId = mongojs.ObjectId;
 
+
 var db = mongojs("localhost/socialart", ["draws"]);
 
 db.on('error', function(err) {
@@ -14,32 +15,10 @@ db.on('ready', function() {
     console.log('database connected');
 });
 
-/*
-	// TEST
-	var ids = [, "552c5551148d64da0837719a"];
-	for (var i = ids.length; i--; ) {
-		ids[i] = ObjectId(ids[i]);
-	}
-	db.draws.find({
-		_id : { $nin: ids},
-	}, function(err, draws) {
-		if (err || !draws) {
-			console.log("query error: ", err);
-		} else if (draws.length === 0) {
-			console.log("0 rows found");
-		} else {
-			draws.forEach(function(draw) {
-				console.log(draw._id);
-			});
-		}
-	});
-*/
-
-
 io.on('connection', function(socket) {
-  
-	socket.on('editor save', function(data) {
 	
+	socket.emittedDraws = [];
+	socket.on('editor save', function(data) {
 		var draw = JSON.parse(data);
 		console.log(draw);
 		var a = db.draws.insert(draw, function(err, item) {
@@ -48,11 +27,9 @@ io.on('connection', function(socket) {
 				id: item._id
 			}));
 		});
-
 	});
 	
 	socket.on('dashboard drag', function(data) {
-		
 		data = JSON.parse(data);
 		var areaMinX = data.area.minX + 50,
 			areaMinY = data.area.minY + 50,
@@ -64,6 +41,7 @@ io.on('connection', function(socket) {
 		for (var i = _ids.length; i--; ) {
 			_ids[i].length && ids.push(ObjectId(_ids[i]));
 		}
+		ids = ids.concat(socket.emittedDraws);
 
 		db.draws.find({
 			_id		: { $nin : ids },
@@ -72,7 +50,6 @@ io.on('connection', function(socket) {
 			maxX	: { $gt : areaMinX },
 			maxY	: { $gt : areaMinY }
 		}, {}, {limit: 100}, function(err, draws) {
-			
 			if (err || !draws) {
 				console.log("query error: ", err);
 				socket.emit('dashboard drag', "error");
@@ -82,6 +59,7 @@ io.on('connection', function(socket) {
 			} else {
 				console.log(draws.length + " rows found");
 				draws.forEach(function(draw) {
+					socket.emittedDraws.push(draw._id);
 					var ris = {
 						id		: draw._id,
 						base64	: draw.base64,
@@ -97,9 +75,7 @@ io.on('connection', function(socket) {
 				console.log("\n");
 				socket.emit('dashboard drag', "end");
 			}
-		
-		});
-			
+		});	
 	});
 	
 });
