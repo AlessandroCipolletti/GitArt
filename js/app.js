@@ -18,6 +18,11 @@ var App = (function() {
 		},
 		orderNumberUp = function(a, b) { return a - b; },
 		orderNumberDown = function(a, b) { return b - a; },
+		orderStringDown = function(a,b) {
+			if (a < b) return +1;
+			if (a > b) return -1;
+			return 0;
+		},
 		preventDefault = function(e) {
 			e.preventDefault();
 		},
@@ -232,8 +237,8 @@ var App = (function() {
 	})(),
 	
 	Dashboard = (function() {
-		var _dom, _imageGroup = {}, _$buttonModify, _zoomLabel, _$zoomLabelDoms, _$coordsLabel, _$allDom,
-		_draggable = true, _isMouseDown = false, _zoomable = true, _allVisibleCoordX = [], _allVisibleCoordY = [], _groupCoordX = 0, _groupCoordY = 0,
+		var _dom, _imageGroup = {}, _originPointDom = false, _$buttonModify, _zoomLabel, _$zoomLabelDoms, _$coordsLabel, _$allDom, 
+		_draggable = true, _isMouseDown = false, _zoomable = true, _groupCoordX = 0, _groupCoordY = 0,
 		_zoomScaleLevelsDown = [ 1, 0.88, 0.7744, 0.681472, 0.59969536, 0.5277319168, 0.464404086783, 0.408675596397, 0.359634524806, 0.316478381829, 0.278500976009, 0.245080858888, 0.215671155822, 0.189790617123, 0.167015743068, 0.146973853900, 0.129336991432, 0.113816552460, 0.100158566165, 0.088139538225 ],
 		_zoomScaleLevelsUp = [ 1, 1.136363636364, 1.291322314050, 1.467411720511, 1.667513318762, 1.894901498594, 2.153297157493, 2.446928588060, 2.780600668250, 3.159773486648, 3.590651689372, 4.080286010650, 4.636688648466, 5.268964373257, 5.987459515065, 6.803931267119, 7.731740076272, 8.786068268491, 9.984168486921, 11.34564600787 ],
 		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 2, _socketCallsEnCours = 0,
@@ -281,27 +286,37 @@ var App = (function() {
 				if (force || _ids.length > _maxCacheSize) {
 					
 				}
+			},
+			allInv = function() {
+				for (var i = _ids.length; i--; ) {
+					_list[_ids[i]].isVisible = false;
+				}
 			};
 			return {
-				get		: get,
-				set		: set,
-				add		: add,
-				del		: del,
-				log		: log,
-				ids		: ids,
-				length	: length,
-				exist	: exist,
-				clean	: clean
+				get				: get,
+				set				: set,
+				add				: add,
+				del				: del,
+				log				: log,
+				ids				: ids,
+				length			: length,
+				exist			: exist,
+				clean			: clean,
+				setAllInvisible	: allInv
 			};
 		})(),
 		_imagesVisibleIds = [],
+		_initDomGroup = function() {
+			var g = DOCUMENT.createElementNS("http://www.w3.org/2000/svg", "g");
+			g.setAttribute('id', 'imageGroup');
+			_dom.appendChild(g);
+			_imageGroup.tag = g;
+		},
 		_initDom = function() {
 			_dom = DOCUMENT.querySelector("#dashboard");
 			_zoomLabel = DOCUMENT.querySelector("#zoomLabel");
 			_$zoomLabelDoms = $("#zoomLabel, #zoomLabelCont");
-			_imageGroup = {
-				tag	: DOCUMENT.querySelector("#imageGroup")
-			}
+			_initDomGroup();
 			_imageGroup.matrix = _imageGroup.tag.getCTM();
 			_$buttonModify = $("#showEditor");
 			_$allDom = $("#showEditor, #zoomLabel, #zoomLabelCont");
@@ -331,29 +346,6 @@ var App = (function() {
 		_isVisible = function(img) {	// OK - la zona "visibile" è quella attualmente a video, più una schermata per ogni lato, come sorta di 'cache'
 			return (img.pxx + img.pxw > -XX && img.pxy + img.pxh > -YY && img.pxx < DXX && img.pxy < DYY);
 		},
-		_updateGroupCoords = function() {
-			_allVisibleCoordX = [];
-			_allVisibleCoordY = [];
-			if (_deltaDragX !== 0 || _deltaDragY !== 0) {
-				_updateCacheForDrag(_deltaDragX, _deltaDragY);
-				_deltaDragX = _deltaDragY = 0;
-			}
-			var _ids = _cache.ids();
-			for (var i = _ids.length; i--; ) {
-				var _img = _cache.get(_ids[i]);
-				//_img.pxx = _img.pxx + _deltaDragX;
-				//_img.pxy = _img.pxy + _deltaDragY;
-				if (_img.isVisible) {
-					_allVisibleCoordX.push(_img.pxx);
-					_allVisibleCoordY.push(_img.pxy);
-				}
-			}
-			_allVisibleCoordX.sort(orderNumberUp);
-			_allVisibleCoordY.sort(orderNumberUp);
-			_groupCoordX = _allVisibleCoordX[0] || _imageGroup.matrix.e || 0;
-			_groupCoordY = _allVisibleCoordY[0] || _imageGroup.matrix.f|| 0;
-			//console.log(_allVisibleCoordX, _allVisibleCoordY);
-		},
 		_updateCacheForDrag = function(dx, dy) {	// OK
 			var _ids = _cache.ids();
 			for (var i = _ids.length; i--; ) {
@@ -369,9 +361,10 @@ var App = (function() {
 				_cache.set(_img.id, _img);
 			}
 		},
-		_updateCacheForZoom = function(z, zx, zy) {	// KOOOOOO TODO 
-			//console.log(arguments);
+		_updateCacheForZoom = function(z, zx, zy) {	// OK
 			var _ids = _cache.ids();
+			_groupCoordX = round(_groupCoordX + (zx - _groupCoordX) * (1 - z), _decimals);
+			_groupCoordY = round(_groupCoordY + (zy - _groupCoordY) * (1 - z), _decimals);
 			for (var i = _ids.length; i--; ) {
 				var _img = _cache.get(_ids[i]);
 				_img.pxx = _img.pxx + _deltaDragX;
@@ -424,6 +417,8 @@ var App = (function() {
 			if (dx === 0 && dy === 0) return;
 			var _deltaX = round(dx / _imageGroup.matrix.a, _decimals),
 				_deltaY = round(dy / _imageGroup.matrix.a, _decimals);
+			_groupCoordX = _groupCoordX + dx;
+			_groupCoordY = _groupCoordY + dy;
 			_deltaDragX = _deltaDragX + dx;
 			_deltaDragY = _deltaDragY + dy;
 			_imageGroup.matrix = _imageGroup.matrix.translate(_deltaX, _deltaY);
@@ -436,6 +431,165 @@ var App = (function() {
 				_fillScreen(); // dopo il drag e l'aggiornamento delle imm, scarico e visualizzo le nuove
 				_deltaDragX = _deltaDragY = 0;
 			}
+		},
+		onSocketMessage = function(data) {
+			if (["end", "none", "error"].indexOf(data) >= 0) {
+				_socketCallsEnCours--;
+			} else {
+				_addDraws(JSON.parse(data));
+			}
+		},
+		_addDraws = function(draws) {	// aggiunge uno ad uno i disegni ricevuti dal socket
+			//console.log("disegni ricevuti: " + draws.length);
+			var draw,
+				scale = _imageGroup.matrix.a;
+			for (var i = 0, l = draws.length; i < l; i++) {
+				draw = draws[i];
+				if (_cache.exist(draw.id)) continue;	// questo controllo dovrebbe essere inutile, ma meglio evitarsi il lavoro di aggiungere un disegno per sbaglio				
+				draw.pxx = round((draw.x - _currentX) * scale + XX2, 1);
+				draw.pxy = round((_currentY - draw.y) * scale + YY2, 1);
+				addDraw(draw);
+				_imageGroup.matrix = _imageGroup.tag.getCTM();
+				_imageGroup.matrix = _imageGroup.matrix.translate(0, 0);
+				_setMatrix(_imageGroup.matrix);
+			}
+		},
+		ZOOM = function() {
+			_zoomTo(_zoom + 18, XX2 , YY);
+		},
+		addDraw = function(draw, replace) {	// OK	aggiunge e salva un disegno passato dall editor o dal socket
+			if (!draw || !draw.id) return false;
+			var _drawExist = _cache.exist(draw.id),
+				scale = _imageGroup.matrix.a;
+			if (!_drawExist || replace) {
+				draw.pxw = round(draw.w * scale, _decimals);
+				draw.pxh = round(draw.h * scale, _decimals);
+				_drawExist && _removeDraw(draw.id, true);
+				var _newDraw = DOCUMENT.createElementNS("http://www.w3.org/2000/svg", "image");
+				_newDraw.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", draw.base64);
+				//console.log(_groupCoordX, _groupCoordY, draw.pxx, draw.pxy, round((draw.pxx - _groupCoordX) / scale, _decimals), round((draw.pxy - _groupCoordY) / scale, _decimals));
+				_newDraw.setAttribute('x', round((draw.pxx - _groupCoordX) / scale, _decimals));
+				_newDraw.setAttribute('y', round((draw.pxy - _groupCoordY) / scale, _decimals));
+				_newDraw.setAttribute('width', draw.w);
+				_newDraw.setAttribute('height', draw.h);
+				_newDraw.id = draw.id;
+				draw.base64 = undefined;
+				delete draw.minX;
+				delete draw.minY;
+				delete draw.maxX;
+				delete draw.maxY;
+				delete draw.coordX;
+				delete draw.coordY;
+				delete draw.base64;
+				draw.data = _newDraw;
+				_appendDraw(draw);
+				_newDraw = draw = undefined;
+			}
+		    return true;
+		},
+		_removeDraw = function(id, del) {	// OK
+			console.log("rimuovo:" + id);
+			(del || false) && _cache.del(id);
+			_imagesVisibleIds.splice(_imagesVisibleIds.indexOf(id), 1);
+			var _oldDraw = DOCUMENT.getElementById(id);
+			_oldDraw && _imageGroup.tag.removeChild(_oldDraw);
+		},
+		_appendDraw = function(draw) {	// aggiunge alla dashboard un svg image già elaborato 
+			if (!draw || !draw.id) return false;
+			if (_imagesVisibleIds.indexOf(draw.id) === -1) {
+				console.log(["aggiungo", draw]);
+				_imagesVisibleIds.push(draw.id);
+				_imagesVisibleIds = _imagesVisibleIds.sort(orderStringDown);
+				var index = _imagesVisibleIds.indexOf(draw.id) + 1;
+				if (index < _imagesVisibleIds.length) {
+					_imageGroup.tag.insertBefore(draw.data, DOCUMENT.getElementById(_imagesVisibleIds[index]));
+				} else {
+					_imageGroup.tag.appendChild(draw.data);
+				}
+				draw.isVisible = true;
+				_cache.add(draw.id, draw);
+			}
+		},
+		_getVisibleArea = function() {	// OK - in coordinate assolute
+			// TODO - per adesso cambio qui la dimensione dell'area da scaricare per scaricare tutto in un colpo,
+			//			ma in futuro sarà meglio fare prima la chiamata per la schermata a video e poi un'altra chiamata per la zona intorno
+			var z = _imageGroup.matrix.a,
+				XX2Z = XX2 / z,
+				YY2Z = YY2 / z;
+			var XXZ = XX / z,
+				YYZ = YY / z;
+			return {
+				minX : _currentX - XXZ,
+				maxX : _currentX + XXZ,
+				minY : _currentY - YYZ,
+				maxY : _currentY + YYZ,
+				x : _currentX,
+				y : _currentY
+			}
+		},
+		_findInCache = function() {
+			var _ids = _cache.ids().filter(function(i) {return _imagesVisibleIds.indexOf(i) < 0}),
+				_draw;
+			for (var i = _ids.length; i--; ) {
+				_draw = _cache.get(_ids[i]);
+				(_isVisible(_draw)) && _appendDraw(_draw);
+			}
+		},
+		_callSocketFor = function(area, notIds) { // OK
+			_socketCallsEnCours++;
+			Socket.emit("dashboard drag", {
+				"area": area,
+				"ids": notIds
+			});
+		},
+		_fillScreen = function() {	// OK
+			// !! si occupa solo di mostrare disegni. non deve rimuovere niente. eventuali drag e zoom sono già stati fatti
+			// 1° calcola la porzione da mostrare in base alle coordinate correnti, zoom e dimensioni schermo
+			var _area = _getVisibleArea();
+			// 2° visualizza subito quello che c'è già in cache
+			_findInCache();
+			// 3° avvia trasferimenti di ciò che non è in cache e che deve comparire
+			_callSocketFor(_area, _cache.ids());
+		},
+		goToXY = function(x, y) {	// OK
+			// calcolo la differenza in px invece che coord, e chiamo _drag. se si inseriscono coordinate poco distanti dalle attuali, forzo l'aggiornamento e il caricamento delle nuove
+			if (utils.areEmpty([x, y])) return;
+			var dx = round((x - _currentX) * _imageGroup.matrix.a),
+				dy = round((y - _currentY) * _imageGroup.matrix.a);
+			_updateCurrentCoords(x, y);
+			_imagesVisibleIds = [];
+			_cache.setAllInvisible();
+			_dom.removeChild(_imageGroup.tag);
+			_originPointDom = _imageGroup.tag = null;
+			_initDomGroup();
+			_originPointDom = point = document.createElementNS("http://www.w3.org/2000/svg", 'rect');
+			_originPointDom.setAttributeNS(null, 'x', 0);
+			_originPointDom.setAttributeNS(null, 'y', 0);
+			_originPointDom.setAttributeNS(null, 'height', '0');
+			_originPointDom.setAttributeNS(null, 'width', '0');
+			_imageGroup.tag.appendChild(_originPointDom);
+			_updateCacheForDrag(dx, dy);
+			_deltaDragX = _deltaDragY = 0;
+			_fillScreen();
+		}, 
+		goToDraw = function(id) {	// TODO
+			// precarica (se necessario) il disegno e poi va alle sue coordinate. in questo modo sono sicuro che sarà visualizzato per primo (importante visto che è stato richiesto specificamente)
+			if (utils.isEmpty(id)) return;
+			if (_cache.exist(id)) {
+				var draw = _cache.get(id);
+			} else {
+				// TODO: prendo via socket il disegno passando l'id,
+				var draw = {
+					id	: id,
+					x	: 0,
+					y	: 0,
+					w	: 0,
+					h	: 0,
+					data: {}
+				};
+				_cache.set(id, draw);
+			}
+			goToXY(draw.x + draw.w / 2, draw.y + draw.h / 2);
 		},
 		_mousedown = function(e) {
 			if (e.button !== 0) return false;
@@ -467,8 +621,6 @@ var App = (function() {
 			// se ho cliccato su un disegno lo evidenzio, con bordo proporzionale allo zoom corrente
 			if (e.target.id === "dashboard") {
 				_cache.log();
-				_updateGroupCoords();
-				//console.log([_imageGroup.tag]);
 			}
 		},
 		_mouseend = function() {
@@ -533,176 +685,6 @@ var App = (function() {
 			_draggable = _zoomable = true;
 			_addEvents();
 			_$allDom.fadeIn("fast");
-		},
-		onSocketMessage = function(data) {
-			if (["end", "none", "error"].indexOf(data) >= 0) {
-				_socketCallsEnCours--;
-			} else {
-				_addDraws(JSON.parse(data));
-			}
-		},
-		_addDraws = function(draws) {	// aggiunge uno ad uno i disegni ricevuti dal socket
-			//console.log("disegni ricevuti: " + draws.length);
-			var draw,
-				scale = _imageGroup.matrix.a;
-			for (var i = 0, l = draws.length; i < l; i++) {
-				draw = draws[i];
-				if (_cache.exist(draw.id)) continue;	// questo controllo dovrebbe essere inutile, ma meglio evitarsi il lavoro di aggiungere un disegno per sbaglio				
-				draw.pxx = round((draw.x - _currentX) * scale + XX2, 1);
-				console.log(_currentY, draw.y, YY2);
-				draw.pxy = round((_currentY - draw.y) * scale + YY2, 1);
-				console.log("disegno ricevuto. calcolo coordinate in px: ", draw.pxx, draw.pxy, " e lo scale attuale è: ", scale);
-				addDraw(draw, false);
-			}
-		},
-		ZOOM = function() {
-			_zoomTo(_zoom + 18, XX2 , YY);
-		},
-		addDraw = function(draw, isNew, replace) {	// OK	aggiunge e salva un disegno passato dall editor o dal socket
-			if (!draw || !draw.id) return false;
-			var _drawExist = _cache.exist(draw.id),
-				isNew = isNew || false,
-				scale = _imageGroup.matrix.a;
-			if (!_drawExist || replace) {
-				_updateGroupCoords();
-				draw.pxw = round(draw.w * scale, _decimals);
-				draw.pxh = round(draw.h * scale, _decimals);
-				_drawExist && _removeDraw(draw.id, true);
-				var _newDraw = DOCUMENT.createElementNS("http://www.w3.org/2000/svg", "image");
-				_newDraw.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", draw.base64);
-				// necessario sottrarre il delta del matrix perchè la posizione viene applicata sul <g>, e non sul <svg>
-				_newDraw.setAttribute('x', round((draw.pxx - _groupCoordX) / scale, _decimals));
-				_newDraw.setAttribute('y', round((draw.pxy - _groupCoordY) / scale, _decimals));
-				console.log("GroupX:", _groupCoordX, "GroupY:", _groupCoordY, "DrawY:", _newDraw.getAttribute('y'));
-				console.log(_imageGroup.tag);
-				debugger;
-				_newDraw.setAttribute('width', draw.w);
-				_newDraw.setAttribute('height', draw.h);
-				_newDraw.id = draw.id;
-				draw.base64 = undefined;
-				delete draw.minX;
-				delete draw.minY;
-				delete draw.maxX;
-				delete draw.maxY;
-				delete draw.coordX;
-				delete draw.coordY;
-				delete draw.base64;
-				draw.data = _newDraw;
-				_appendDraw(draw, isNew);
-				_newDraw = draw = undefined;
-			}
-		    return true;
-		},
-		_removeDraw = function(id, del) {	// OK
-			console.log("rimuovo:" + id);
-			(del || false) && _cache.del(id);
-			_imagesVisibleIds.splice(_imagesVisibleIds.indexOf(id), 1);
-			var _oldDraw = DOCUMENT.getElementById(id);
-			_oldDraw && _imageGroup.tag.removeChild(_oldDraw);
-		},
-		_appendDraw = function(draw, isNew) {	// aggiunge alla dashboard un svg image già elaborato 
-			// TODO l'ordine degli id non viene preso correttamente
-			if (!draw || !draw.id) return false;
-			var isNew = isNew || false;
-			if (_imagesVisibleIds.indexOf(draw.id) === -1) {
-				console.log(["aggiungo", draw]);
-				if (_imagesVisibleIds.length) {
-					if (isNew) {
-						_imageGroup.tag.insertBefore(draw.data, _imageGroup.tag.firstChild);
-					} else {
-						// TODO mettere la funzione di ordinamento come variabile di utils globale
-						_imagesVisibleIds = _imagesVisibleIds.sort(function(a,b) {
-							if (a < b) return -1;
-							if (a > b) return +1;
-							return 0;
-						});
-						var index = _imagesVisibleIds.indexOf(draw.id);
-						if (index === _imagesVisibleIds.length)
-							_imageGroup.tag.appendChild(draw.data);
-						else
-							_imageGroup.tag.insertBefore(draw.data, DOCUMENT.getElementById(_imagesVisibleIds[index + 1]));
-					}
-				} else {
-					_imageGroup.tag.appendChild(draw.data);
-				}
-				//console.log("ho visualizzato il disegno con coordinate: ", draw.pxx, draw.pxy, " e lo scale attuale è: ", _imageGroup.matrix.a);
-				_imagesVisibleIds.push(draw.id);
-				draw.isVisible = true;
-				_cache.add(draw.id, draw);
-			}
-		},
-		_getVisibleArea = function() {	// OK - in coordinate assolute
-			// TODO - per adesso cambio qui la dimensione dell'area da scaricare per scaricare tutto in un colpo,
-			//			ma in futuro sarà meglio fare prima la chiamata per la schermata a video e poi un'altra chiamata per la zona intorno
-			var z = _imageGroup.matrix.a,
-				XX2Z = XX2 / z,
-				YY2Z = YY2 / z;
-			var XXZ = XX / z,
-				YYZ = YY / z;
-			return {
-				minX : _currentX - XXZ,
-				maxX : _currentX + XXZ,
-				minY : _currentY - YYZ * 10,
-				maxY : _currentY + YYZ,
-				x : _currentX,
-				y : _currentY
-			}
-		},
-		_findInCache = function() {
-			var _ids = _cache.ids().filter(function(i) {return _imagesVisibleIds.indexOf(i) < 0}),
-				_draw;
-			for (var i = _ids.length; i--; ) {
-				_draw = _cache.get(_ids[i]);
-				(_isVisible(_draw)) && _appendDraw(_draw, false);
-			}
-		},
-		_callSocketFor = function(area, notIds) { // OK
-			_socketCallsEnCours++;
-			Socket.emit("dashboard drag", {
-				"area": area,
-				"ids": notIds
-			});
-		},
-		_fillScreen = function() {	// OK
-			// !! si occupa solo di mostrare disegni. non deve rimuovere niente. eventuali drag e zoom sono già stati fatti
-			// 1° calcola la porzione da mostrare in base alle coordinate correnti, zoom e dimensioni schermo
-			var _area = _getVisibleArea();
-			// 2° visualizza subito quello che c'è già in cache
-			_findInCache();
-			// 3° avvia trasferimenti di ciò che non è in cache e che deve comparire
-			_callSocketFor(_area, _cache.ids());
-		},
-		goToXY = function(x, y) {	// OK
-			// calcolo la differenza in px invece che coord, e chiamo _drag. se si inseriscono coordinate poco distanti dalle attuali, forzo l'aggiornamento e il caricamento delle nuove
-			if (utils.areEmpty([x, y])) return;
-			if (_currentX === x && _currentY === y)	{ // se ho richiamato le stesse coordinate attuali, refresho la pagina per cercare le cose non ancora in cache
-				// TODO forse questo non è necessario perchè potrei pushare i disegni direttamente dal server
-				_fillScreen();
-			} else {									// altrimenti faccio drag, che fa tutto il resto
-				var dx = round((x - _currentX) * _imageGroup.matrix.a),
-					dy = round((y - _currentY) * _imageGroup.matrix.a);
-				_updateCurrentCoords(x, y);
-				_drag(dx, dy, true);
-			}
-		}, 
-		goToDraw = function(id) {	// TODO
-			// precarica (se necessario) il disegno e poi va alle sue coordinate. in questo modo sono sicuro che sarà visualizzato per primo (importante visto che è stato richiesto specificamente)
-			if (utils.isEmpty(id)) return;
-			if (_cache.exist(id)) {
-				var draw = _cache.get(id);
-			} else {
-				// TODO: prendo via socket il disegno passando l'id,
-				var draw = {
-					id	: id,
-					x	: 0,
-					y	: 0,
-					w	: 0,
-					h	: 0,
-					data: {}
-				};
-				_cache.set(id, draw);
-			}
-			goToXY(draw.x + draw.w / 2, draw.y + draw.h / 2);
 		},
 		getCoords = function() {
 			return {
@@ -1310,7 +1292,7 @@ var App = (function() {
 					pxy		: _savedDraw.pxy,
 					id		: data.id
 				};
-				Dashboard.addDraw(_draw, true, true);
+				Dashboard.addDraw(_draw, true);
 				_savedDraw = undefined;
 				_clear();
 				_step = [];
@@ -1355,9 +1337,10 @@ var App = (function() {
 					_savedDraw.pxy = _savedDraw.minY;
 					_savedDraw.w = _savedDraw.maxX - _savedDraw.minX;
 					_savedDraw.h = _savedDraw.maxY - _savedDraw.minY;
-					_savedDraw.x = _coords.x - XX2 + _savedDraw.minX;	// coordinate del px in alto a sx rispetto alle coordinate correnti della lavagna
-					_savedDraw.y = _coords.y + YY2 + _savedDraw.minY;
+					_savedDraw.x = _savedDraw.minX - XX2 + _coords.x;	// coordinate del px in alto a sx rispetto alle coordinate correnti della lavagna
+					_savedDraw.y = _coords.y + (YY2 - _savedDraw.minY);
 					_saveToServer(_savedDraw);
+					console.log(_savedDraw, _coords, [XX2, YY2]);
 				}
 			}
 		},
