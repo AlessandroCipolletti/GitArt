@@ -461,9 +461,6 @@ var App = (function() {
 				_setMatrix(_imageGroup.matrix);
 			}
 		},
-		ZOOM = function() {
-			_zoomTo(_zoom + 18, XX2 , YY);
-		},
 		addDraw = function(draw, replace) {	// OK	aggiunge e salva un disegno passato dall editor o dal socket
 			if (!draw || !draw.id) return false;
 			var _drawExist = _cache.exist(draw.id),
@@ -719,8 +716,7 @@ var App = (function() {
 			getCoords		: getCoords,
 			onSocketMessage	: onSocketMessage,
 			onResize		: onResize,
-			init			: init,
-			zoom			: ZOOM
+			init			: init
 		};
 	})(),
 	
