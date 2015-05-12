@@ -344,7 +344,14 @@ var App = (function() {
 			Editor.show();
 		},
 		_isVisible = function(img) {	// OK - la zona "visibile" è quella attualmente a video, più una schermata per ogni lato, come sorta di 'cache'
-			return (img.pxx + img.pxw > -XX && img.pxy + img.pxh > -YY && img.pxx < DXX && img.pxy < DYY);
+			var z = _imageGroup.matrix.a,
+				deltaCoordX = 1.5 * XX / z,
+				deltaCoordY = 1.5 * YY / z;
+			return ((img.x + img.w > _currentX - deltaCoordX) &&	// left
+				(img.y - img.h < _currentY + deltaCoordY) &&		// top
+				(img.x < _currentX + deltaCoordX) &&				// right
+				(img.y > _currentY - deltaCoordY));					// bottom
+			//return (img.pxx + img.pxw > -XX && img.pxy + img.pxh > -YY && img.pxx < DXX && img.pxy < DYY);
 		},
 		_updateCacheForDrag = function(dx, dy) {	// OK
 			var _ids = _cache.ids();
