@@ -242,7 +242,7 @@ var App = (function() {
 		_zoomScaleLevelsDown = [ 1, 0.88, 0.7744, 0.681472, 0.59969536, 0.5277319168, 0.464404086783, 0.408675596397, 0.359634524806, 0.316478381829, 0.278500976009, 0.245080858888, 0.215671155822, 0.189790617123, 0.167015743068, 0.146973853900, 0.129336991432, 0.113816552460, 0.100158566165, 0.088139538225 ],
 		_zoomScaleLevelsUp = [ 1, 1.136363636364, 1.291322314050, 1.467411720511, 1.667513318762, 1.894901498594, 2.153297157493, 2.446928588060, 2.780600668250, 3.159773486648, 3.590651689372, 4.080286010650, 4.636688648466, 5.268964373257, 5.987459515065, 6.803931267119, 7.731740076272, 8.786068268491, 9.984168486921, 11.34564600787 ],
 		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 2, _socketCallsEnCours = 0,
-		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 400, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
+		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 200, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
 		
 		_cache = (function() {
 			var _list = {},
@@ -357,14 +357,10 @@ var App = (function() {
 			var _ids = _cache.ids();
 			for (var i = _ids.length; i--; ) {
 				var _img = _cache.get(_ids[i]);
-				_img.pxx = _img.pxx + dx;
-				_img.pxy = _img.pxy + dy;
-				if (_isVisible(_img)) {
-					_img.isVisible = true;
-				} else if (_imagesVisibleIds.indexOf(_img.id) >= 0) {
-					_img.isVisible = false;
-					_removeDraw(_img.id, false);
-				}
+				//_img.pxx = _img.pxx + dx;
+				//_img.pxy = _img.pxy + dy;
+				_img.isVisible = _isVisible(_img);
+				(_imagesVisibleIds.indexOf(_img.id) >= 0) && (!_img.isVisible) && _removeDraw(_img.id, false);
 				_cache.set(_img.id, _img);
 			}
 		},
@@ -374,18 +370,14 @@ var App = (function() {
 			_groupCoordY = round(_groupCoordY + (zy - _groupCoordY) * (1 - z), _decimals);
 			for (var i = _ids.length; i--; ) {
 				var _img = _cache.get(_ids[i]);
-				_img.pxx = _img.pxx + _deltaDragX;
-				_img.pxx = round(_img.pxx + (zx - _img.pxx) * (1 - z), _decimals);
-				_img.pxy = _img.pxy + _deltaDragY;
-				_img.pxy = round(_img.pxy + (zy - _img.pxy) * (1 - z), _decimals);
-				_img.pxw = round(_img.pxw * z, _decimals);
-				_img.pxh = round(_img.pxh * z, _decimals);
-				if (_isVisible(_img)) {
-					_img.isVisible = true;
-				} else if (_imagesVisibleIds.indexOf(_img.id) >= 0) {
-					_img.isVisible = false;
-					_removeDraw(_img.id, false);
-				}
+				//_img.pxx = _img.pxx + _deltaDragX;
+				//_img.pxx = round(_img.pxx + (zx - _img.pxx) * (1 - z), _decimals);
+				//_img.pxy = _img.pxy + _deltaDragY;
+				//_img.pxy = round(_img.pxy + (zy - _img.pxy) * (1 - z), _decimals);
+				//_img.pxw = round(_img.pxw * z, _decimals);
+				//_img.pxh = round(_img.pxh * z, _decimals);
+				_img.isVisible = _isVisible(_img);
+				(_imagesVisibleIds.indexOf(_img.id) >= 0) && (!_img.isVisible) && _removeDraw(_img.id, false);
 				_cache.set(_img.id, _img);
 			}
 			_deltaDragX = _deltaDragY = 0;
@@ -433,8 +425,8 @@ var App = (function() {
 			var _newX = round(_currentX - _deltaX, _decimals),
 				_newY = round(_currentY + _deltaY, _decimals);
 			_updateCurrentCoords(_newX, _newY);
+			_updateCacheForDrag(dx, dy);
 			if (forceLoad || MATH.abs(_deltaDragX) > _deltaDragMax || MATH.abs(_deltaDragY) > _deltaDragMax) {
-				_updateCacheForDrag(_deltaDragX, _deltaDragY);
 				_fillScreen(); // dopo il drag e l'aggiornamento delle imm, scarico e visualizzo le nuove
 				_deltaDragX = _deltaDragY = 0;
 			}
@@ -453,8 +445,8 @@ var App = (function() {
 			for (var i = 0, l = draws.length; i < l; i++) {
 				draw = draws[i];
 				if (_cache.exist(draw.id)) continue;	// questo controllo dovrebbe essere inutile, ma meglio evitarsi il lavoro di aggiungere un disegno per sbaglio				
-				draw.pxx = round((draw.x - _currentX) * scale + XX2, 1);
-				draw.pxy = round((_currentY - draw.y) * scale + YY2, 1);
+				//draw.pxx = round((draw.x - _currentX) * scale + XX2, 1);
+				//draw.pxy = round((_currentY - draw.y) * scale + YY2, 1);
 				addDraw(draw);
 				_imageGroup.matrix = _imageGroup.tag.getCTM();
 				_imageGroup.matrix = _imageGroup.matrix.translate(0, 0);
@@ -466,14 +458,15 @@ var App = (function() {
 			var _drawExist = _cache.exist(draw.id),
 				scale = _imageGroup.matrix.a;
 			if (!_drawExist || replace) {
-				draw.pxw = round(draw.w * scale, _decimals);
-				draw.pxh = round(draw.h * scale, _decimals);
+				//draw.pxw = round(draw.w * scale, _decimals);
+				//draw.pxh = round(draw.h * scale, _decimals);
 				_drawExist && _removeDraw(draw.id, true);
 				var _newDraw = DOCUMENT.createElementNS("http://www.w3.org/2000/svg", "image");
 				_newDraw.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", draw.base64);
-				//console.log(_groupCoordX, _groupCoordY, draw.pxx, draw.pxy, round((draw.pxx - _groupCoordX) / scale, _decimals), round((draw.pxy - _groupCoordY) / scale, _decimals));
-				_newDraw.setAttribute('x', round((draw.pxx - _groupCoordX) / scale, _decimals));
-				_newDraw.setAttribute('y', round((draw.pxy - _groupCoordY) / scale, _decimals));
+				//_newDraw.setAttribute('x', round((draw.pxx - _groupCoordX) / scale, _decimals));
+				//_newDraw.setAttribute('y', round((draw.pxy - _groupCoordY) / scale, _decimals));
+				_newDraw.setAttribute('x', round(((draw.x - _currentX) * scale + XX2 - _groupCoordX) / scale));
+				_newDraw.setAttribute('y', round(((_currentY - draw.y) * scale + YY2 - _groupCoordY) / scale));
 				_newDraw.setAttribute('width', draw.w);
 				_newDraw.setAttribute('height', draw.h);
 				_newDraw.id = draw.id;
@@ -609,9 +602,9 @@ var App = (function() {
 		},
 		__mousemove = function() {
 			_drag(this[0], this[1], false);
-			_draggable = true;
 			_mouseX = this[2];	// questo init lo metto qui perché se ci sono dei mousemove che vanno persi nell'attesa di requestAnimationFrame, i delta cords non vanno persi
 			_mouseY = this[3];
+			_draggable = true;
 		},
 		_mousemove = function(e) {
 			if (_isMouseDown && _draggable) {
@@ -1291,8 +1284,8 @@ var App = (function() {
 					y		: _savedDraw.y,
 					w		: _savedDraw.w,
 					h		: _savedDraw.h,
-					pxx		: _savedDraw.pxx,
-					pxy		: _savedDraw.pxy,
+					//pxx	: _savedDraw.pxx,
+					//pxy	: _savedDraw.pxy,
 					id		: data.id
 				};
 				Dashboard.addDraw(_draw, true);
@@ -1336,8 +1329,8 @@ var App = (function() {
 					delete _savedDraw.oldX;
 					delete _savedDraw.oldY;
 					_savedDraw.base64 = _tempCanvas.toDataURL("image/png");
-					_savedDraw.pxx = _savedDraw.minX;
-					_savedDraw.pxy = _savedDraw.minY;
+					//_savedDraw.pxx = _savedDraw.minX;
+					//_savedDraw.pxy = _savedDraw.minY;
 					_savedDraw.w = _savedDraw.maxX - _savedDraw.minX;
 					_savedDraw.h = _savedDraw.maxY - _savedDraw.minY;
 					_savedDraw.x = _savedDraw.minX - XX2 + _coords.x;	// coordinate del px in alto a sx rispetto alle coordinate correnti della lavagna
