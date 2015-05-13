@@ -241,7 +241,7 @@ var App = (function() {
 		_draggable = true, _isMouseDown = false, _zoomable = true, _groupCoordX = 0, _groupCoordY = 0,
 		_zoomScaleLevelsDown = [ 1, 0.88, 0.7744, 0.681472, 0.59969536, 0.5277319168, 0.464404086783, 0.408675596397, 0.359634524806, 0.316478381829, 0.278500976009, 0.245080858888, 0.215671155822, 0.189790617123, 0.167015743068, 0.146973853900, 0.129336991432, 0.113816552460, 0.100158566165, 0.088139538225 ],
 		_zoomScaleLevelsUp = [ 1, 1.136363636364, 1.291322314050, 1.467411720511, 1.667513318762, 1.894901498594, 2.153297157493, 2.446928588060, 2.780600668250, 3.159773486648, 3.590651689372, 4.080286010650, 4.636688648466, 5.268964373257, 5.987459515065, 6.803931267119, 7.731740076272, 8.786068268491, 9.984168486921, 11.34564600787 ],
-		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 2, _socketCallsEnCours = 0,
+		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 0, _socketCallsEnCours = 0,
 		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 200, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
 		
 		_cache = (function() {
@@ -336,9 +336,6 @@ var App = (function() {
 			_currentY = y;
 			_updateCoordsLabel(x, y);
 		},
-		_setMatrix = function(matrix) {
-			_imageGroup.tag.setAttribute("transform", ["matrix(", matrix.a, ",", matrix.b, ",", matrix.c, ",", matrix.d, ",", round(matrix.e), ",", round(matrix.f), ")"].join(''));
-		},
 		_buttonModifyClick = function() {
 			_zoomTo(1);
 			Editor.show();
@@ -407,21 +404,22 @@ var App = (function() {
 			_updateCurrentCoords(_newX, _newY);
 			_imageGroup.matrix = _imageGroup.matrix.translate(-(newp.x * (_z-1)), -(newp.y * (_z-1)));
 			_imageGroup.matrix.a = _imageGroup.matrix.d = _zoomScaleLevelsDown[_zoom - 1];
-			_setMatrix(_imageGroup.matrix);
+			_imageGroup.updateMatrix();
 			_updateCacheForZoom(_z, x, y);
 			(_deltaZoomLevel > 0) && _fillScreen(); 	// dopo lo zoom e l'aggiornamento delle imm, scarico e visualizzo le nuove. necessario solo se sto rimpicciolendo la schermata.
 			_zoomLabel.textContent = [round(100 - (95 / _zoomMax) * (level - 1)), "%"].join('');
 		},
 		_drag = function(dx, dy, forceLoad) {	// OK. dx dy sono le differenze in px, non in coordinate (bisogna tenere conto dello zoom)
 			if (dx === 0 && dy === 0) return;
-			var _deltaX = round(dx / _imageGroup.matrix.a, _decimals),
-				_deltaY = round(dy / _imageGroup.matrix.a, _decimals);
+			var scale = _imageGroup.matrix.a,
+				_deltaX = round(dx / scale, _decimals),
+				_deltaY = round(dy / scale, _decimals);
 			_groupCoordX = _groupCoordX + dx;
 			_groupCoordY = _groupCoordY + dy;
 			_deltaDragX = _deltaDragX + dx;
 			_deltaDragY = _deltaDragY + dy;
 			_imageGroup.matrix = _imageGroup.matrix.translate(_deltaX, _deltaY);
-			_setMatrix(_imageGroup.matrix);
+			_imageGroup.updateMatrix();
 			var _newX = round(_currentX - _deltaX, _decimals),
 				_newY = round(_currentY + _deltaY, _decimals);
 			_updateCurrentCoords(_newX, _newY);
@@ -450,7 +448,7 @@ var App = (function() {
 				addDraw(draw);
 				_imageGroup.matrix = _imageGroup.tag.getCTM();
 				_imageGroup.matrix = _imageGroup.matrix.translate(0, 0);
-				_setMatrix(_imageGroup.matrix);
+				_imageGroup.updateMatrix();
 			}
 		},
 		addDraw = function(draw, replace) {	// OK	aggiunge e salva un disegno passato dall editor o dal socket
@@ -465,8 +463,8 @@ var App = (function() {
 				_newDraw.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", draw.base64);
 				//_newDraw.setAttribute('x', round((draw.pxx - _groupCoordX) / scale, _decimals));
 				//_newDraw.setAttribute('y', round((draw.pxy - _groupCoordY) / scale, _decimals));
-				_newDraw.setAttribute('x', round(((draw.x - _currentX) * scale + XX2 - _groupCoordX) / scale));
-				_newDraw.setAttribute('y', round(((_currentY - draw.y) * scale + YY2 - _groupCoordY) / scale));
+				_newDraw.setAttribute('x', round(((draw.x - _currentX) * scale + XX2 - _groupCoordX) / scale, _decimals));
+				_newDraw.setAttribute('y', round(((_currentY - draw.y) * scale + YY2 - _groupCoordY) / scale, _decimals));
 				_newDraw.setAttribute('width', draw.w);
 				_newDraw.setAttribute('height', draw.h);
 				_newDraw.id = draw.id;
@@ -693,8 +691,20 @@ var App = (function() {
 			// calcolo coordinate, punto in centro pagina, aggiungo o rimuovo disegni
 			// i disegni non devono spostarsi rispetto allo schermo, ma le coordinate correnti devono essere calcolate al centro della finestra
 		},
+		TESTdrawRect = function(x, y) {
+			var rect = DOCUMENT.createElementNS("http://www.w3.org/2000/svg", 'rect');
+	        rect.setAttributeNS(null, 'x', x);
+	        rect.setAttributeNS(null, 'y', y);
+	        rect.setAttributeNS(null, 'height', '10');
+	        rect.setAttributeNS(null, 'width', '10');
+	        _imageGroup.tag.appendChild(rect);
+		},
 		init = function() {
 			//scelgo a che posizione aprire la lavagna
+			_imageGroup.updateMatrix = function() {
+				var matrix = _imageGroup.matrix;
+				_imageGroup.tag.setAttribute("transform", "matrix(" + matrix.a + "," + matrix.b + "," + matrix.c + "," + matrix.d + "," + round(matrix.e, 4) + "," + round(matrix.f, 4) + ")");
+			};
 			_initDom();
 			_addEvents();
 			goToXY(0, 0);
