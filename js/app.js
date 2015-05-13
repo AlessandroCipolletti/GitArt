@@ -345,9 +345,9 @@ var App = (function() {
 				deltaCoordX = 1.5 * XX / z,
 				deltaCoordY = 1.5 * YY / z;
 			return ((img.x + img.w > _currentX - deltaCoordX) &&	// left
-				(img.y - img.h < _currentY + deltaCoordY) &&		// top
-				(img.x < _currentX + deltaCoordX) &&				// right
-				(img.y > _currentY - deltaCoordY));					// bottom
+				(img.y - img.h < _currentY + deltaCoordY) &&	// top
+				(img.x < _currentX + deltaCoordX) &&		// right
+				(img.y > _currentY - deltaCoordY));		// bottom
 			//return (img.pxx + img.pxw > -XX && img.pxy + img.pxh > -YY && img.pxx < DXX && img.pxy < DYY);
 		},
 		_updateCacheForDrag = function(dx, dy) {	// OK
@@ -651,14 +651,21 @@ var App = (function() {
 				requestAnimationFrame(__mouseWheel.bind([_delta, e.clientX, e.clientY]));
 			}
 		},
+		_keyDown = function(e) {
+			if (e.keyCode === 37) _drag(-1, 0);
+			if (e.keyCode === 38) _drag(0, -1);
+			if (e.keyCode === 39) _drag(1, 0);
+			if (e.keyCode === 40) _drag(0, 1);
+		},
 		_addEvents = function() {
 			_dom.addEventListener('click',			_click,		true);
 			_dom.addEventListener('mousedown',		_mousedown,	true);
 			_dom.addEventListener('mousemove', 		_mousemove,	true);
 			_dom.addEventListener('mouseup',		_mouseup,	true);
-			//_dom.addEventListener('mouseout',		_mouseout,	false);
-			_dom.addEventListener('mouseover',		_mouseover,	false);
+			//_dom.addEventListener('mouseout',		_mouseout,	true);
+			_dom.addEventListener('mouseover',		_mouseover,	true);
 			_dom.addEventListener(_mouseWheelEvent, _mouseWheel,true);
+			Config.debug && DOCUMENT.addEventListener("keydown", _keyDown, false);
 			_$buttonModify.bind("click", _buttonModifyClick);
 		},
 		_removeEvents = function() {
@@ -666,9 +673,10 @@ var App = (function() {
 			_dom.removeEventListener('mousedown',		_mousedown,	true);
 			_dom.removeEventListener('mousemove', 		_mousemove,	true);
 			_dom.removeEventListener('mouseup',			_mouseup,	true);
-			//_dom.removeEventListener('mouseout',		_mouseout,	false);
-			_dom.removeEventListener('mouseover',		_mouseover,	false);
+			//_dom.removeEventListener('mouseout',		_mouseout,	true);
+			_dom.removeEventListener('mouseover',		_mouseover,	true);
 			_dom.removeEventListener(_mouseWheelEvent, 	_mouseWheel,true);
+			Config.debug && DOCUMENT.removeEventListener("keydown", _keyDown, false);
 			_$buttonModify.unbind("click", _buttonModifyClick);
 		},
 		overshadow = function() {	// mette in secondo piano e blocca la dashboard per mostrare l'editor
