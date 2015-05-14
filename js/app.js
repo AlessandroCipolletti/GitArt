@@ -155,11 +155,13 @@ var App = (function() {
 			console.log(msg);
 			// qui possiamo anche tentare una chiamata ajax per inviarci _msg per le statistiche sugli errori,
 		},
-		setSpinner = function(state) {
+		setSpinner = function(state, overlay) {
 			if (state) {
-				_$spinner.fadeIn("fast");
+				_$spinner.stop().fadeIn("fast");
+				overlay && _$dark.stop().fadeIn("fast");
 			} else {
-				_$spinner.fadeOut("fast");
+				_$spinner.stop().fadeOut("fast");
+				_$dark.stop().fadeOut("fast");
 			}
 		};
 		return {
@@ -757,7 +759,7 @@ var App = (function() {
 		_$ptions, _$overlays, _$pickerToolPreview, _$pickerToolColor, _$pickerToolColor2, _$editorShowTools, _$editorSave, _$sizeToolContainer, _$grayscaleContainer, _$grayscalePointer,
 		_$editorShowOptions, _$optionDraft, _$optionRestore, _$optionSquare, _$optionExport, _$optionClear, _$optionClose, _$closeButtons,
 		_minX, _minY, _maxX, _maxY, _oldX, _oldY, _mouseX = 0, _mouseY = 0, _numUndoStep = 31, _currentStep = 0, _oldMidX, _oldMidY, _$sizeToolPreview, _$sizeToolLabel,
-		_isInit, _isMouseDown, _isPressedShift, _restored = false, _toolsSizeX, _toolsSizeY, _randomColor = true, _overlay = false, _grayscaleIsScrolling = false,
+		_isInit, _isMouseDown, _isPressedShift, _restored = false, _toolsSizeX, _toolsSizeY, _randomColor = true, _overlay = false, _grayscaleIsScrolling = false, _isSaving = false,
 		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0, _savedDraw = {},
 		_color, _size, _pencilSize = 2, _pencilColor = "", _pencilColorID = 12, _brushSize = 50, _eraserSize = 50, _brushColor, _maxToolSize = 200,
 		_grayscaleColors = ["#FFF", "#EEE", "#DDD", "#CCC", "#BBB", "#AAA", "#999", "#888", "#777", "#666", "#555", "#444", "#333", "#222", "#111", "#000"], 
@@ -829,7 +831,7 @@ var App = (function() {
 			DOCUMENT.addEventListener('mouseout', 	_mouseend,	true);
 			DOCUMENT.addEventListener("keydown", _keyDown, false);
 			DOCUMENT.addEventListener("keyup", _keyUp, false);
-			_$dark.bind("click", _hideOverlays);
+			_$dark.bind("click", _darkClick);
 			_$brushTool.bind("mousedown", _editorMenuActions[1]);
 			_$pencilTool.bind("mousedown", _editorMenuActions[2]);
 			_$eraserTool.bind("mousedown", _editorMenuActions[3]);
@@ -859,7 +861,7 @@ var App = (function() {
 			DOCUMENT.removeEventListener('mouseout', 	_mouseend);
 			DOCUMENT.removeEventListener("keydown", _keyDown, false);
 			DOCUMENT.removeEventListener("keyup", 	_keyUp, false);
-			_$dark.unbind("click", _hideOverlays);
+			_$dark.unbind("click", _darkClick);
 			_$brushTool.unbind("mousedown", _editorMenuActions[1]);
 			_$pencilTool.unbind("mousedown", _editorMenuActions[2]);
 			_$eraserTool.unbind("mousedown", _editorMenuActions[3]);
@@ -1020,6 +1022,9 @@ var App = (function() {
 				_randomColor = false;
 				_colorPicker.setColor(__color);
 			}
+		},
+		_darkClick = function() {
+			(_isSaving === false) && _hideOverlays();
 		},
 		__keyDown = Info.macOS ? 
 			function(e) {
@@ -1221,6 +1226,7 @@ var App = (function() {
 		_showTools = function() {
 			_overlay = true;
 			_$dark.stop().fadeIn("fast");
+			_$dark.addClass("cursorX");
 			_$tools.stop().fadeIn("fast");
 			_$pickerToolPreview.fadeOut("fast");
 			_$sizeToolContainer.fadeOut("fast");
@@ -1228,6 +1234,7 @@ var App = (function() {
 		},
 		_showOptions = function() {
 			_overlay = true;
+			_$dark.addClass("cursorX");
 			_$dark.stop().fadeIn("fast");
 			_$options.stop().fadeIn("fast");
 			_$pickerToolPreview.fadeOut("fast");
@@ -1314,7 +1321,8 @@ var App = (function() {
 			}
 		},
 		onSocketMessage = function(data) {	// OK - qui riceviamo le risposte ai salvataggi
-			Messages.remove();
+			utils.setSpinner(false);
+			_isSaving = false;
 			data = JSON.parse(data);
 			if (data.ok) {
 				var _draw = {
@@ -1357,7 +1365,9 @@ var App = (function() {
 				Messages.alert(label["nothingToSave"]);
 			} else {
 				if (Messages.confirm(label['editorSaveConfirm'])) {
-					Messages.loading(label['salvoDisegno'])
+					_isSaving = true;
+					_$dark.removeClass("cursorX");
+					utils.setSpinner(true, true);
 					_savedDraw = _saveLayer();
 					var _coords = Dashboard.getCoords(),
 						_tempCanvas = document.createElement("canvas");
@@ -1375,7 +1385,6 @@ var App = (function() {
 					_savedDraw.x = _savedDraw.minX - XX2 + _coords.x;	// coordinate del px in alto a sx rispetto alle coordinate correnti della lavagna
 					_savedDraw.y = _coords.y + (YY2 - _savedDraw.minY);
 					_saveToServer(_savedDraw);
-					console.log(_savedDraw, _coords, [XX2, YY2]);
 				}
 			}
 		},
@@ -1701,8 +1710,6 @@ var App = (function() {
 			//_show(_render(image, msg, buttons));
 		},
 		loading = function(msg) {
-			var image = '<img src="" class="">';		// girella
-			var buttons = {};
 			//_show(_render(image, msg, buttons));
 		},
 		remove = function() {
