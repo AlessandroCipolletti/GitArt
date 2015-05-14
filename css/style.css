@@ -3,7 +3,7 @@
 	src: url('../font/font.ttf');
 }
 
-#editorMenu, #editor, #editorTools, #darkOverlay, #editorSmallTool, #editorOptions, #pickerToolPreview, #sizePickerCont, #sizeToolContainer, #pencilGrayscaleCont {
+#editorMenu, #editor, #editorTools, #darkOverlay, #editorSmallTool, #editorOptions, #pickerToolPreview, #sizePickerCont, #sizeToolContainer, #pencilGrayscaleCont, #spinner {
 	display: none;
 }
 
@@ -25,6 +25,61 @@ body {
 	color: grey;
 }
 
+#spinner {
+    font-size: 50px; /* 1em */
+    width: 1em;
+    height: 1em;
+    margin: 0px;
+    padding: 0px;
+    top: 10px;
+    left: calc(50% - 0.5em);
+    position: absolute;
+    z-index: 1000;
+    list-style: none;
+    border-radius: 50%;
+    border: .02em solid rgba(0, 128, 255, 0.5); /* Subtle white line circling the dots */
+}
+	#spinner li {
+		width: .2em;
+	    height: .2em;
+	    position: absolute;
+	    border-radius: 50%;
+	}
+	#spinner li:nth-child(1) {
+		background: #D2D2D2;
+	    top: 0;
+	    left: 50%;
+	    margin-left: -.1em; /* Width/2 */
+	    transform-origin: 50% 250%;
+	    -webkit-animation: rota 1.13s linear infinite;
+	}
+	#spinner li:nth-child(2) {
+	    background: #CCCCFF;
+	    top: 50%; 
+	    right: 0;
+	    margin-top: -.1em; /* Height/2 */
+	    transform-origin: -150% 50%;
+	    -webkit-animation: rota 1.86s linear infinite;
+	}
+	#spinner li:nth-child(3) {
+	    background: #007FFF;
+	    bottom: 0;
+	    left: 50%; 
+	    margin-left: -.1em; /* Width/2 */
+	    transform-origin: 50% -150%;
+	    -webkit-animation: rota 1.45s linear infinite;
+	}
+	#spinner li:nth-child(4) {
+	    background: #F7E89F;
+	    top: 50%; 
+	    left: 0;
+	    margin-top: -.1em; /* Height/2 */
+	    transform-origin: 250% 50%;
+	    -webkit-animation: rota 1.72s linear infinite;
+	}
+	@-webkit-keyframes rota {
+	    to { transform: rotate(360deg); }
+	}
 
 /*
 	INIZIO PULSANTI GENERICI ---------------------------------------------------------------------------------------------------------
@@ -586,7 +641,7 @@ body {
 		top: calc(50% - 10px);
 		left: calc(50% - 10px);
 		display: none;
-		z-index: 10000;
+		z-index: -100;
 	}	
 		#dashboardCoords * {
 			float: left;
@@ -606,3 +661,5 @@ body {
 			line-height: 20px;
 			font-size: 10px;
 		}
+
+
