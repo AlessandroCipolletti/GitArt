@@ -345,9 +345,9 @@ var App = (function() {
 				deltaCoordX = 1.5 * XX / z,
 				deltaCoordY = 1.5 * YY / z;
 			return ((img.x + img.w > _currentX - deltaCoordX) &&	// left
-				(img.y - img.h < _currentY + deltaCoordY) &&	// top
-				(img.x < _currentX + deltaCoordX) &&		// right
-				(img.y > _currentY - deltaCoordY));		// bottom
+				(img.y - img.h < _currentY + deltaCoordY) &&	   // top
+				(img.x < _currentX + deltaCoordX) &&			  // right
+				(img.y > _currentY - deltaCoordY));				 // bottom
 			//return (img.pxx + img.pxw > -XX && img.pxy + img.pxh > -YY && img.pxx < DXX && img.pxy < DYY);
 		},
 		_updateCacheForDrag = function(dx, dy) {	// OK
@@ -509,15 +509,13 @@ var App = (function() {
 			// TODO - per adesso cambio qui la dimensione dell'area da scaricare per scaricare tutto in un colpo,
 			//			ma in futuro sarà meglio fare prima la chiamata per la schermata a video e poi un'altra chiamata per la zona intorno
 			var z = _imageGroup.matrix.a,
-				XX2Z = XX2 / z,
-				YY2Z = YY2 / z;
-			var XXZ = XX / z,
-				YYZ = YY / z;
+				deltaCoordX = 1.5 * XX / z,
+				deltaCoordY = 1.5 * YY / z;
 			return {
-				minX : _currentX - XXZ,
-				maxX : _currentX + XXZ,
-				minY : _currentY - YYZ,
-				maxY : _currentY + YYZ,
+				minX : _currentX - deltaCoordX,
+				maxX : _currentX + deltaCoordX,
+				minY : _currentY - deltaCoordY,
+				maxY : _currentY + deltaCoordY,
 				x : _currentX,
 				y : _currentY
 			}
