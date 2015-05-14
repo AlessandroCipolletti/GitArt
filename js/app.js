@@ -441,7 +441,6 @@ var App = (function() {
 		onSocketMessage = function(data) {
 			if (["end", "none", "error"].indexOf(data) >= 0) {
 				_socketCallsEnCours--;
-				console.log("chiamate aperte: ", _socketCallsEnCours);
 				if (_socketCallsEnCours === 0) {
 					_isLoading = false;
 					utils.setSpinner(false);
@@ -544,7 +543,6 @@ var App = (function() {
 		},
 		_callSocketFor = function(area, notIds) { // OK
 			_socketCallsEnCours++;
-			console.log("chiamate aperte: ", _socketCallsEnCours);
 			if (!_isLoading) {
 				_isLoading = true;
 				if (_timeoutForSpinner === false) {
@@ -1748,25 +1746,18 @@ var App = (function() {
 	Init = function() {
 		// qui ci sarà il driver lato client che legge l'url corrente e si inizializza e crea la pagina di conseguenza
 		var _onResize = function() {
-				XX = WINDOW.innerWidth;
-				YY = WINDOW.innerHeight;
-				XX2 = XX / 2;
-				YY2 = YY / 2;
-				DXX = 2 * XX;
-				DYY = 2 * YY;
-			},
-			onGlobalResize = function() {
-				_onResize
-				// richiamare gli handler onResize di tutti i moduli
-			},
-			_initSockets = function() {
-			
-			};
+			XX = WINDOW.innerWidth;
+			YY = WINDOW.innerHeight;
+			XX2 = XX / 2;
+			YY2 = YY / 2;
+			DXX = 2 * XX;
+			DYY = 2 * YY;
+		};
 		_onResize();
 		_$dark = $('#darkOverlay');
 		_$spinner = $('#spinner');
 		_mouseWheelEvent = Info.firefox ? "DOMMouseScroll" : "mousewheel";
-		DOCUMENT.body.onresize = onGlobalResize;
+		WINDOW.addEventListener("resize", _onResize, true);
 		DOCUMENT.body.addEventListener("mousedown", preventDefault, true);
 		DOCUMENT.body.addEventListener("mousemove", preventDefault, true);
 		DOCUMENT.body.addEventListener("mouseup", 	 preventDefault, true);
