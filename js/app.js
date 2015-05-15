@@ -755,9 +755,9 @@ var App = (function() {
 	})(),
 	
 	Editor = (function() {
-		var _dom, _$dom, _context, _$tools, _$toolContent, _$allDom, _$allDomContainer, _$allMenuTool, _$brushTool, _$pencilTool, _$eraserTool, _$pickerTool, _$editorUndo, _$editorRedo, 
+		var _dom, _$dom, _context, _$tools, _$toolContent, _$allDom, _$allDomContainer, _$allMenuTool, _$brushTool, _$pencilTool, _$eraserTool, _$pickerTool, _$editorUndo, _$editorRedo, _$editorHide,
 		_$ptions, _$overlays, _$pickerToolPreview, _$pickerToolColor, _$pickerToolColor2, _$editorShowTools, _$editorSave, _$sizeToolContainer, _$grayscaleContainer, _$grayscalePointer,
-		_$editorShowOptions, _$optionDraft, _$optionRestore, _$optionSquare, _$optionExport, _$optionClear, _$optionClose, _$closeButtons,
+		_$editorShowOptions, _$optionDraft, _$optionRestore, _$optionSquare, _$optionExport, _$optionClear, _$closeButtons,
 		_minX, _minY, _maxX, _maxY, _oldX, _oldY, _mouseX = 0, _mouseY = 0, _numUndoStep = 31, _currentStep = 0, _oldMidX, _oldMidY, _$sizeToolPreview, _$sizeToolLabel,
 		_isInit, _isMouseDown, _isPressedShift, _restored = false, _toolsSizeX, _toolsSizeY, _randomColor = true, _overlay = false, _grayscaleIsScrolling = false, _isSaving = false,
 		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0, _savedDraw = {},
@@ -786,7 +786,7 @@ var App = (function() {
 			_optionsSizeY = _$options.height();
 			_dom.width = XX;
 			_dom.height = YY;
-			_editorMenuActions = [EmptyFN, _selectBrush, _selectPencil, _selectEraser, _selectPicker, _showTools, _undo, _redo, _save, _showOptions];
+			_editorMenuActions = [_hide, _selectBrush, _selectPencil, _selectEraser, _selectPicker, _showTools, _undo, _redo, _save, _showOptions];
 			_editorMenuActionsLength = _editorMenuActions.length;
 			_$brushTool = $("#editorMenu1");
 			_$pencilTool = $("#editorMenu2");
@@ -797,13 +797,13 @@ var App = (function() {
 			_$editorRedo = $("#editorMenu7");
 			_$editorSave = $("#editorMenu8");
 			_$editorShowOptions = $("#editorMenu9");
+			_$editorHide = $("#editorMenu0");
 			_$allMenuTool = $("#editorMenu1, #editorMenu2, #editorMenu3, #editorMenu4");
 			_$optionDraft = $("#optionDraft").html(label['SalvaBozza']);
 			_$optionRestore = $("#optionRestore").html(label['Ripristina']);
 			_$optionSquare = $("#optionSquare").html(label['FoglioQuadretti']);
 			_$optionExport = $("#optionExport").html(label['Esporta']);
 			_$optionClear = $("#optionClear").html(label['Svuota']);
-			_$optionClose = $("#optionClose").html(label['Pausa']);
 			_disableElement(_$optionRestore);
 			_$sizeToolPreview = $("#sizeToolPreview");
 			$("#toolSize a").html(label['Dimensione']);
@@ -841,12 +841,12 @@ var App = (function() {
 			_$editorRedo.bind("mousedown", _editorMenuActions[7]);
 			_$editorSave.bind("mousedown", _editorMenuActions[8]);
 			_$editorShowOptions.bind("mousedown", _editorMenuActions[9]);
+			_$editorHide.bind("mousedown", _editorMenuActions[0]);
 			_$optionDraft.bind("click", _draft);
 			_$optionRestore.bind("click", _restore);
 			_$optionSquare.bind("click", _toggleBackground);
 			_$optionExport.bind("click", _export);
 			_$optionClear.bind("click", clear);
-			_$optionClose.bind("click", _hide);
 			_$closeButtons.bind("click", _hideOverlays);
 			_colorPicker.addEvents();
 			//WINDOW.onbeforeunload = function() { return label['closePrevent']; };
@@ -871,12 +871,12 @@ var App = (function() {
 			_$editorRedo.unbind("mousedown", _editorMenuActions[7]);
 			_$editorSave.unbind("mousedown", _editorMenuActions[8]);
 			_$editorShowOptions.unbind("mousedown", _editorMenuActions[9]);
+			_$editorHide.bind("mousedown", _editorMenuActions[0]);
 			_$optionDraft.unbind("click", _draft);
 			_$optionRestore.unbind("click", _restore);
 			_$optionSquare.unbind("click", _toggleBackground);
 			_$optionExport.unbind("click", _export);
 			_$optionClear.unbind("click", clear);
-			_$optionClose.unbind("click", _hide);
 			_$closeButtons.unbind("click", _hideOverlays);
 			_colorPicker.removeEvents();
 			WINDOW.onbeforeunload = undefined;
