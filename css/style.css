@@ -50,35 +50,57 @@ body {
 	    top: 0;
 	    left: 50%;
 	    margin-left: -.1em; /* Width/2 */
-	    transform-origin: 50% 250%;
+		-webkit-transform-origin: 50% 250%;
+		-moz-transform-origin: 50% 250%;
+		transform-origin: 50% 250%;
 	    -webkit-animation: rota 1.13s linear infinite;
+	    -moz-animation: rota 1.13s linear infinite;
+	    animation: rota 1.13s linear infinite;
 	}
 	#spinner li:nth-child(2) {
 	    background: #CCCCFF;
 	    top: 50%; 
 	    right: 0;
 	    margin-top: -.1em; /* Height/2 */
-	    transform-origin: -150% 50%;
+		-webkit-transform-origin: -150% 50%;
+		-moz-transform-origin: -150% 50%;
+		transform-origin: -150% 50%;
 	    -webkit-animation: rota 1.86s linear infinite;
+	    -moz-animation: rota 1.86s linear infinite;
+	    animation: rota 1.86s linear infinite;
 	}
 	#spinner li:nth-child(3) {
 	    background: #007FFF;
 	    bottom: 0;
 	    left: 50%; 
 	    margin-left: -.1em; /* Width/2 */
-	    transform-origin: 50% -150%;
+		-webkit-transform-origin: 50% -150%;
+		-moz-transform-origin: 50% -150%;
+		transform-origin: 50% -150%;
 	    -webkit-animation: rota 1.45s linear infinite;
+		-moz-animation: rota 1.45s linear infinite;
+		animation: rota 1.45s linear infinite;
 	}
 	#spinner li:nth-child(4) {
 	    background: #F7E89F;
 	    top: 50%; 
 	    left: 0;
 	    margin-top: -.1em; /* Height/2 */
+		-webkit-transform-origin: 250% 50%;
+		-moz-transform-origin: 250% 50%;
 	    transform-origin: 250% 50%;
 	    -webkit-animation: rota 1.72s linear infinite;
+		-moz-animation: rota 1.72s linear infinite;
+		animation: rota 1.72s linear infinite;
 	}
 	@-webkit-keyframes rota {
-	    to { transform: rotate(360deg); }
+		to { -webkit-transform: rotate(360deg); }
+	}
+	@-moz-keyframes rota {
+		to { -moz-transform: rotate(360deg); }
+	}
+	@keyframes rota {
+		to { transform: rotate(360deg); }
 	}
 
 /*
@@ -664,5 +686,3 @@ body {
 			line-height: 20px;
 			font-size: 10px;
 		}
-
-
