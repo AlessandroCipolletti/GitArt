@@ -821,6 +821,7 @@ var App = (function() {
 				_initGrayscale();
 				_colorPicker.init();
 				_onResize();
+				_brushColor = _getColor();
 				_selectBrush();
 			}
 		},
@@ -974,6 +975,7 @@ var App = (function() {
 			}
 			_size = _brushSize;
 			_color = _brushColor;
+			_getColor();
 		},
 		_selectPencil = function() {
 			if (_toolSelected !== 1) {
@@ -1017,6 +1019,7 @@ var App = (function() {
 			_$pickerToolColor.css("background-color", __color);
 			if (_isMouseDown && px[3] > 0) {
 				_brushColor = __color;
+				_$editorShowTools.css("background-color", _brushColor);
 				_randomColor = false;
 				_$pickerToolColor2.css("background-color", __color);
 				_randomColor = false;
@@ -1081,7 +1084,6 @@ var App = (function() {
 				if (_toolSelected === 3)
 					_updatePickerTool();
 				else {
-					_getColor();
 					if (_isPressedShift && _oldX !== -1)
 						_line(x, y);
 					_checkCoord(x, y);
@@ -1126,6 +1128,7 @@ var App = (function() {
 			if (!_isMouseDown) return;
 			_isMouseDown = false;
 			if (_toolSelected === 3) return;
+			(_toolSelected === 0) && _getColor();
 			_mouseX = e.clientX;
 			_mouseY = e.clientY;
 			if (_mouseX !== _oldX) {
@@ -1204,6 +1207,7 @@ var App = (function() {
 		_getColor = function() {
 			if (_randomColor && _toolSelected === 0)
 				_color = "rgb(" + random(255) + ", " + random(255) + ", " + random(255) + ")";
+			_$editorShowTools.css("background-color", _color);
 			return _color;
 		},
 		_clear = function() {
@@ -1289,6 +1293,7 @@ var App = (function() {
 				_disableElement(_$editorUndo);
 			if (_currentStep === 0)
 				_disableElement(_$editorRedo);
+			(_toolSelected === 0) && _getColor();
 		},
 		_hide = function() {
 			if (_maxX > 0 && _maxY > 0 && !_draft.data)     
@@ -1424,8 +1429,11 @@ var App = (function() {
 			if (rgb) {
 				_brushColor = rgb;
 				_randomColor = false;
-			} else
+			} else {
 				_randomColor = true;
+				_getColor();
+				_brushColor = _color;
+			}
 			_selectBrush();
 		},
 		_colorPicker = (function() {	// sottomodulo di editor per gestire il color-picker
@@ -1580,7 +1588,6 @@ var App = (function() {
 		// auto-init del modulo Editor
 		_minX = _minY = _maxX = _maxY = _oldX = _oldY = -1;
 		_isInit = _isMouseDown = _isPressedShift = false;
-		_brushColor = _getColor();
 		return {
 			show			: show,
 			setColor		: setColor,
