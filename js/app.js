@@ -638,7 +638,7 @@ var App = (function() {
 		_click = function(e) {
 			// se ho cliccato su un disegno lo evidenzio, con bordo proporzionale allo zoom corrente
 			if (e.target.id === "dashboard") {
-				_cache.log();
+				//_cache.log();
 			}
 		},
 		_mouseend = function() {
