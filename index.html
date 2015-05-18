@@ -12,7 +12,7 @@
 		#showEditor {
 			position: absolute;
 			bottom: 20px;
-			right: 50px;
+			left: 20px;
 			display: none;
 		}
 	</style>
@@ -61,7 +61,7 @@
 			<div><a id="editorMenu2" class="enabled"><div></div></a></div>
 			<div><a id="editorMenu3" class="enabled"><div></div></a></div>
 			<div><a id="editorMenu4" class="enabled"><div></div></a></div>
-			<div><a id="editorMenu5" class="enabled"><div></div></a></div>
+			<div><a id="editorMenu5" class="enabled selected"><div></div></a></div>
 			<div><a id="editorMenu6" class="enabled"><div></div></a></div>
 			<div><a id="editorMenu7" class="enabled"><div></div></a></div>
 			<div><a id="editorMenu8" class="enabled"><div></div></a></div>
@@ -80,35 +80,27 @@
 		<div id="pencilGrayscaleCont">
 			<div id="grayscalePointer"></div>
 		</div>
-		<div id="editorTools" align="center">
-			<div id="closeEditorTools"><img src="img/icon/x.png"></div>
-			<!-- INIZIO COLOR PICKER -->
-			<div id="colorPickerCont">
-				<div align="center" id="colorPickerContU">
-					<canvas id="colorPicker" width="285" height="180"></canvas>
-					<div id="colorPreviewCont" align="center">
-						<a id="previewLabel"></a>
-						<div id="colorPreview" ></div><br>
-						<a id="randomColors" class="button"><img src="img/icon/yes.png"></a>
-					</div>
-				</div>
-				<div align="center" id="colorPickerContD">
-					<div id="oldColorsCont">
-						<div id="oldColor0"></div>
-						<div id="oldColor1"></div>
-						<div id="oldColor2"></div>
-						<div id="oldColor3"></div>
-						<div id="oldColor4"></div>
-						<div id="oldColor5"></div>
-						<div id="oldColor6"></div>
-						<div id="oldColor7"></div>
-						<div id="oldColor8"></div>
-						<div id="oldColor9"></div>
-					</div>
-				</div>
+		<!-- INIZIO COLOR PICKER -->
+		<div id="colorPickerCont">
+			<div align="center" id="colorPickerContU">
+				<canvas id="colorPicker" width="285" height="180"></canvas>
+				<div id="colorPreview" ></div><br>
+				<!--<a id="randomColors" class="button"><img src="img/icon/yes.png"></a>-->
 			</div>
-				<!-- FINE COLOR PICKER -->
+			<div align="center" id="colorPickerContD">
+				<div id="oldColor0"></div>
+				<div id="oldColor1"></div>
+				<div id="oldColor2"></div>
+				<div id="oldColor3"></div>
+				<div id="oldColor4"></div>
+				<div id="oldColor5"></div>
+				<div id="oldColor6"></div>
+				<div id="oldColor7"></div>
+				<div id="oldColor8"></div>
+				<div id="oldColor9"></div>
+			</div>
 		</div>
+		<!-- FINE COLOR PICKER -->
 		<!-- OPTIONS OPTIONS OPTIONS OPTIONS OPTIONS -->
 		<div id="editorOptions" align="center">
 			<ul>

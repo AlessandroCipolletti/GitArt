@@ -755,11 +755,11 @@ var App = (function() {
 	})(),
 	
 	Editor = (function() {
-		var _dom, _$dom, _context, _$tools, _$toolContent, _$allDom, _$allDomContainer, _$allMenuTool, _$brushTool, _$pencilTool, _$eraserTool, _$pickerTool, _$editorUndo, _$editorRedo, _$editorHide,
-		_$ptions, _$overlays, _$pickerToolPreview, _$pickerToolColor, _$pickerToolColor2, _$editorShowTools, _$editorSave, _$sizeToolContainer, _$grayscaleContainer, _$grayscalePointer,
+		var _dom, _$dom, _context, _$allDom, _$allDomContainer, _$allMenuTool, _$brushTool, _$pencilTool, _$eraserTool, _$pickerTool, _$editorUndo, _$editorRedo, _$editorHide,
+		_$ptions, _$pickerToolPreview, _$pickerToolColor, _$pickerToolColor2, _$randomColorButton, _$editorSave, _$sizeToolContainer, _$grayscaleContainer, _$grayscalePointer,
 		_$editorShowOptions, _$optionDraft, _$optionRestore, _$optionSquare, _$optionExport, _$optionClear, _$closeButtons,
 		_minX, _minY, _maxX, _maxY, _oldX, _oldY, _mouseX = 0, _mouseY = 0, _numUndoStep = 31, _currentStep = 0, _oldMidX, _oldMidY, _$sizeToolPreview, _$sizeToolLabel,
-		_isInit, _isMouseDown, _isPressedShift, _restored = false, _toolsSizeX, _toolsSizeY, _randomColor = true, _overlay = false, _grayscaleIsScrolling = false, _isSaving = false,
+		_isInit, _isMouseDown, _isPressedShift, _restored = false, _randomColor = true, _overlay = false, _grayscaleIsScrolling = false, _isSaving = false,
 		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0, _savedDraw = {},
 		_color, _size, _pencilSize = 2, _pencilColor = "", _pencilColorID = 12, _brushSize = 50, _eraserSize = 50, _brushColor, _maxToolSize = 200,
 		_grayscaleColors = ["#FFF", "#EEE", "#DDD", "#CCC", "#BBB", "#AAA", "#999", "#888", "#777", "#666", "#555", "#444", "#333", "#222", "#111", "#000"], 
@@ -771,28 +771,23 @@ var App = (function() {
 			_dom = DOCUMENT.querySelector("#editor");
 			_context = _dom.getContext("2d");
 			_$dom = $("#editor");
-			_$tools = $("#editorTools");
 			_$options = $("#editorOptions");
-			_$overlays = $("#editorTools, #editorOptions");
-			_$toolContent = $("#editorToolsRight");
 			_$pickerToolPreview = $("#pickerToolPreview");
 			_$pickerToolColor = $("#pickerToolColor");
 			_$pickerToolColor2 = $("#pickerToolColor2");
 			_$allDomContainer = $("#editorContainer");
 			_$allDom = $("#editorMenu, #editor, #editorSmallTool");
-			_toolsSizeX = _$tools.width();
-			_toolsSizeY = _$tools.height();
 			_optionsSizeX = _$options.width();
 			_optionsSizeY = _$options.height();
 			_dom.width = XX;
 			_dom.height = YY;
-			_editorMenuActions = [_hide, _selectBrush, _selectPencil, _selectEraser, _selectPicker, _showTools, _undo, _redo, _save, _showOptions];
+			_editorMenuActions = [_hide, _selectBrush, _selectPencil, _selectEraser, _selectPicker, _selectRandomColor, _undo, _redo, _save, _showOptions];
 			_editorMenuActionsLength = _editorMenuActions.length;
 			_$brushTool = $("#editorMenu1");
 			_$pencilTool = $("#editorMenu2");
 			_$eraserTool = $("#editorMenu3");
 			_$pickerTool = $("#editorMenu4");
-			_$editorShowTools = $("#editorMenu5");
+			_$randomColorButton = $("#editorMenu5");
 			_$editorUndo = $("#editorMenu6");
 			_$editorRedo = $("#editorMenu7");
 			_$editorSave = $("#editorMenu8");
@@ -807,7 +802,7 @@ var App = (function() {
 			_disableElement(_$optionRestore);
 			_$sizeToolPreview = $("#sizeToolPreview");
 			$("#toolSize a").html(label['Dimensione']);
-			_$closeButtons = $("#closeOptions, #closeEditorTools");
+			_$closeButtons = $("#closeOptions");
 			_$sizeToolLabel = $("#sizeToolLabel");
 			_$sizeToolContainer = $("#sizeToolContainer");
 			_$grayscaleContainer = $("#pencilGrayscaleCont");
@@ -837,7 +832,7 @@ var App = (function() {
 			_$pencilTool.bind("mousedown", _editorMenuActions[2]);
 			_$eraserTool.bind("mousedown", _editorMenuActions[3]);
 			_$pickerTool.bind("mousedown", _editorMenuActions[4]);
-			_$editorShowTools.bind("mousedown", _editorMenuActions[5]);
+			_$randomColorButton.bind("mousedown", _editorMenuActions[5]);
 			_$editorUndo.bind("mousedown", _editorMenuActions[6]);
 			_$editorRedo.bind("mousedown", _editorMenuActions[7]);
 			_$editorSave.bind("mousedown", _editorMenuActions[8]);
@@ -848,7 +843,7 @@ var App = (function() {
 			_$optionSquare.bind("click", _toggleBackground);
 			_$optionExport.bind("click", _export);
 			_$optionClear.bind("click", clear);
-			_$closeButtons.bind("click", _hideOverlays);
+			_$closeButtons.bind("click", _hideOptions);
 			_colorPicker.addEvents();
 			//WINDOW.onbeforeunload = function() { return label['closePrevent']; };
 			WINDOW.addEventListener("resize", _onResize, true);
@@ -867,7 +862,7 @@ var App = (function() {
 			_$pencilTool.unbind("mousedown", _editorMenuActions[2]);
 			_$eraserTool.unbind("mousedown", _editorMenuActions[3]);
 			_$pickerTool.unbind("mousedown", _editorMenuActions[4]);
-			_$editorShowTools.unbind("mousedown", _editorMenuActions[5]);
+			_$randomColorButton.unbind("mousedown", _editorMenuActions[5]);
 			_$editorUndo.unbind("mousedown", _editorMenuActions[6]);
 			_$editorRedo.unbind("mousedown", _editorMenuActions[7]);
 			_$editorSave.unbind("mousedown", _editorMenuActions[8]);
@@ -878,7 +873,7 @@ var App = (function() {
 			_$optionSquare.unbind("click", _toggleBackground);
 			_$optionExport.unbind("click", _export);
 			_$optionClear.unbind("click", clear);
-			_$closeButtons.unbind("click", _hideOverlays);
+			_$closeButtons.unbind("click", _hideOptions);
 			_colorPicker.removeEvents();
 			WINDOW.onbeforeunload = undefined;
 			WINDOW.removeEventListener("resize", _onResize);
@@ -1014,20 +1009,28 @@ var App = (function() {
 			}
 			_color = _brushColor;
 		},
+		_selectRandomColor = function() {
+			if (!_randomColor) {
+				if (_toolSelected === 3)
+					_selectBrush();
+				_randomColor = true;
+				_$randomColorButton.addClass("selected");
+			}
+			_getColor();
+		},
 		_updatePickerTool = function() {
 			var px = _context.getImageData(_mouseX, _mouseY, 1, 1).data, __color = px[3] === 0 ? "white" : "rgb(" + px[0] + "," + px[1] + "," + px[2] + ")";
 			_$pickerToolColor.css("background-color", __color);
 			if (_isMouseDown && px[3] > 0) {
 				_brushColor = __color;
-				_$editorShowTools.css("background-color", _brushColor);
-				_randomColor = false;
+				_$randomColorButton.removeClass("selected");
 				_$pickerToolColor2.css("background-color", __color);
 				_randomColor = false;
 				_colorPicker.setColor(__color);
 			}
 		},
 		_darkClick = function() {
-			(_isSaving === false) && _hideOverlays();
+			(_isSaving === false) && _hideOptions();
 		},
 		__keyDown = Info.macOS ? 
 			function(e) {
@@ -1044,8 +1047,8 @@ var App = (function() {
 				e.stopPropagation();
 			}
 			if (_overlay) {
-				if (keyCode === 27 || keyCode === 57 || (keyCode === 53 && _$tools.is(':visible')))
-					_hideOverlays();
+				if (keyCode === 27 || keyCode === 57)	// esc o pulsante 9
+					_hideOptions();
 			} else {
 				if (keyCode >= 48 && keyCode <= (48 + _editorMenuActionsLength) && !_isPressedShift) {
 					_editorMenuActions[keyCode - 48]();
@@ -1205,9 +1208,10 @@ var App = (function() {
 			});
 		},
 		_getColor = function() {
-			if (_randomColor && _toolSelected === 0)
+			if (_randomColor && _toolSelected === 0) {
 				_color = "rgb(" + random(255) + ", " + random(255) + ", " + random(255) + ")";
-			_$editorShowTools.css("background-color", _color);
+				_colorPicker.setColor(_color);
+			}
 			return _color;
 		},
 		_clear = function() {
@@ -1227,15 +1231,6 @@ var App = (function() {
 				$("#optionSquare").html(label['FoglioRighe']);
 			}
 		},
-		_showTools = function() {
-			_overlay = true;
-			_$dark.stop().fadeIn("fast");
-			_$dark.addClass("cursorX");
-			_$tools.stop().fadeIn("fast");
-			_$pickerToolPreview.fadeOut("fast");
-			_$sizeToolContainer.fadeOut("fast");
-			_colorPicker.show();
-		},
 		_showOptions = function() {
 			_overlay = true;
 			_$dark.addClass("cursorX");
@@ -1244,9 +1239,9 @@ var App = (function() {
 			_$pickerToolPreview.fadeOut("fast");
 			_$sizeToolContainer.fadeOut("fast");
 		},
-		_hideOverlays = function() {
+		_hideOptions = function() {
 			_overlay = false;
-			_$overlays.stop().fadeOut("fast");
+			_$options.stop().fadeOut("fast");
 			_$dark.stop().fadeOut("fast");
 			_$sizeToolContainer.fadeOut("fast");
 			if (_toolSelected === 3) {
@@ -1287,6 +1282,7 @@ var App = (function() {
 			_addEvents();
 			_$allDomContainer.show();
 			_$allDom.fadeIn();
+			_colorPicker.show();
 			if (!_draft.data)
 				_disableElement($("#editorRestore"));
 			if (_step.length - _currentStep <= 1)
@@ -1298,7 +1294,8 @@ var App = (function() {
 		_hide = function() {
 			if (_maxX > 0 && _maxY > 0 && !_draft.data)     
 				_draft();
-			_hideOverlays();
+			_hideOptions();
+			_colorPicker.hide();
 			_$allDom.fadeOut(function() {_$allDomContainer.hide()});
 			_removeEvents();
 			Dashboard.foreground();
@@ -1416,10 +1413,6 @@ var App = (function() {
 			}
 		},
 		_onResize = function() {
-			_$tools.css({
-				'top':  (YY > _toolsSizeY ? ((YY - _toolsSizeY) / 3) : 0) + "px", 
-				'left': (XX > _toolsSizeX ? ((XX - _toolsSizeX) / 2) : 0) + "px"
-			});
 			_$options.css({
 				'top':  (YY > _optionsSizeY ? ((YY - _optionsSizeY) / 3) : 0) + "px", 
 				'left': (XX > _optionsSizeX ? ((XX - _optionsSizeX) / 2) : 0) + "px"
@@ -1427,8 +1420,9 @@ var App = (function() {
 		},
 		setColor = function(rgb) {
 			if (rgb) {
-				_brushColor = rgb;
+				_brushColor = _color= rgb;
 				_randomColor = false;
+				_$randomColorButton.removeClass("selected");
 			} else {
 				_randomColor = true;
 				_getColor();
@@ -1437,24 +1431,23 @@ var App = (function() {
 			_selectBrush();
 		},
 		_colorPicker = (function() {	// sottomodulo di editor per gestire il color-picker
-			var _$container, _$dom, _context, _dom, _imagePicker = new Image(), _imageSelector = new Image(), _$preview, _$randomColors,
-			_isMouseDown = false, _lastColors = [], _numOldColors = 10, _$oldColors = [], _$oldColorsDiv,
+			var _$container, _$dom, _context, _dom, _imagePicker = new Image(), _imageSelector = new Image(), _$preview,
+			_isMouseDown = false, _lastColors = [], _numOldColors = 10, _$oldColors = [], _$oldColorsDiv, width = 143, height = 90,
 			_mouseX, _mouseY, _oldX, _oldY, _color = false, _newColor = true, _moreColors = false,
 			init = function() {
 				_dom = DOCUMENT.querySelector("#colorPicker");
+				_dom.width = width;
+				_dom.height = height;
 				_context = _dom.getContext("2d");
 				_$dom = $("#colorPicker");
 				_$container = $("#colorPickerCont");
 				_$preview = $("#colorPreview");
 				_imagePicker.onload = function() {
-					_context.drawImage(_imagePicker, 0, 0);
+					_context.drawImage(_imagePicker, 0, 0, width, height);
 					_imagePicker.onload = undefined;
 				}
 				_imagePicker.src = "img/colors.png";
 				_imageSelector.src = "img/selector.png";
-				DOCUMENT.querySelector("#previewLabel").innerText = label["Anteprima"];
-				_$randomColors = $("#randomColors");
-				_$randomColors.html(_$randomColors.html() + label["Casuale"]);
 				for (var i = 0; i < _numOldColors; i++) 
 					_$oldColors[i] = $("#oldColor" + i);
 				_$oldColorsDiv = $("#oldColorsCont > div");
@@ -1464,28 +1457,23 @@ var App = (function() {
 				_dom.addEventListener('mousedown',		_mousedown,	true);
 				_dom.addEventListener('mousemove', 		_mousemove,	true);
 				_dom.addEventListener('mouseout', 		_mouseout,	true);
-				_$randomColors.bind("click", _setRandomColor);
 				_$oldColorsDiv.bind("click", _oldColorClick);
 			},
 			removeEvents = function() {
-				DOCUMENT.removeEventListener('mouseup',_mouseup,	true);
+				DOCUMENT.removeEventListener('mouseup',	_mouseup,	true);
 				_dom.removeEventListener('mousedown',	_mousedown,	true);
 				_dom.removeEventListener('mousemove', 	_mousemove,	true);
 				_dom.removeEventListener('mouseout', 	_mouseout,	true);
-				_$randomColors.unbind("click", _setRandomColor);
 				_$oldColorsDiv.unbind("click", _oldColorClick);
 			},
 			_update = function() {
 				var px, __color;
-				_context.drawImage(_imagePicker, 0, 0);
+				_context.drawImage(_imagePicker, 0, 0, width, height);
 				px = _context.getImageData(_mouseX, _mouseY, 1, 1).data;
 				__color = "rgb(" + px[0] + "," + px[1] + "," + px[2] + ")";
 				_$preview.css("backgroundColor", __color);
-				//if (_oldX >= 0)
-					_context.drawImage(_imageSelector, _oldX - 7, _oldY - 7);
+				_context.drawImage(_imageSelector, _oldX - 5, _oldY - 5);
 				if (_isMouseDown) {
-					if (!_color)
-						_$randomColors.html('<img src="img/icon/no.png">' + label["Casuale"]);
 					_color = __color;
 					if (_newColor) {
 						_newColor = false;
@@ -1531,41 +1519,27 @@ var App = (function() {
 			_oldColorClick = function() {
 				if (this.id.slice(-1) < _lastColors.length) {
 					_oldX = _oldY = -10;
-					if (!_color)
-						_$randomColors.html('<img src="img/icon/no.png">' + label["Casuale"]);
 					_color = $(this).css("backgroundColor");
-					_context.drawImage(_imagePicker, 0, 0);
+					_context.drawImage(_imagePicker, 0, 0, width, height);
 					_$preview.css("backgroundColor", _color);
 					Editor.setColor(_color);
 				}
 			},
-			_setRandomColor = function() {
-				if (_color) {
-					_context.clearRect(0, 0, _dom.width, _dom.height);
-					_context.drawImage(_imagePicker, 0, 0);
-					_$preview.css("backgroundColor", "white");
-					_oldX = _oldY = -10;
-					_color = false;
-					_$randomColors.html('<img src="img/icon/yes.png">' + label["Casuale"]);
-					Editor.setColor(false);
-				}
-			},
 			show = function() {
-				//_$container.show();
+				_$container.fadeIn();
 				if (!_newColor) {
 					_newColor = true;
 					for (var i = 0, len = _lastColors.length; i < len; i++)
 						_$oldColors[i].css("backgroundColor", _lastColors[i]);
 				}
 			},
-			//hide = function() {
-			//	_$container.hide();
-			//},
-			setColor = function(__color) {
-				_$randomColors.html('<img src="img/icon/no.png">' + label["Casuale"]);
-				_color = __color;
-				_context.drawImage(_imagePicker, 0, 0);
-				_$preview.css("backgroundColor", _color);
+			hide = function() {
+				_$container.fadeOut();
+			},
+			setColor = function(color) {
+				_color = color;
+				_context.drawImage(_imagePicker, 0, 0, width, height);
+				_$preview.css("backgroundColor", color);
 				_oldX = _oldY = -10;
 			},
 			getColor = function() {
@@ -1577,7 +1551,7 @@ var App = (function() {
 			return {
 				init:			init,
 				show: 			show,
-				//hide:			hide,
+				hide:			hide,
 				addEvents:		addEvents,
 				removeEvents:	removeEvents,
 				setColor:		setColor,
