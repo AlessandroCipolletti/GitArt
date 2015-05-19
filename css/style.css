@@ -228,7 +228,7 @@ body {
 		cursor: url('../img/pencil_cur.png') 2 88 , auto;
 	}
 	#editor.useEraser {
-		cursor: url('../img/eraser_cur.png') 7 51 , auto;
+		cursor: url('../img/eraser_cur.png') 2 55 , auto;
 	}
 	#editor.usePicker {
 		cursor: url('../img/picker_cur.png') 3 63 , auto;
