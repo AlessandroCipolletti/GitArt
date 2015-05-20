@@ -36,7 +36,7 @@ var App = (function() {
 	Config = (function() {
 		return {
 			debug : true,
-			socketUrl : "http://46.252.150.61:4000",
+			socketUrl : "http://46.252.150.61:5000",
 			workers : {
 				blur :		"file blur.js",
 				scarica :	"file scarica.js"
