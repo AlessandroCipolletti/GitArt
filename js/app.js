@@ -347,9 +347,16 @@ var App = (function() {
 			_currentY = y;
 			_updateCoordsLabel(x, y);
 		},
+		_animZoom = function() {
+			if (_zoom === 1) {
+				Editor.show();
+			} else {
+				_zoomTo(_zoom - 1, XX2, YY2, true);
+				requestAnimationFrame(_animZoom);
+			}
+		},
 		_buttonModifyClick = function() {
-			_zoomTo(1);
-			Editor.show();
+			_animZoom();
 		},
 		_isVisible = function(img) {	// OK - la zona "visibile" è quella attualmente a video, più una schermata per ogni lato, come sorta di 'cache'
 			var z = _imageGroup.matrix.a,
@@ -390,11 +397,10 @@ var App = (function() {
 			}
 			_deltaDragX = _deltaDragY = 0;
 		},
-		_zoomTo = function(level, x, y) {	// "OK", porco dio
+		_zoomTo = function(level, x, y, animated) {	// "OK", porco dio
 			// posso provare a correggere gli arrotondamenti facendo i calcoli fissando un numero di decimali
 			if (level === _zoom || level > _zoomMax || level < 1) return;
-			var x = typeof x === "undefined" ? XX2 : x,
-				y = typeof y === "undefined" ? YY2 : y,
+			var refreshCache = (level === 1 || animated !== true),
 				_deltaZoomLevel = level - _zoom,
 				newp = _dom.createSVGPoint(),
 				//_zz = (_deltaZoomLevel > 0) ? MATH.pow(1 - _zoomScale, -_deltaZoomLevel) : MATH.pow(1 / (1 - _zoomScale), _deltaZoomLevel),
@@ -416,8 +422,10 @@ var App = (function() {
 			_imageGroup.matrix = _imageGroup.matrix.translate(-(newp.x * (_z-1)), -(newp.y * (_z-1)));
 			_imageGroup.matrix.a = _imageGroup.matrix.d = _zoomScaleLevelsDown[_zoom - 1];
 			_imageGroup.updateMatrix();
-			_updateCacheForZoom(_z, x, y);
-			(_deltaZoomLevel > 0) && _fillScreen(); 	// dopo lo zoom e l'aggiornamento delle imm, scarico e visualizzo le nuove. necessario solo se sto rimpicciolendo la schermata.
+			if (refreshCache) {
+				_updateCacheForZoom(_z, x, y);
+				(_deltaZoomLevel > 0) && _fillScreen(); 	// dopo lo zoom e l'aggiornamento delle imm, scarico e visualizzo le nuove. necessario solo se sto rimpicciolendo la schermata.
+			}
 			_zoomLabel.textContent = [round(100 - (95 / _zoomMax) * (level - 1)), "%"].join('');
 		},
 		_drag = function(dx, dy, forceLoad) {	// OK. dx dy sono le differenze in px, non in coordinate (bisogna tenere conto dello zoom)
