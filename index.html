@@ -16,6 +16,19 @@
 			display: none;
 		}
 	</style>
+	<script>
+		function touchHandler(e) {
+			e.preventDefault();
+			var first = e.changedTouches[0],
+				type = e.type === "touchstart" ? "mousedown" : e.type === "touchmove" ? "mousemove" : "mouseup";
+				simulatedEvent = document.createEvent("MouseEvent");
+			simulatedEvent.initMouseEvent(type, true, true, window, 1, first.screenX, first.screenY, first.clientX, first.clientY, false, false, false, false, 0, null);
+			first.target.dispatchEvent(simulatedEvent)
+		}
+		document.addEventListener("touchstart", touchHandler, true);
+		document.addEventListener("touchmove", touchHandler, true);
+		document.addEventListener("touchend", touchHandler, true);
+	</script>
 </head>
 <body id="body" onLoad="App.Init()">
 	<div id="darkOverlay"></div>
