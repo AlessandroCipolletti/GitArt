@@ -35,8 +35,8 @@ var App = (function() {
 		
 	Config = (function() {
 		return {
-			debug : false,
-			socketUrl : "http://46.252.150.61:4000",
+			debug : true,
+			socketUrl : "http://46.252.150.61:5000",
 			workers : {
 				blur :		"file blur.js",
 				scarica :	"file scarica.js"
@@ -152,7 +152,7 @@ var App = (function() {
 			el.addClass("disabled").removeClass("enabled");
 		},
 		logError = function(msg) {
-			//console.log(msg);
+			console.log(msg);
 			// qui possiamo anche tentare una chiamata ajax per inviarci _msg per le statistiche sugli errori,
 		},
 		setSpinner = function(state, overlay) {
@@ -196,16 +196,16 @@ var App = (function() {
 					}
 				};
 				_socket.io.on("error", function() {
-					//console.log(label['socketError']);
+					console.log(label['socketError']);
 				});
 				_socket.io.on("disconnect", function() {
-					//console.log("socket disconnect");
+					console.log("socket disconnect");
 				});
 				_socket.io.on("reconnect", function() {
 					_onConnect();
 				});
 				_socket.io.on("connect", function() {
-					//console.log("Socket Connect OK");
+					console.log("Socket Connect OK");
 					_onConnect();
 				});
 				_socket.io.on("dashboard drag", Dashboard.onSocketMessage);
@@ -282,7 +282,7 @@ var App = (function() {
 				_updateIds();
 			},
 			log = function() {
-				//console.log(_list);
+				console.log(_list);
 			},
 			ids = function() {
 				return _ids;
@@ -458,7 +458,7 @@ var App = (function() {
 			}
 		},
 		_addDraws = function(draws) {	// aggiunge uno ad uno i disegni ricevuti dal socket
-			////console.log("disegni ricevuti: " + draws.length);
+			//console.log("disegni ricevuti: " + draws.length);
 			var draw,
 				scale = _imageGroup.matrix.a;
 			for (var i = 0, l = draws.length; i < l; i++) {
@@ -504,7 +504,7 @@ var App = (function() {
 		    return true;
 		},
 		_removeDraw = function(id, del) {	// OK
-			//console.log("rimuovo:" + id);
+			console.log("rimuovo:" + id);
 			(del || false) && _cache.del(id);
 			_imagesVisibleIds.splice(_imagesVisibleIds.indexOf(id), 1);
 			var _oldDraw = DOCUMENT.getElementById(id);
@@ -513,7 +513,7 @@ var App = (function() {
 		_appendDraw = function(draw) {	// aggiunge alla dashboard un svg image già elaborato 
 			if (!draw || !draw.id) return false;
 			if (_imagesVisibleIds.indexOf(draw.id) === -1) {
-				//console.log(["aggiungo", draw]);
+				console.log(["aggiungo", draw]);
 				_imagesVisibleIds.push(draw.id);
 				_imagesVisibleIds = _imagesVisibleIds.sort(orderStringDown);
 				var index = _imagesVisibleIds.indexOf(draw.id) + 1;
@@ -1046,7 +1046,7 @@ var App = (function() {
 				return e.ctrlKey;
 			},
 		_keyDown = function(e) {
-			////console.log("editor: " + e.keyCode);
+			//console.log("editor: " + e.keyCode);
 			var keyCode = e.keyCode;
 			if (keyCode === 27) {
 				e.preventDefault();
