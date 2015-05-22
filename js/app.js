@@ -252,7 +252,7 @@ var App = (function() {
 		_draggable = true, _isMouseDown = false, _zoomable = true, _groupCoordX = 0, _groupCoordY = 0, _isLoading = false, _timeoutForSpinner = false,
 		_zoomScaleLevelsDown = [ 1, 0.88, 0.7744, 0.681472, 0.59969536, 0.5277319168, 0.464404086783, 0.408675596397, 0.359634524806, 0.316478381829, 0.278500976009, 0.245080858888, 0.215671155822, 0.189790617123, 0.167015743068, 0.146973853900, 0.129336991432, 0.113816552460, 0.100158566165, 0.088139538225 ],
 		_zoomScaleLevelsUp = [ 1, 1.136363636364, 1.291322314050, 1.467411720511, 1.667513318762, 1.894901498594, 2.153297157493, 2.446928588060, 2.780600668250, 3.159773486648, 3.590651689372, 4.080286010650, 4.636688648466, 5.268964373257, 5.987459515065, 6.803931267119, 7.731740076272, 8.786068268491, 9.984168486921, 11.34564600787 ],
-		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 0, _socketCallsEnCours = 0,
+		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 0, _socketCallsEnCours = 0, _animationZoom = false,
 		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 200, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
 		
 		_cache = (function() {
@@ -350,13 +350,17 @@ var App = (function() {
 		_animZoom = function() {
 			if (_zoom === 1) {
 				Editor.show();
+				_animationZoom = false;
 			} else {
 				_zoomTo(_zoom - 1, XX2, YY2, true);
 				requestAnimationFrame(_animZoom);
 			}
 		},
 		_buttonModifyClick = function() {
-			_animZoom();
+			if (!_animationZoom) {
+				_animationZoom = true;
+				_animZoom();
+			}
 		},
 		_isVisible = function(img) {	// OK - la zona "visibile" è quella attualmente a video, più una schermata per ogni lato, come sorta di 'cache'
 			var z = _imageGroup.matrix.a,
@@ -473,6 +477,8 @@ var App = (function() {
 			}
 		},
 		addDraw = function(draw, replace) {	// OK	aggiunge e salva un disegno passato dall editor o dal socket
+		console.log(draw);
+
 			if (!draw || !draw.id) return false;
 			var _drawExist = _cache.exist(draw.id),
 				scale = _imageGroup.matrix.a;
