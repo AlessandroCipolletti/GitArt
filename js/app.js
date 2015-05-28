@@ -252,7 +252,7 @@ var App = (function() {
 		_draggable = true, _isMouseDown = false, _zoomable = true, _groupCoordX = 0, _groupCoordY = 0, _isLoading = false, _timeoutForSpinner = false,
 		_zoomScaleLevelsDown = [ 1, 0.88, 0.7744, 0.681472, 0.59969536, 0.5277319168, 0.464404086783, 0.408675596397, 0.359634524806, 0.316478381829, 0.278500976009, 0.245080858888, 0.215671155822, 0.189790617123, 0.167015743068, 0.146973853900, 0.129336991432, 0.113816552460, 0.100158566165, 0.088139538225 ],
 		_zoomScaleLevelsUp = [ 1, 1.136363636364, 1.291322314050, 1.467411720511, 1.667513318762, 1.894901498594, 2.153297157493, 2.446928588060, 2.780600668250, 3.159773486648, 3.590651689372, 4.080286010650, 4.636688648466, 5.268964373257, 5.987459515065, 6.803931267119, 7.731740076272, 8.786068268491, 9.984168486921, 11.34564600787 ],
-		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 0, _socketCallsEnCours = 0, _animationZoom = false,
+		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 0, _socketCallsInProgress = 0, _animationZoom = false,
 		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 200, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
 		
 		_cache = (function() {
@@ -385,8 +385,14 @@ var App = (function() {
 		},
 		_updateCacheForZoom = function(z, zx, zy) {	// OK
 			var _ids = _cache.ids();
+			
 			_groupCoordX = round(_groupCoordX + (zx - _groupCoordX) * (1 - z), _decimals);
 			_groupCoordY = round(_groupCoordY + (zy - _groupCoordY) * (1 - z), _decimals);
+			var _groupRect = _imageGroup.tag.getBoundingClientRect();
+			//_groupCoordX = _groupRect.left;
+			//_groupCoordY = _groupRect.top;
+			console.log(_groupCoordX, _groupCoordY, "-", _groupRect.left, _groupRect.top);
+			
 			for (var i = _ids.length; i--; ) {
 				var _img = _cache.get(_ids[i]);
 				//_img.pxx = _img.pxx + _deltaDragX;
@@ -435,12 +441,18 @@ var App = (function() {
 			var scale = _imageGroup.matrix.a,
 				_deltaX = round(dx / scale, _decimals),
 				_deltaY = round(dy / scale, _decimals);
-			_groupCoordX = _groupCoordX + dx;
-			_groupCoordY = _groupCoordY + dy;
 			_deltaDragX = _deltaDragX + dx;
 			_deltaDragY = _deltaDragY + dy;
 			_imageGroup.matrix = _imageGroup.matrix.translate(_deltaX, _deltaY);
 			_imageGroup.updateMatrix();
+			
+			_groupCoordX = _groupCoordX + dx;
+			_groupCoordY = _groupCoordY + dy;
+			var _groupRect = _imageGroup.tag.getBoundingClientRect();
+			//_groupCoordX = _groupRect.left;
+			//_groupCoordY = _groupRect.top;
+			console.log(_groupCoordX, _groupCoordY, "-", _groupRect.left, _groupRect.top);
+			
 			var _newX = round(_currentX - _deltaX, _decimals),
 				_newY = round(_currentY + _deltaY, _decimals);
 			_updateCurrentCoords(_newX, _newY);
@@ -452,8 +464,8 @@ var App = (function() {
 		},
 		onSocketMessage = function(data) {
 			if (["end", "none", "error"].indexOf(data) >= 0) {
-				_socketCallsEnCours--;
-				if (_socketCallsEnCours === 0) {
+				_socketCallsInProgress--;
+				if (_socketCallsInProgress === 0) {
 					_isLoading = false;
 					utils.setSpinner(false);
 				}
@@ -477,8 +489,7 @@ var App = (function() {
 			}
 		},
 		addDraw = function(draw, replace) {	// OK	aggiunge e salva un disegno passato dall editor o dal socket
-		console.log(draw);
-
+			//console.log(draw);
 			if (!draw || !draw.id) return false;
 			var _drawExist = _cache.exist(draw.id),
 				scale = _imageGroup.matrix.a;
@@ -510,7 +521,7 @@ var App = (function() {
 		    return true;
 		},
 		_removeDraw = function(id, del) {	// OK
-			console.log("rimuovo:" + id);
+			//console.log("rimuovo:" + id);
 			(del || false) && _cache.del(id);
 			_imagesVisibleIds.splice(_imagesVisibleIds.indexOf(id), 1);
 			var _oldDraw = DOCUMENT.getElementById(id);
@@ -519,7 +530,7 @@ var App = (function() {
 		_appendDraw = function(draw) {	// aggiunge alla dashboard un svg image già elaborato 
 			if (!draw || !draw.id) return false;
 			if (_imagesVisibleIds.indexOf(draw.id) === -1) {
-				console.log(["aggiungo", draw]);
+				//console.log(["aggiungo", draw]);
 				_imagesVisibleIds.push(draw.id);
 				_imagesVisibleIds = _imagesVisibleIds.sort(orderStringDown);
 				var index = _imagesVisibleIds.indexOf(draw.id) + 1;
@@ -556,7 +567,7 @@ var App = (function() {
 			}
 		},
 		_callSocketFor = function(area, notIds) { // OK
-			_socketCallsEnCours++;
+			_socketCallsInProgress++;
 			if (!_isLoading) {
 				_isLoading = true;
 				if (_timeoutForSpinner === false) {
@@ -652,6 +663,7 @@ var App = (function() {
 			if (e.target.id === "dashboard") {
 				//_cache.log();
 			}
+			console.log(_imageGroup.tag.getBoundingClientRect().left);
 		},
 		_mouseend = function() {
 			_mouseX = 0;
