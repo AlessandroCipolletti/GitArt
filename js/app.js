@@ -248,11 +248,11 @@ var App = (function() {
 	})(),
 	
 	Dashboard = (function() {
-		var _dom, _imageGroup = {}, _originPointDom = false, _$buttonModify, _zoomLabel, _$zoomLabelDoms, _$coordsLabel, _$allDom, 
-		_draggable = true, _isMouseDown = false, _zoomable = true, _groupCoordX = 0, _groupCoordY = 0, _isLoading = false, _timeoutForSpinner = false,
+		var _dom, _imageGroup = {}, _$buttonModify, _zoomLabel, _$zoomLabelDoms, _$coordsLabel, _$allDom, 
+		_draggable = true, _isMouseDown = false, _zoomable = true, _isLoading = false, _timeoutForSpinner = false,
 		_zoomScaleLevelsDown = [ 1, 0.88, 0.7744, 0.681472, 0.59969536, 0.5277319168, 0.464404086783, 0.408675596397, 0.359634524806, 0.316478381829, 0.278500976009, 0.245080858888, 0.215671155822, 0.189790617123, 0.167015743068, 0.146973853900, 0.129336991432, 0.113816552460, 0.100158566165, 0.088139538225 ],
 		_zoomScaleLevelsUp = [ 1, 1.136363636364, 1.291322314050, 1.467411720511, 1.667513318762, 1.894901498594, 2.153297157493, 2.446928588060, 2.780600668250, 3.159773486648, 3.590651689372, 4.080286010650, 4.636688648466, 5.268964373257, 5.987459515065, 6.803931267119, 7.731740076272, 8.786068268491, 9.984168486921, 11.34564600787 ],
-		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 0, _socketCallsEnCours = 0, _animationZoom = false,
+		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 0, _socketCallsInProgress = 0, _animationZoom = false,
 		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 200, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
 		
 		_cache = (function() {
@@ -318,10 +318,23 @@ var App = (function() {
 		})(),
 		_imagesVisibleIds = [],
 		_initDomGroup = function() {
+			if (_imageGroup.tag) {
+				_dom.removeChild(_imageGroup.tag);
+				_imageGroup.origin = _imageGroup.tag = null;
+				_imageGroup.pxx = _imageGroup.pxy = 0;
+			}
 			var g = DOCUMENT.createElementNS("http://www.w3.org/2000/svg", "g");
+			var origin = document.createElementNS("http://www.w3.org/2000/svg", 'rect');
 			g.setAttribute('id', 'imageGroup');
+			origin.setAttributeNS(null, 'x', 0);
+	        origin.setAttributeNS(null, 'y', 0);
+	        origin.setAttributeNS(null, 'height', '1');
+	        origin.setAttributeNS(null, 'width', '1');
+	        origin.setAttributeNS(null, 'fill', '#FFF');
+	        g.appendChild(origin);
 			_dom.appendChild(g);
 			_imageGroup.tag = g;
+			_imageGroup.origin = origin;
 		},
 		_initDom = function() {
 			_dom = DOCUMENT.querySelector("#dashboard");
@@ -372,21 +385,8 @@ var App = (function() {
 				(img.y > _currentY - deltaCoordY));				 // bottom
 			//return (img.pxx + img.pxw > -XX && img.pxy + img.pxh > -YY && img.pxx < DXX && img.pxy < DYY);
 		},
-		_updateCacheForDrag = function(dx, dy) {	// OK
-			var _ids = _cache.ids();
-			for (var i = _ids.length; i--; ) {
-				var _img = _cache.get(_ids[i]);
-				//_img.pxx = _img.pxx + dx;
-				//_img.pxy = _img.pxy + dy;
-				_img.isVisible = _isVisible(_img);
-				(_imagesVisibleIds.indexOf(_img.id) >= 0) && (!_img.isVisible) && _removeDraw(_img.id, false);
-				_cache.set(_img.id, _img);
-			}
-		},
 		_updateCacheForZoom = function(z, zx, zy) {	// OK
 			var _ids = _cache.ids();
-			_groupCoordX = round(_groupCoordX + (zx - _groupCoordX) * (1 - z), _decimals);
-			_groupCoordY = round(_groupCoordY + (zy - _groupCoordY) * (1 - z), _decimals);
 			for (var i = _ids.length; i--; ) {
 				var _img = _cache.get(_ids[i]);
 				//_img.pxx = _img.pxx + _deltaDragX;
@@ -420,30 +420,49 @@ var App = (function() {
 			newp = newp.matrixTransform(_imageGroup.tag.getScreenCTM().inverse());
 			newp.x = round(newp.x);
 			newp.y = round(newp.y);
-			var _newX = round(_currentX + ((XX2 - x) * _currentScaleAndZoom), _decimals),
-				_newY = round(_currentY - ((YY2 - y) * _currentScaleAndZoom), _decimals);
-			_updateCurrentCoords(_newX, _newY);
+			var _newCoordX = round(_currentX + ((XX2 - x) * _currentScaleAndZoom), _decimals),
+				_newCoordY = round(_currentY - ((YY2 - y) * _currentScaleAndZoom), _decimals);
+			_updateCurrentCoords(_newCoordX, _newCoordY);
 			_imageGroup.matrix = _imageGroup.matrix.translate(-(newp.x * (_z-1)), -(newp.y * (_z-1)));
 			_imageGroup.matrix.a = _imageGroup.matrix.d = _zoomScaleLevelsDown[_zoom - 1];
 			_imageGroup.updateMatrix();
+			//_imageGroup.pxx = round(_imageGroup.pxx + (zx - _imageGroup.pxx) * (1 - z), _decimals);
+			//_imageGroup.pxy = round(_imageGroup.pxy + (zy - _imageGroup.pxy) * (1 - z), _decimals);
+			var _groupRect = _imageGroup.origin.getBoundingClientRect();
+			_imageGroup.pxx = _groupRect.left;
+			_imageGroup.pxy = _groupRect.top;
 			_updateCacheForZoom(_z, x, y);
 			refreshCache && (_deltaZoomLevel > 0) && _fillScreen(); 	// dopo lo zoom e l'aggiornamento delle imm, scarico e visualizzo le nuove. necessario solo se sto rimpicciolendo la schermata.
 			_zoomLabel.textContent = [round(100 - (95 / _zoomMax) * (level - 1)), "%"].join('');
+		},
+		_updateCacheForDrag = function(dx, dy) {	// OK
+			var _ids = _cache.ids();
+			for (var i = _ids.length; i--; ) {
+				var _img = _cache.get(_ids[i]);
+				//_img.pxx = _img.pxx + dx;
+				//_img.pxy = _img.pxy + dy;
+				_img.isVisible = _isVisible(_img);
+				(_imagesVisibleIds.indexOf(_img.id) >= 0) && (!_img.isVisible) && _removeDraw(_img.id, false);
+				_cache.set(_img.id, _img);
+			}
 		},
 		_drag = function(dx, dy, forceLoad) {	// OK. dx dy sono le differenze in px, non in coordinate (bisogna tenere conto dello zoom)
 			if (dx === 0 && dy === 0) return;
 			var scale = _imageGroup.matrix.a,
 				_deltaX = round(dx / scale, _decimals),
 				_deltaY = round(dy / scale, _decimals);
-			_groupCoordX = _groupCoordX + dx;
-			_groupCoordY = _groupCoordY + dy;
 			_deltaDragX = _deltaDragX + dx;
 			_deltaDragY = _deltaDragY + dy;
 			_imageGroup.matrix = _imageGroup.matrix.translate(_deltaX, _deltaY);
 			_imageGroup.updateMatrix();
-			var _newX = round(_currentX - _deltaX, _decimals),
-				_newY = round(_currentY + _deltaY, _decimals);
-			_updateCurrentCoords(_newX, _newY);
+			//_imageGroup.pxx = _imageGroup.pxx + dx;
+			//_imageGroup.pxy = _imageGroup.pxy + dy;
+			var _groupRect = _imageGroup.origin.getBoundingClientRect();
+			_imageGroup.pxx = _groupRect.left;
+			_imageGroup.pxy = _groupRect.top;
+			var _newCoordX = round(_currentX - _deltaX, _decimals),
+				_newCoordY = round(_currentY + _deltaY, _decimals);
+			_updateCurrentCoords(_newCoordX, _newCoordY);
 			_updateCacheForDrag(dx, dy);
 			if (forceLoad || MATH.abs(_deltaDragX) > _deltaDragMax || MATH.abs(_deltaDragY) > _deltaDragMax) {
 				_fillScreen(); // dopo il drag e l'aggiornamento delle imm, scarico e visualizzo le nuove
@@ -452,8 +471,8 @@ var App = (function() {
 		},
 		onSocketMessage = function(data) {
 			if (["end", "none", "error"].indexOf(data) >= 0) {
-				_socketCallsEnCours--;
-				if (_socketCallsEnCours === 0) {
+				_socketCallsInProgress--;
+				if (_socketCallsInProgress === 0) {
 					_isLoading = false;
 					utils.setSpinner(false);
 				}
@@ -477,8 +496,7 @@ var App = (function() {
 			}
 		},
 		addDraw = function(draw, replace) {	// OK	aggiunge e salva un disegno passato dall editor o dal socket
-		console.log(draw);
-
+			//console.log(draw);
 			if (!draw || !draw.id) return false;
 			var _drawExist = _cache.exist(draw.id),
 				scale = _imageGroup.matrix.a;
@@ -488,10 +506,10 @@ var App = (function() {
 				_drawExist && _removeDraw(draw.id, true);
 				var _newDraw = DOCUMENT.createElementNS("http://www.w3.org/2000/svg", "image");
 				_newDraw.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", draw.base64);
-				//_newDraw.setAttribute('x', round((draw.pxx - _groupCoordX) / scale, _decimals));
-				//_newDraw.setAttribute('y', round((draw.pxy - _groupCoordY) / scale, _decimals));
-				_newDraw.setAttribute('x', round(((draw.x - _currentX) * scale + XX2 - _groupCoordX) / scale, _decimals));
-				_newDraw.setAttribute('y', round(((_currentY - draw.y) * scale + YY2 - _groupCoordY) / scale, _decimals));
+				//_newDraw.setAttribute('x', round((draw.pxx - _imageGroup.pxx) / scale, _decimals));
+				//_newDraw.setAttribute('y', round((draw.pxy - _imageGroup.pxy) / scale, _decimals));
+				_newDraw.setAttribute('x', round(((draw.x - _currentX) * scale + XX2 - _imageGroup.pxx) / scale, _decimals));
+				_newDraw.setAttribute('y', round(((_currentY - draw.y) * scale + YY2 - _imageGroup.pxy) / scale, _decimals));
 				_newDraw.setAttribute('width', draw.w);
 				_newDraw.setAttribute('height', draw.h);
 				_newDraw.id = draw.id;
@@ -510,7 +528,7 @@ var App = (function() {
 		    return true;
 		},
 		_removeDraw = function(id, del) {	// OK
-			console.log("rimuovo:" + id);
+			//console.log("rimuovo:" + id);
 			(del || false) && _cache.del(id);
 			_imagesVisibleIds.splice(_imagesVisibleIds.indexOf(id), 1);
 			var _oldDraw = DOCUMENT.getElementById(id);
@@ -519,7 +537,7 @@ var App = (function() {
 		_appendDraw = function(draw) {	// aggiunge alla dashboard un svg image già elaborato 
 			if (!draw || !draw.id) return false;
 			if (_imagesVisibleIds.indexOf(draw.id) === -1) {
-				console.log(["aggiungo", draw]);
+				//console.log(["aggiungo", draw]);
 				_imagesVisibleIds.push(draw.id);
 				_imagesVisibleIds = _imagesVisibleIds.sort(orderStringDown);
 				var index = _imagesVisibleIds.indexOf(draw.id) + 1;
@@ -556,7 +574,7 @@ var App = (function() {
 			}
 		},
 		_callSocketFor = function(area, notIds) { // OK
-			_socketCallsEnCours++;
+			_socketCallsInProgress++;
 			if (!_isLoading) {
 				_isLoading = true;
 				if (_timeoutForSpinner === false) {
@@ -589,15 +607,7 @@ var App = (function() {
 			_updateCurrentCoords(x, y);
 			_imagesVisibleIds = [];
 			_cache.setAllInvisible();
-			_dom.removeChild(_imageGroup.tag);
-			_originPointDom = _imageGroup.tag = null;
 			_initDomGroup();
-			_originPointDom = point = document.createElementNS("http://www.w3.org/2000/svg", 'rect');
-			_originPointDom.setAttributeNS(null, 'x', 0);
-			_originPointDom.setAttributeNS(null, 'y', 0);
-			_originPointDom.setAttributeNS(null, 'height', '0');
-			_originPointDom.setAttributeNS(null, 'width', '0');
-			_imageGroup.tag.appendChild(_originPointDom);
 			_updateCacheForDrag(dx, dy);
 			_deltaDragX = _deltaDragY = 0;
 			_fillScreen();
@@ -650,7 +660,7 @@ var App = (function() {
 		_click = function(e) {
 			// se ho cliccato su un disegno lo evidenzio, con bordo proporzionale allo zoom corrente
 			if (e.target.id === "dashboard") {
-				//_cache.log();
+				_cache.log();
 			}
 		},
 		_mouseend = function() {
