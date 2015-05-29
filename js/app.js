@@ -253,7 +253,7 @@ var App = (function() {
 		_zoomScaleLevelsDown = [ 1, 0.88, 0.7744, 0.681472, 0.59969536, 0.5277319168, 0.464404086783, 0.408675596397, 0.359634524806, 0.316478381829, 0.278500976009, 0.245080858888, 0.215671155822, 0.189790617123, 0.167015743068, 0.146973853900, 0.129336991432, 0.113816552460, 0.100158566165, 0.088139538225 ],
 		_zoomScaleLevelsUp = [ 1, 1.136363636364, 1.291322314050, 1.467411720511, 1.667513318762, 1.894901498594, 2.153297157493, 2.446928588060, 2.780600668250, 3.159773486648, 3.590651689372, 4.080286010650, 4.636688648466, 5.268964373257, 5.987459515065, 6.803931267119, 7.731740076272, 8.786068268491, 9.984168486921, 11.34564600787 ],
 		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 0, _socketCallsInProgress = 0, _animationZoom = false,
-		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaDragMax = 200, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
+		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaZoomMax = 2, _deltaZoom = 0, _deltaDragMax = 200, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
 		
 		_cache = (function() {
 			var _list = {},
@@ -385,7 +385,28 @@ var App = (function() {
 				(img.y > _currentY - deltaCoordY));				 // bottom
 			//return (img.pxx + img.pxw > -XX && img.pxy + img.pxh > -YY && img.pxx < DXX && img.pxy < DYY);
 		},
-		_updateCacheForZoom = function(z, zx, zy) {	// OK
+		_updateGroupOrigin = function() {
+			//_imageGroup.pxx = round(_imageGroup.pxx + (zx - _imageGroup.pxx) * (1 - z), _decimals);
+			//_imageGroup.pxy = round(_imageGroup.pxy + (zy - _imageGroup.pxy) * (1 - z), _decimals);
+			var _groupRect = _imageGroup.origin.getBoundingClientRect();
+			_imageGroup.pxx = round(_groupRect.left, _decimals);
+			_imageGroup.pxy = round(_groupRect.top, _decimals);
+		},
+		_updateCache = function() {
+			var _ids = _cache.ids();
+			for (var i = _ids.length; i--; ) {
+				var _img = _cache.get(_ids[i]),
+					rect = _img.data.getBoundingClientRect();
+				_img.pxx = round(rect.left, _decimals);
+				_img.pxy = round(rect.top, _decimals);
+				_img.pxw = round(rect.width, _decimals);
+				_img.pxh = round(rect.height, _decimals);
+				_img.isVisible = _isVisible(_img);
+				(_imagesVisibleIds.indexOf(_img.id) >= 0) && (!_img.isVisible) && _removeDraw(_img.id, false);
+				_cache.set(_img.id, _img);
+			}
+		},
+		/* _updateCacheForZoom = function(z, zx, zy) {	// OK
 			var _ids = _cache.ids();
 			for (var i = _ids.length; i--; ) {
 				var _img = _cache.get(_ids[i]);
@@ -400,42 +421,39 @@ var App = (function() {
 				_cache.set(_img.id, _img);
 			}
 			_deltaDragX = _deltaDragY = 0;
-		},
-		_zoomTo = function(level, x, y, animated) {	// "OK", porco dio
+		}, */
+		_zoomTo = function(level, x, y, animated) {	// "OK"
 			// posso provare a correggere gli arrotondamenti facendo i calcoli fissando un numero di decimali
 			if (level === _zoom || level > _zoomMax || level < 1) return;
 			var refreshCache = (level === 1 || animated !== true),
-				_deltaZoomLevel = level - _zoom,
+				deltaZoomLevel = level - _zoom,
 				newp = _dom.createSVGPoint(),
-				//_zz = (_deltaZoomLevel > 0) ? MATH.pow(1 - _zoomScale, -_deltaZoomLevel) : MATH.pow(1 / (1 - _zoomScale), _deltaZoomLevel),
-				//_z = (_deltaZoomLevel > 0) ? MATH.pow(1 - _zoomScale, _deltaZoomLevel) : MATH.pow(1 / (1 - _zoomScale), -_deltaZoomLevel),
-				_scaleLevelIndex = MATH.abs(_deltaZoomLevel),
-				_zz = (_deltaZoomLevel > 0) ? _zoomScaleLevelsUp[_scaleLevelIndex] : _zoomScaleLevelsDown[_scaleLevelIndex],
-				_z = (_deltaZoomLevel > 0) ? _zoomScaleLevelsDown[_scaleLevelIndex] : _zoomScaleLevelsUp[_scaleLevelIndex],
+				//_zz = (deltaZoomLevel > 0) ? MATH.pow(1 - _zoomScale, -deltaZoomLevel) : MATH.pow(1 / (1 - _zoomScale), deltaZoomLevel),
+				//_z = (deltaZoomLevel > 0) ? MATH.pow(1 - _zoomScale, deltaZoomLevel) : MATH.pow(1 / (1 - _zoomScale), -deltaZoomLevel),
+				_scaleLevelIndex = MATH.abs(deltaZoomLevel),
+				_zz = (deltaZoomLevel > 0) ? _zoomScaleLevelsUp[_scaleLevelIndex] : _zoomScaleLevelsDown[_scaleLevelIndex],
+				_z = (deltaZoomLevel > 0) ? _zoomScaleLevelsDown[_scaleLevelIndex] : _zoomScaleLevelsUp[_scaleLevelIndex],
 				_currentScale = 1 / _imageGroup.matrix.a,
 				_currentScaleAndZoom = _currentScale * round(_zz - 1, 12);
 			_zoom = level;
+			_deltaZoom = _deltaZoom + MATH.max(deltaZoomLevel, 0);
 			newp.x = x;
 			newp.y = y;
 			newp = newp.matrixTransform(_imageGroup.tag.getScreenCTM().inverse());
 			newp.x = round(newp.x);
 			newp.y = round(newp.y);
-			var _newCoordX = round(_currentX + ((XX2 - x) * _currentScaleAndZoom), _decimals),
-				_newCoordY = round(_currentY - ((YY2 - y) * _currentScaleAndZoom), _decimals);
-			_updateCurrentCoords(_newCoordX, _newCoordY);
 			_imageGroup.matrix = _imageGroup.matrix.translate(-(newp.x * (_z-1)), -(newp.y * (_z-1)));
 			_imageGroup.matrix.a = _imageGroup.matrix.d = _zoomScaleLevelsDown[_zoom - 1];
 			_imageGroup.updateMatrix();
-			//_imageGroup.pxx = round(_imageGroup.pxx + (zx - _imageGroup.pxx) * (1 - z), _decimals);
-			//_imageGroup.pxy = round(_imageGroup.pxy + (zy - _imageGroup.pxy) * (1 - z), _decimals);
-			var _groupRect = _imageGroup.origin.getBoundingClientRect();
-			_imageGroup.pxx = _groupRect.left;
-			_imageGroup.pxy = _groupRect.top;
-			_updateCacheForZoom(_z, x, y);
-			refreshCache && (_deltaZoomLevel > 0) && _fillScreen(); 	// dopo lo zoom e l'aggiornamento delle imm, scarico e visualizzo le nuove. necessario solo se sto rimpicciolendo la schermata.
+			var _newCoordX = round(_currentX + ((XX2 - x) * _currentScaleAndZoom), _decimals),
+				_newCoordY = round(_currentY - ((YY2 - y) * _currentScaleAndZoom), _decimals);
+			_updateCurrentCoords(_newCoordX, _newCoordY);
+			_updateGroupOrigin();
+			//_updateCacheForZoom(_z, x, y);
+			refreshCache && (_deltaZoom > _deltaZoomMax) && _fillScreen(); 	// dopo lo zoom e l'aggiornamento delle imm, scarico e visualizzo le nuove. necessario solo se sto rimpicciolendo la schermata.
 			_zoomLabel.textContent = [round(100 - (95 / _zoomMax) * (level - 1)), "%"].join('');
 		},
-		_updateCacheForDrag = function(dx, dy) {	// OK
+		/* _updateCacheForDrag = function(dx, dy) {	// OK
 			var _ids = _cache.ids();
 			for (var i = _ids.length; i--; ) {
 				var _img = _cache.get(_ids[i]);
@@ -445,7 +463,7 @@ var App = (function() {
 				(_imagesVisibleIds.indexOf(_img.id) >= 0) && (!_img.isVisible) && _removeDraw(_img.id, false);
 				_cache.set(_img.id, _img);
 			}
-		},
+		}, */
 		_drag = function(dx, dy, forceLoad) {	// OK. dx dy sono le differenze in px, non in coordinate (bisogna tenere conto dello zoom)
 			if (dx === 0 && dy === 0) return;
 			var scale = _imageGroup.matrix.a,
@@ -455,19 +473,12 @@ var App = (function() {
 			_deltaDragY = _deltaDragY + dy;
 			_imageGroup.matrix = _imageGroup.matrix.translate(_deltaX, _deltaY);
 			_imageGroup.updateMatrix();
-			//_imageGroup.pxx = _imageGroup.pxx + dx;
-			//_imageGroup.pxy = _imageGroup.pxy + dy;
-			var _groupRect = _imageGroup.origin.getBoundingClientRect();
-			_imageGroup.pxx = _groupRect.left;
-			_imageGroup.pxy = _groupRect.top;
 			var _newCoordX = round(_currentX - _deltaX, _decimals),
 				_newCoordY = round(_currentY + _deltaY, _decimals);
 			_updateCurrentCoords(_newCoordX, _newCoordY);
-			_updateCacheForDrag(dx, dy);
-			if (forceLoad || MATH.abs(_deltaDragX) > _deltaDragMax || MATH.abs(_deltaDragY) > _deltaDragMax) {
-				_fillScreen(); // dopo il drag e l'aggiornamento delle imm, scarico e visualizzo le nuove
-				_deltaDragX = _deltaDragY = 0;
-			}
+			_updateGroupOrigin();
+			//_updateCacheForDrag(dx, dy);
+			(forceLoad || MATH.abs(_deltaDragX) > _deltaDragMax || MATH.abs(_deltaDragY) > _deltaDragMax) && _fillScreen();
 		},
 		onSocketMessage = function(data) {
 			if (["end", "none", "error"].indexOf(data) >= 0) {
@@ -591,12 +602,14 @@ var App = (function() {
 			});
 		},
 		_fillScreen = function() {	// OK
-			// !! si occupa solo di mostrare disegni. non deve rimuovere niente. eventuali drag e zoom sono già stati fatti
-			// 1° calcola la porzione da mostrare in base alle coordinate correnti, zoom e dimensioni schermo
+			// 1 - aggiorna le coordinate in px delle immagini in cache (e rimuove quelle non piu visibili)
+			_deltaDragX = _deltaDragY = _deltaZoom = 0;
+			_updateCache();
+			// 2° calcola la porzione da mostrare in base alle coordinate correnti, zoom e dimensioni schermo
 			var _area = _getVisibleArea();
-			// 2° visualizza subito quello che c'è già in cache
+			// 3° visualizza subito quello che c'è già in cache
 			_findInCache();
-			// 3° avvia trasferimenti di ciò che non è in cache e che deve comparire
+			// 4° avvia trasferimenti di ciò che non è in cache e che deve comparire
 			_callSocketFor(_area, _cache.ids());
 		},
 		goToXY = function(x, y) {	// OK
@@ -608,8 +621,7 @@ var App = (function() {
 			_imagesVisibleIds = [];
 			_cache.setAllInvisible();
 			_initDomGroup();
-			_updateCacheForDrag(dx, dy);
-			_deltaDragX = _deltaDragY = 0;
+			//_updateCacheForDrag(dx, dy);
 			_fillScreen();
 		}, 
 		goToDraw = function(id) {	// TODO
