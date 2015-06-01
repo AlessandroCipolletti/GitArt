@@ -384,10 +384,7 @@ var App = (function() {
 			}
 		},
 		_isVisible = function(img) {	// OK - la zona "visibile" è quella attualmente a video, più una schermata per ogni lato, come sorta di 'cache'
-			return ((img.x + img.w > _minVisibleCoordX) &&		// left
-				(img.y - img.h < _maxVisibleCoordY) &&		   // top
-				(img.x < _maxVisibleCoordX) &&				  // right
-				(img.y > _minVisibleCoordY));				 // bottom
+			return (img.r > _minVisibleCoordX && img.b < _maxVisibleCoordY && img.x < _maxVisibleCoordX && img.y > _minVisibleCoordY);
 		},
 		_updateGroupOrigin = function() {
 			var _groupRect = _imageGroup.origin.getBoundingClientRect();
@@ -467,7 +464,6 @@ var App = (function() {
 			}
 		},
 		_addDraws = function(draws) {	// aggiunge uno ad uno i disegni ricevuti dal socket
-			//console.log("disegni ricevuti: " + draws.length);
 			var draw;
 			for (var i = 0, l = draws.length; i < l; i++) {
 				draw = draws[i];
@@ -1327,8 +1323,8 @@ var App = (function() {
 					y		: _savedDraw.y,
 					w		: _savedDraw.w,
 					h		: _savedDraw.h,
-					//pxx	: _savedDraw.pxx,
-					//pxy	: _savedDraw.pxy,
+					r		: _savedDraw.r,
+					b		: _savedDraw.b,
 					id		: data.id
 				};
 				Dashboard.addDraw(_draw, true);
@@ -1350,8 +1346,8 @@ var App = (function() {
 				y		: draw.y,
 				w		: draw.w,
 				h		: draw.h,
-				maxX	: draw.x + draw.w,
-				maxY	: draw.y + draw.h,
+				maxX	: draw.r,
+				maxY	: draw.b,
 				base64	: draw.base64
 			};
 			Socket.emit("editor save", data);
@@ -1374,12 +1370,12 @@ var App = (function() {
 					delete _savedDraw.oldX;
 					delete _savedDraw.oldY;
 					_savedDraw.base64 = _tempCanvas.toDataURL("image/png");
-					//_savedDraw.pxx = _savedDraw.minX;
-					//_savedDraw.pxy = _savedDraw.minY;
 					_savedDraw.w = _savedDraw.maxX - _savedDraw.minX;
 					_savedDraw.h = _savedDraw.maxY - _savedDraw.minY;
-					_savedDraw.x = _savedDraw.minX - XX2 + _coords.x;	// coordinate del px in alto a sx rispetto alle coordinate correnti della lavagna
+					_savedDraw.x = _savedDraw.minX - XX2 + _coords.x;	// coordinate del px in alto a sx rispetto alle coordinate assolute correnti della lavagna
 					_savedDraw.y = _coords.y + (YY2 - _savedDraw.minY);
+					_savedDraw.r = _savedDraw.x + _savedDraw.w;			// ccordinate assolute massime e minime del disegno
+					_savedDraw.b = _savedDraw.y - _savedDraw.h;
 					_saveToServer(_savedDraw);
 				}
 			}
