@@ -5,7 +5,7 @@ var mongojs = require('mongojs');
 var ObjectId = mongojs.ObjectId;
 
 
-var db = mongojs("localhost/socialart", ["draws"]);
+var db = mongojs("localhost/dev", ["draws"]);
 
 db.on('error', function(err) {
     console.log('database error', err);
@@ -31,11 +31,7 @@ io.on('connection', function(socket) {
 	
 	socket.on('dashboard drag', function(data) {
 		data = JSON.parse(data);
-		var areaMinX = data.area.minX + 50,
-			areaMinY = data.area.minY + 50,
-			areaMaxX = data.area.maxX - 50,
-			areaMaxY = data.area.maxY - 50,
-			_ids = data.ids,
+		var _ids = data.ids,
 			ids = [];
 		
 		for (var i = _ids.length; i--; ) {
@@ -45,10 +41,10 @@ io.on('connection', function(socket) {
 
 		db.draws.find({
 			_id		: { $nin : ids },
-			x		: { $lt : areaMaxX },
-			y		: { $lt : areaMaxY },
-			maxX	: { $gt : areaMinX },
-			maxY	: { $gt : areaMinY }
+			x		: { $lt : data.area.maxX },
+			y		: { $lt : data.area.maxY },
+			maxX	: { $gt : data.area.minX },
+			maxY	: { $gt : data.area.minY }
 		}, {}, {limit: 100}, function(err, draws) {
 			if (err || !draws) {
 				console.log("query error: ", err);
@@ -66,9 +62,12 @@ io.on('connection', function(socket) {
 						w		: draw.w,
 						h		: draw.h,
 						x		: draw.x,
-						y		: draw.y
+						y		: draw.y,
+						r		: draw.maxX,
+						b		: draw.maxY
 					};
 					console.log([ris.x, ris.y]);
+					console.log(draw.maxY);
 					socket.emit('dashboard drag', JSON.stringify([ris]));
 					draw = undefined;
 				});
@@ -82,6 +81,6 @@ io.on('connection', function(socket) {
 
 
 
-http.listen(4000, function(){
-  console.log('listening on *:4000\n');
+http.listen(5000, function(){
+  console.log('listening DEV on *:5000\n');
 });
