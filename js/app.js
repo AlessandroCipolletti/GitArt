@@ -382,7 +382,8 @@ var App = (function() {
 			}
 		},
 		_buttonModifyClick = function() {
-			if (!_animationZoom) {
+			if (_animationZoom) return;
+			if (CurrentUser.login()) {
 				_animationZoom = true;
 				_animZoom();
 			}
@@ -771,8 +772,6 @@ var App = (function() {
 			_$pickerToolColor2 = $("#pickerToolColor2");
 			_$allDomContainer = $("#editorContainer");
 			_$allDom = $("#editorMenu, #editor, #editorSmallTool");
-			_optionsSizeX = _$options.width();
-			_optionsSizeY = _$options.height();
 			_dom.width = XX;
 			_dom.height = YY;
 			_editorMenuActions = [_hide, _selectBrush, _selectPencil, _selectEraser, _selectPicker, _selectRandomColor, _undo, _redo, _save, _showOptions];
@@ -1407,10 +1406,7 @@ var App = (function() {
 			}
 		},
 		_onResize = function() {
-			_$options.css({
-				'top':  (YY > _optionsSizeY ? ((YY - _optionsSizeY) / 3) : 0) + "px", 
-				'left': (XX > _optionsSizeX ? ((XX - _optionsSizeX) / 2) : 0) + "px"
-			});
+			
 		},
 		setColor = function(rgb) {
 			if (rgb) {
@@ -1661,18 +1657,39 @@ var App = (function() {
 	})();	
 	
 	CurrentUser = (function() {
-		var a,
+		var _logged = false,
+			_showLogin,
 		init = function() {
-
+			_showLogin = Social.showLogin;
+		},
+		isLogged = function() {
+			return _logged;
+		},
+		login = function() {
+			if (_logged) {
+				return true;
+			} else {
+				Social.showLogin();
+			}
 		};
 		return {
-			init:	init
+			init:	init,
+			isLogged: isLogged,
+			login: login
 		}
 	})(),
 
 	Social = (function() {
-		var init = function() {
+		var _$popup = $("#socialLoginPopup"),
+		init = function() {
 			_facebook.init();
+		},
+		showLogin = function() {
+			console.log("SHOW");
+			_$popup.stop().fadeIn("fast");
+		},
+		hideLogin = function() {
+			_$popup.stop().fadeOut("fast");
 		},
 		_facebook = (function() {
 			var config = Config.fb,
@@ -1730,7 +1747,9 @@ var App = (function() {
 			};
 		})();
 		return {
-			init: init
+			init: init,
+			showLogin: showLogin,
+			hideLogin: hideLogin
 		}
 	})(),
 	

@@ -39,14 +39,10 @@
 </head>
 <body id="body" onLoad="App.Init()">
 
-	<div id="socialLogin"> 
-		<!--
-		<fb:login-button data-size="xlarge" scope="public_profile,email" data-auto-logout-link="true" onlogin="checkLoginState();">
-		</fb:login-button>
-		<button onclick="ciao()">TEST</button>
-		-->
+	<div id="socialLoginPopup" class="popupPanel" align="center">
 		
 		<div id="status"></div>
+		<div id="closeOptions"><img src="img/icon/x.png"></div>
 	</div>
 
 	<div id="darkOverlay"></div>
@@ -133,7 +129,7 @@
 		</div>
 		<!-- FINE COLOR PICKER -->
 		<!-- OPTIONS OPTIONS OPTIONS OPTIONS OPTIONS -->
-		<div id="editorOptions" align="center">
+		<div id="editorOptions" class="popupPanel" align="center">
 			<ul>
 				<li id="optionDraft" class="button"></li>
 				<li id="optionRestore" class="button"></li>

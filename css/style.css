@@ -3,7 +3,7 @@
 	src: url('../font/font.ttf');
 }
 
-#editorMenu, #editor, #colorPickerCont, #darkOverlay, #editorSmallTool, #editorOptions, #pickerToolPreview, #sizePickerCont, #sizeToolContainer, #pencilGrayscaleCont, #spinner {
+#editorMenu, #editor, #colorPickerCont, #darkOverlay, #editorSmallTool, #pickerToolPreview, #sizePickerCont, #sizeToolContainer, #pencilGrayscaleCont, #spinner {
 	display: none;
 }
 
@@ -419,8 +419,9 @@ body {
 .cursorX {
 	cursor: url('../img/icon/xs.png') 15 15, auto;
 }
-#editorOptions {
+.popupPanel {
 	position: absolute;
+	display: none;
 	background-color: rgb(255, 255, 255);
 	z-index: 1001;
 	border-radius:			10px;
@@ -442,6 +443,8 @@ body {
 #editorOptions {
 	width: 190px;
 	height: 200px;
+	left: calc(50% - 125px);
+	top: calc(40% - 130px);
 	padding: 30px;
 }
 	#editorOptions ul {
@@ -685,3 +688,19 @@ body {
 			line-height: 20px;
 			font-size: 10px;
 		}
+
+/*	-----------------------------------------------------------------------------------------------------------------------------
+
+	*****************************************************************************************************************************
+	SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL 
+	*****************************************************************************************************************************
+*/
+
+#socialLoginPopup {
+	width: 250px;
+	height: 300px;
+	left: calc(50% - 150px);
+	top: calc(40% - 175px);
+	padding: 25px;
+}
+
