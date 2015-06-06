@@ -38,11 +38,17 @@
 	</script>
 </head>
 <body id="body" onLoad="App.Init()">
-
+<!-- SOCIAL LOGIN  SOCIAL LOGIN  SOCIAL LOGIN  SOCIAL LOGIN  SOCIAL LOGIN  -->
 	<div id="socialLoginPopup" class="popupPanel" align="center">
-		
+		<h1>Social.Art</h1>
+		<div id="fbLogin" class="displayNone">
+			<img src="img/social/loginfb.png">
+		</div>
+		<div id="fbLogged">
+
+		</div>
 		<div id="status"></div>
-		<div id="closeOptions"><img src="img/icon/x.png"></div>
+		<div class="close"><img src="img/icon/x.png"></div>
 	</div>
 
 	<div id="darkOverlay"></div>
@@ -74,7 +80,7 @@
 			<rect id="zoomLabelCont" x="-10" y="-10" rx="10" ry="10" width="70" height="60"></rect>
 			<text id="zoomLabel" x="15" y="30">100%</text>
 		</svg>
-		<a id="showEditor" class="button">Modifica</a>
+		<a id="showEditor" class="button">Disegna</a>
 		<div id="dashboardCoords">
 			<div></div>
 			<span></span>
@@ -137,7 +143,7 @@
 				<li id="optionExport" class="button"></li>
 				<li id="optionClear" class="button"></li>
 			</ul>
-			<div id="closeOptions"><img src="img/icon/x.png"></div>
+			<div class="close"><img src="img/icon/x.png"></div>
 		</div>
 	</div>
 	<!-- EDITOR EDITOR EDITOR EDITOR EDITOR EDITOR -->

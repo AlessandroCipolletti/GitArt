@@ -3,6 +3,10 @@
 	src: url('../font/font.ttf');
 }
 
+.displayNone {
+	display: none;
+}
+
 #editorMenu, #editor, #colorPickerCont, #darkOverlay, #editorSmallTool, #pickerToolPreview, #sizePickerCont, #sizeToolContainer, #pencilGrayscaleCont, #spinner {
 	display: none;
 }
@@ -437,6 +441,17 @@ body {
 	border: solid 1px grey;
 	overflow: hidden;
 }
+	.popupPanel .close {
+		width: 20px;
+		height: 20px;
+		position: absolute;
+		top: 7px;
+		right: 7px;
+		cursor: pointer;
+	}
+	.popupPanel .close img {
+		width: 100%;
+	}
 /*
 		INIZIO EDITOR OPTIONS---------------------------------------------------------------------------------------------------------------------
 */
@@ -455,17 +470,6 @@ body {
 	}
 	#editorOptions li {
 		margin-bottom: 5px;
-	}
-	#closeOptions {
-		width: 20px;
-		height: 20px;
-		position: absolute;
-		top: 7px;
-		right: 7px;
-		cursor: pointer;
-	}
-	#closeOptions img {
-		width: 100%;
 	}
 /*
 		INIZIO EDITOR TOOLS  ---------------------------------------------------------------------------------------------------------------------
@@ -697,10 +701,17 @@ body {
 */
 
 #socialLoginPopup {
-	width: 250px;
-	height: 300px;
-	left: calc(50% - 150px);
-	top: calc(40% - 175px);
-	padding: 25px;
+	width: 300px;
+	height: 350px;
+	left: calc(50% - 200px);
+	top: calc(40% - 225px);
+	padding: 50px;
 }
-
+	#fbLogin, #fbLogged {
+		width: 100%;
+		height: 100px;
+	}
+	#fbLogin img {
+		margin-top: 20px;
+		width: 100%;
+	}

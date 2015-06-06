@@ -98,7 +98,7 @@ var App = (function() {
 		return _lingua;
 	})(Info.lenguage),
 	
-	utils = (function() {
+	Utils = (function() {
 		var _checkError = (function _checkError() {
 			var _function, errorMsg,
 			setFunc = function(func) {
@@ -162,12 +162,35 @@ var App = (function() {
 		setSpinner = function(state, overlay) {
 			if (state) {
 				_$spinner.stop().fadeIn("fast");
-				overlay && _$dark.stop().fadeIn("fast");
+				overlay && overlay.show();
 			} else {
 				_$spinner.stop().fadeOut("fast");
-				_$dark.stop().fadeOut("fast");
+				overlay && overlay.hide();
 			}
-		};
+		},
+		overlay = (function() {
+			var _callback = false,
+			show = function(onClick) {
+				if (onClick) {
+					_$dark.addClass("cursorX");
+					_callback = onClick;
+					_$dark.bind("click", onClick);
+				}
+				_$dark.stop().fadeIn("fast");
+			},
+			hide = function() {
+				if (_callback) {
+					_$dark.removeClass("cursorX");
+					_callback = false;
+					_$dark.unbind("click", _callback);
+				}
+				_$dark.stop().fadeOut("fast");
+			};
+			return {
+				show: show,
+				hide: hide
+			};
+		})();
 		return {
 			CK				: checkError,
 			isEmpty			: isEmpty,
@@ -176,7 +199,8 @@ var App = (function() {
 			cancelEvent		: cancelEvent,
 			enableElement	: enableElement,
 			disableElement	: disableElement,
-			setSpinner		: setSpinner
+			setSpinner		: setSpinner,
+			overlay			: overlay
 		}
 	})(),
 	
@@ -244,8 +268,8 @@ var App = (function() {
 			// queste 2 funzioni che sono uguali in più moduli le possiamo aggiungere col metodo oggetto.method preso dal libro, cosi le scriviamo una volta sola
 		};
 		return {
-			create		: function(file) { return utils.CK(create,	"Error: Worker not created. ",	file) },
-			close		: function(file) { return utils.CK(close,		"Error: Worker not closed. ",	file) },
+			create		: function(file) { return Utils.CK(create,	"Error: Worker not created. ",	file) },
+			close		: function(file) { return Utils.CK(close,		"Error: Worker not closed. ",	file) },
 			one			: one,
 			oneOrNew	: oneOrNew
 		}
@@ -462,7 +486,7 @@ var App = (function() {
 				_socketCallsInProgress--;
 				if (_socketCallsInProgress === 0) {
 					_isLoading = false;
-					utils.setSpinner(false);
+					Utils.setSpinner(false);
 				}
 			} else {
 				_addDraws(JSON.parse(data));
@@ -556,7 +580,7 @@ var App = (function() {
 				if (_timeoutForSpinner === false) {
 					_timeoutForSpinner = true;
 					setTimeout(function() {
-						_isLoading && utils.setSpinner(true);
+						_isLoading && Utils.setSpinner(true);
 						_timeoutForSpinner = false;
 					}, 100);
 				}
@@ -579,7 +603,7 @@ var App = (function() {
 		},
 		goToXY = function(x, y) {	// OK
 			// calcolo la differenza in px invece che coord, e chiamo _drag. se si inseriscono coordinate poco distanti dalle attuali, forzo l'aggiornamento e il caricamento delle nuove
-			if (utils.areEmpty([x, y])) return;
+			if (Utils.areEmpty([x, y])) return;
 			var z = _imageGroup.matrix.a,
 				dx = round((x - _currentX) * z),
 				dy = round((y - _currentY) * z);
@@ -591,7 +615,7 @@ var App = (function() {
 		}, 
 		goToDraw = function(id) {	// TODO
 			// precarica (se necessario) il disegno e poi va alle sue coordinate. in questo modo sono sicuro che sarà visualizzato per primo (importante visto che è stato richiesto specificamente)
-			if (utils.isEmpty(id)) return;
+			if (Utils.isEmpty(id)) return;
 			if (_cache.exist(id)) {
 				var draw = _cache.get(id);
 			} else {
@@ -758,10 +782,8 @@ var App = (function() {
 		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0, _savedDraw = {},
 		_color, _size, _pencilSize = 2, _pencilColor = "", _pencilColorID = 12, _brushSize = 50, _eraserSize = 50, _brushColor, _maxToolSize = 200,
 		_grayscaleColors = ["#FFF", "#EEE", "#DDD", "#CCC", "#BBB", "#AAA", "#999", "#888", "#777", "#666", "#555", "#444", "#333", "#222", "#111", "#000"], 
-		_enableElement = utils.enableElement,
-		_disableElement = utils.disableElement,
-		_labelAnnulla = label["Annulla"],
-		_labelRipeti = label["Ripeti"],
+		utils = Utils, _enableElement = utils.enableElement, _disableElement = utils.disableElement,
+		_labelAnnulla = label["Annulla"], _labelRipeti = label["Ripeti"],
 		__init = function() {
 			_dom = DOCUMENT.querySelector("#editor");
 			_context = _dom.getContext("2d");
@@ -795,7 +817,7 @@ var App = (function() {
 			_disableElement(_$optionRestore);
 			_$sizeToolPreview = $("#sizeToolPreview");
 			$("#toolSize a").html(label['Dimensione']);
-			_$closeButtons = $("#closeOptions");
+			_$closeButtons = $("#editorOptions .close");
 			_$sizeToolLabel = $("#sizeToolLabel");
 			_$sizeToolContainer = $("#sizeToolContainer");
 			_$grayscaleContainer = $("#pencilGrayscaleCont");
@@ -820,7 +842,6 @@ var App = (function() {
 			DOCUMENT.addEventListener('mouseout', 	_mouseend,	true);
 			DOCUMENT.addEventListener("keydown", _keyDown, false);
 			DOCUMENT.addEventListener("keyup", _keyUp, false);
-			_$dark.bind("click", _darkClick);
 			_$brushTool.bind("mousedown", _editorMenuActions[1]);
 			_$pencilTool.bind("mousedown", _editorMenuActions[2]);
 			_$eraserTool.bind("mousedown", _editorMenuActions[3]);
@@ -850,7 +871,6 @@ var App = (function() {
 			DOCUMENT.removeEventListener('mouseout', 	_mouseend);
 			DOCUMENT.removeEventListener("keydown", _keyDown, false);
 			DOCUMENT.removeEventListener("keyup", 	_keyUp, false);
-			_$dark.unbind("click", _darkClick);
 			_$brushTool.unbind("mousedown", _editorMenuActions[1]);
 			_$pencilTool.unbind("mousedown", _editorMenuActions[2]);
 			_$eraserTool.unbind("mousedown", _editorMenuActions[3]);
@@ -1226,8 +1246,7 @@ var App = (function() {
 		},
 		_showOptions = function() {
 			_overlay = true;
-			_$dark.addClass("cursorX");
-			_$dark.stop().fadeIn("fast");
+			utils.overlay.show(_darkClick);
 			_$options.stop().fadeIn("fast");
 			_$pickerToolPreview.fadeOut("fast");
 			_$sizeToolContainer.fadeOut("fast");
@@ -1235,7 +1254,7 @@ var App = (function() {
 		_hideOptions = function() {
 			_overlay = false;
 			_$options.stop().fadeOut("fast");
-			_$dark.stop().fadeOut("fast");
+			utils.overlay.hide();
 			_$sizeToolContainer.fadeOut("fast");
 			if (_toolSelected === 3) {
 				_$pickerToolColor2.css("background-color", _randomColor ? "white" : _color);
@@ -1361,7 +1380,6 @@ var App = (function() {
 			} else {
 				if (Messages.confirm(label['editorSaveConfirm'])) {
 					_isSaving = true;
-					_$dark.removeClass("cursorX");
 					utils.setSpinner(true, true);
 					_savedDraw = _saveLayer();
 					var _coords = Dashboard.getCoords(),
@@ -1492,8 +1510,7 @@ var App = (function() {
 			},
 			_mousemove = function(e) {
 				_updatePoint(e);
-				if (_isMouseDown)
-					_updateOldPoint();
+				_isMouseDown && _updateOldPoint();
 				_update();
 			},
 			_mouseup = function() {
@@ -1619,11 +1636,11 @@ var App = (function() {
 			var params = {			// deve contenere l'identificativo di connessione, e tutto il necessario
 				query	: query	// se query è vuota, il lato server restituirà la pagina default con nuove news
 			};
-			var result = utils.getRemoteData(Config.services.news, params);
-			if (utils.isEmpty(result))
+			var result = Utils.getRemoteData(Config.services.news, params);
+			if (Utils.isEmpty(result))
 				Messages.error(label["ConnectionError"]);
 			else {
-				var html = _render(result, utils.isEmpty(query));
+				var html = _render(result, Utils.isEmpty(query));
 				Overlay.show(html);
 			}
 		};
@@ -1643,8 +1660,8 @@ var App = (function() {
 			var params = {			// deve contenere l'identificativo di connessione, e tutto il necessario
 				idUser	: idUser
 			};
-			var result = utils.getRemoteData(Config.services.news, params);
-			if (utils.isEmpty(result))
+			var result = Utils.getRemoteData(Config.services.news, params);
+			if (Utils.isEmpty(result))
 				Messages.error(label["ConnectionError"]);
 			else {
 				var html = _render(result);
@@ -1680,40 +1697,26 @@ var App = (function() {
 	})(),
 
 	Social = (function() {
-		var _$popup = $("#socialLoginPopup"),
+		var _$popup, _$closeButtons,
+			utils = Utils,
 		init = function() {
+			_$popup = $("#socialLoginPopup");
+			_$closeButtons = $("#socialLoginPopup .close");
+			_$closeButtons.bind("click", hideLogin);
 			_facebook.init();
 		},
 		showLogin = function() {
-			console.log("SHOW");
+			utils.overlay.show(hideLogin);
 			_$popup.stop().fadeIn("fast");
 		},
 		hideLogin = function() {
+			utils.overlay.hide();
 			_$popup.stop().fadeOut("fast");
 		},
 		_facebook = (function() {
 			var config = Config.fb,
+				_$loginButton,
 			init = function() {
-				// This is called with the results from from FB.getLoginStatus().
-				function statusChangeCallback(response) {
-					console.log('statusChangeCallback', response);
-					if (response.status === 'connected') { // Logged into your app and Facebook.
-						testAPI();
-					} else if (response.status === 'not_authorized') { // The person is logged into Facebook, but not your app.
-						document.getElementById('status').innerHTML = 'Please log into this app.';
-					} else { // The person is not logged into Facebook, so we're not sure if they are logged into this app or not.
-						document.getElementById('status').innerHTML = 'Please log into Facebook.';
-					}
-				}
-
-				// This function is called when someone finishes with the Login Button
-				// See the onlogin handler attached to it in the sample code below.
-				function checkLoginState() {
-					FB.getLoginStatus(function(response) {
-						statusChangeCallback(response);
-					});
-				}
-
 				WINDOW.fbAsyncInit = function() {
 					FB.init({
 					 	appId: config.appId,
@@ -1721,7 +1724,7 @@ var App = (function() {
 						xfbml: true,  // parse social plugins on this page
 						version: config.apiVersion
 					});
-					checkLoginState();
+					FB.getLoginStatus(_loginCallback);
 				};
 				(function(d, s, id) {// Load the SDK asynchronously
 					var js, fjs = d.getElementsByTagName(s)[0];
@@ -1730,16 +1733,25 @@ var App = (function() {
 					js.src = "//connect.facebook.net/en_US/sdk.js";
 					fjs.parentNode.insertBefore(js, fjs);
 				}(document, 'script', 'facebook-jssdk'));
-
-				// Here we run a very simple test of the Graph API after login is successful.
-				// See statusChangeCallback() for when this call is made.
-				function testAPI() {
-					console.log('Welcome!  Fetching your information.... ');
-					FB.api('/me', function(response) {
-						console.log('Successful login for: ' + response.name);
-						document.getElementById('status').innerHTML =
-						'Thanks for logging in, ' + response.name + '!';
-					});
+				_$loginButton = $("#fbLogin img");
+				_$loginButton.bind("click", function() {
+					var fb = FB;
+					fb && fb.login(loginCallback, { scope: 'public_profile,email' });
+				});
+			},
+			_getUserInfo = function() {
+				FB.api('/me', function(response) {
+					console.log('User Info: ', response);
+					document.getElementById('status').innerHTML = 'Thanks for logging in, ' + response.name + '!';
+				});
+			},
+			_loginCallback = function(response) {
+				console.log('Login', response);
+				if (response.status === 'connected') { // Logged into your app and Facebook.
+					_getUserInfo();
+				} else {
+					_$loginButton.removeClass("displayNone");
+					document.getElementById('status').innerHTML = 'Please log into Facebook.';
 				}
 			};
 			return {
@@ -1857,11 +1869,3 @@ var App = (function() {
 		CurrentUser	: CurrentUser
 	};
 })();
-
-function ciao() {
-	FB.login(function(r) {
-		console.log(r);
-	}, {
-        scope: 'public_profile,email'
-    });
-}
