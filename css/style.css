@@ -710,8 +710,20 @@ body {
 	#fbLogin, #fbLogged {
 		width: 100%;
 		height: 100px;
+		position: relative;
 	}
-	#fbLogin img {
-		margin-top: 20px;
-		width: 100%;
-	}
+		#fbLogin img {
+			margin-top: 20px;
+			width: 100%;
+			cursor: pointer;
+		}
+		#fbLogged img {
+			height: 100%;
+			position: absolute;
+			right: 60%;
+		}
+		#fbStatus {
+			position: absolute;
+			left: 45%;
+			margin-top: 20px;
+		}

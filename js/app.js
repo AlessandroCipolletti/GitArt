@@ -85,6 +85,8 @@ var App = (function() {
 			"NienteDaEsportare"			: "Niente da esportare",
 			"Pennello"					: "Pennello",
 			"Gomma"						: "Gomma",
+			"areYouSure"				: "Sei sicuro?",
+			"loggedAs"					: "Collegato come ",
 			"salvoDisegno"				: " Salvo disegno...",
 			"nothingToSave"				: "Niente da salvare",
 			"editorSaveError"			: "Oooops :( Ora non &egrave; possibile salvare. Riprova pi&ugrave; tardi",
@@ -1413,7 +1415,7 @@ var App = (function() {
 			}
 		},
 		clear = function(force) {
-			if (Messages.confirm("Sei sicuro?")) {
+			if (Messages.confirm(label["areYouSure"])) {
 				_clear();
 				_step = [];
 				_currentStep = 0;
@@ -1688,6 +1690,12 @@ var App = (function() {
 			} else {
 				Social.showLogin();
 			}
+		},
+		logout = function() {
+			if (Messages.confirm(label["areYouSure"])) {
+				// logout Current User
+				Social.logout();
+			}
 		};
 		return {
 			init:	init,
@@ -1713,9 +1721,12 @@ var App = (function() {
 			utils.overlay.hide();
 			_$popup.stop().fadeOut("fast");
 		},
+		logout = function() {
+			_facebook.logout();
+		},
 		_facebook = (function() {
 			var config = Config.fb,
-				_$loginButton,
+				_$loginButton, _$logged, _$status,
 			init = function() {
 				WINDOW.fbAsyncInit = function() {
 					FB.init({
@@ -1733,35 +1744,45 @@ var App = (function() {
 					js.src = "//connect.facebook.net/en_US/sdk.js";
 					fjs.parentNode.insertBefore(js, fjs);
 				}(document, 'script', 'facebook-jssdk'));
-				_$loginButton = $("#fbLogin img");
-				_$loginButton.bind("click", function() {
+				_$loginButton = $("#fbLogin");
+				$("img", _$loginButton).bind("click", function() {
 					var fb = FB;
-					fb && fb.login(loginCallback, { scope: 'public_profile,email' });
+					fb && fb.login(_loginCallback, { scope: 'public_profile,email' });
 				});
+				_$logged = $("#fbLogged");
+				_$status = $("#fbStatus");
 			},
 			_getUserInfo = function() {
 				FB.api('/me', function(response) {
 					console.log('User Info: ', response);
-					document.getElementById('status').innerHTML = 'Thanks for logging in, ' + response.name + '!';
+					_$status.html(label["loggedAs"] + response.name);
 				});
 			},
 			_loginCallback = function(response) {
 				console.log('Login', response);
-				if (response.status === 'connected') { // Logged into your app and Facebook.
+				_$status.html('');
+				if (response.status === 'connected') {
+					_$logged.removeClass("displayNone");
+					_$loginButton.addClass("displayNone");
 					_getUserInfo();
 				} else {
+					_$logged.addClass("displayNone");
 					_$loginButton.removeClass("displayNone");
-					document.getElementById('status').innerHTML = 'Please log into Facebook.';
 				}
+			},
+			logout = function() {
+
 			};
 			return {
-				init:	init
+				init: init,
+				logout:	logout
 			};
 		})();
 		return {
 			init: init,
 			showLogin: showLogin,
-			hideLogin: hideLogin
+			hideLogin: hideLogin,
+			logout:	logout
 		}
 	})(),
 	
