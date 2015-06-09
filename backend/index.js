@@ -38,13 +38,13 @@ io.on('connection', function(socket) {
 			_ids[i].length && ids.push(ObjectId(_ids[i]));
 		}
 		ids = ids.concat(socket.emittedDraws);
-
+		
 		db.draws.find({
 			_id		: { $nin : ids },
 			x		: { $lt : data.area.maxX },
 			y		: { $lt : data.area.maxY },
-			maxX	: { $gt : data.area.minX },
-			maxY	: { $gt : data.area.minY }
+			r		: { $gt : data.area.minX },
+			b		: { $gt : data.area.minY }
 		}, {}, {limit: 100}, function(err, draws) {
 			if (err || !draws) {
 				console.log("query error: ", err);
@@ -63,11 +63,10 @@ io.on('connection', function(socket) {
 						h		: draw.h,
 						x		: draw.x,
 						y		: draw.y,
-						r		: draw.maxX,
-						b		: draw.maxY
+						r		: draw.r,
+						b		: draw.b
 					};
 					console.log([ris.x, ris.y]);
-					console.log(draw.maxY);
 					socket.emit('dashboard drag', JSON.stringify([ris]));
 					draw = undefined;
 				});
