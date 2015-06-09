@@ -161,13 +161,13 @@ var App = (function() {
 			console.log(msg);
 			// qui possiamo anche tentare una chiamata ajax per inviarci _msg per le statistiche sugli errori,
 		},
-		setSpinner = function(state, overlay) {
+		setSpinner = function(state, dark) {
 			if (state) {
 				_$spinner.stop().fadeIn("fast");
-				overlay && overlay.show();
+				dark && overlay.show();
 			} else {
 				_$spinner.stop().fadeOut("fast");
-				overlay && overlay.hide();
+				dark && overlay.hide();
 			}
 		},
 		overlay = (function() {
@@ -1341,17 +1341,8 @@ var App = (function() {
 			_isSaving = false;
 			data = JSON.parse(data);
 			if (data.ok) {
-				var _draw = {
-					base64	: _savedDraw.base64,
-					x		: _savedDraw.x,
-					y		: _savedDraw.y,
-					w		: _savedDraw.w,
-					h		: _savedDraw.h,
-					r		: _savedDraw.r,
-					b		: _savedDraw.b,
-					id		: data.id
-				};
-				Dashboard.addDraw(_draw, true);
+				_savedDraw.id = data.id;
+				Dashboard.addDraw(_savedDraw, true);
 				_savedDraw = undefined;
 				_clear();
 				_step = [];
@@ -1365,16 +1356,7 @@ var App = (function() {
 			}
 		},
 		_saveToServer = function(draw) {
-			var data = {
-				x		: draw.x,
-				y		: draw.y,
-				w		: draw.w,
-				h		: draw.h,
-				maxX	: draw.r,
-				maxY	: draw.b,
-				base64	: draw.base64
-			};
-			Socket.emit("editor save", data);
+			Socket.emit("editor save", draw);
 		},
 		_save = function() {	// TODO : CREDO OK
 			if (_maxX === -1 || _maxY === -1) {
@@ -1389,9 +1371,6 @@ var App = (function() {
 					_tempCanvas.width = _savedDraw.data.width;
 					_tempCanvas.height = _savedDraw.data.height;
 					_tempCanvas.getContext("2d").putImageData(_savedDraw.data, 0, 0);
-					_savedDraw.data = undefined;
-					delete _savedDraw.oldX;
-					delete _savedDraw.oldY;
 					_savedDraw.base64 = _tempCanvas.toDataURL("image/png");
 					_savedDraw.w = _savedDraw.maxX - _savedDraw.minX;
 					_savedDraw.h = _savedDraw.maxY - _savedDraw.minY;
@@ -1399,6 +1378,14 @@ var App = (function() {
 					_savedDraw.y = _coords.y + (YY2 - _savedDraw.minY);
 					_savedDraw.r = _savedDraw.x + _savedDraw.w;			// ccordinate assolute massime e minime del disegno
 					_savedDraw.b = _savedDraw.y - _savedDraw.h;
+					_savedDraw.data = undefined;
+					delete _savedDraw.data;
+					delete _savedDraw.oldX;
+					delete _savedDraw.oldY;
+					delete _savedDraw.maxX;
+					delete _savedDraw.maxY;
+					delete _savedDraw.minX;
+					delete _savedDraw.minY;
 					_saveToServer(_savedDraw);
 				}
 			}
