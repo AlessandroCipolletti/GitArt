@@ -1676,10 +1676,13 @@ var App = (function() {
 	})();	
 	
 	CurrentUser = (function() {
-		var _logged = false,
-			_showLogin,
+		var _$popup, _$closeButtons,
+			utils = Utils, _logged = false, _userInfo = {};
 		init = function() {
-			_showLogin = Social.showLogin;
+			_$popup = $("#socialLoginPopup");
+			_$closeButtons = $("#socialLoginPopup .close");
+			_$closeButtons.bind("click", _hideLogin);
+			_facebook.init();
 		},
 		isLogged = function() {
 			return _logged;
@@ -1688,41 +1691,24 @@ var App = (function() {
 			if (_logged) {
 				return true;
 			} else {
-				Social.showLogin();
+				_showLogin();
 			}
 		},
 		logout = function() {
 			if (Messages.confirm(label["areYouSure"])) {
 				// logout Current User
-				Social.logout();
+				_logged = false;
+				_userInfo = {};
+				_facebook.logout();
 			}
-		};
-		return {
-			init:	init,
-			isLogged: isLogged,
-			login: login
-		}
-	})(),
-
-	Social = (function() {
-		var _$popup, _$closeButtons,
-			utils = Utils,
-		init = function() {
-			_$popup = $("#socialLoginPopup");
-			_$closeButtons = $("#socialLoginPopup .close");
-			_$closeButtons.bind("click", hideLogin);
-			_facebook.init();
 		},
-		showLogin = function() {
-			utils.overlay.show(hideLogin);
+		_showLogin = function() {
+			utils.overlay.show(_hideLogin);
 			_$popup.stop().fadeIn("fast");
 		},
-		hideLogin = function() {
+		_hideLogin = function() {
 			utils.overlay.hide();
 			_$popup.stop().fadeOut("fast");
-		},
-		logout = function() {
-			_facebook.logout();
 		},
 		_facebook = (function() {
 			var config = Config.fb,
@@ -1779,10 +1765,9 @@ var App = (function() {
 			};
 		})();
 		return {
-			init: init,
-			showLogin: showLogin,
-			hideLogin: hideLogin,
-			logout:	logout
+			init:	init,
+			isLogged: isLogged,
+			login: login
 		}
 	})(),
 	
@@ -1869,7 +1854,7 @@ var App = (function() {
 		var requestUrl = DOCUMENT.location.href;
 		Socket.init();
 		if (true) {	// url corrente corrispondente ad home
-			Social.init();
+			CurrentUser.init();
 			Dashboard.init();
 		}
 	};
@@ -1886,7 +1871,6 @@ var App = (function() {
 		Overlay		: Overlay,
 		News		: News,
 		UserPage	: UserPage,
-		Social		: Social,
 		CurrentUser	: CurrentUser
 	};
 })();
