@@ -55,7 +55,7 @@ io.on('connection', function(socket) {
 			} else {
 				console.log(draws.length + " rows found");
 				draws.forEach(function(draw) {
-					socket.emittedDraws.push(draw._id);
+					(socket.emittedDraws.indexOf(draw._id) < 0) && socket.emittedDraws.push(draw._id);
 					var ris = {
 						id		: draw._id,
 						base64	: draw.base64,
