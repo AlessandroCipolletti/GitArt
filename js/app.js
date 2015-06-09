@@ -35,11 +35,15 @@ var App = (function() {
 		
 	Config = (function() {
 		return {
-			debug : true,
-			socketUrl : "http://46.252.150.61:5000",
-			workers : {
-				blur :		"file blur.js",
-				scarica :	"file scarica.js"
+			debug: true,
+			socketUrl: "http://46.252.150.61:5000",
+			fb: {
+				appId: '1448620825449065',
+				apiVersion: 'v2.3'
+			},
+			workers: {
+				blur:		"file blur.js",
+				scarica:	"file scarica.js"
 			}
 		}
 	})(),
@@ -81,6 +85,8 @@ var App = (function() {
 			"NienteDaEsportare"			: "Niente da esportare",
 			"Pennello"					: "Pennello",
 			"Gomma"						: "Gomma",
+			"areYouSure"				: "Sei sicuro?",
+			"loggedAs"					: "Collegato come ",
 			"salvoDisegno"				: " Salvo disegno...",
 			"nothingToSave"				: "Niente da salvare",
 			"editorSaveError"			: "Oooops :( Ora non &egrave; possibile salvare. Riprova pi&ugrave; tardi",
@@ -94,7 +100,7 @@ var App = (function() {
 		return _lingua;
 	})(Info.lenguage),
 	
-	utils = (function() {
+	Utils = (function() {
 		var _checkError = (function _checkError() {
 			var _function, errorMsg,
 			setFunc = function(func) {
@@ -158,12 +164,35 @@ var App = (function() {
 		setSpinner = function(state, overlay) {
 			if (state) {
 				_$spinner.stop().fadeIn("fast");
-				overlay && _$dark.stop().fadeIn("fast");
+				overlay && overlay.show();
 			} else {
 				_$spinner.stop().fadeOut("fast");
-				_$dark.stop().fadeOut("fast");
+				overlay && overlay.hide();
 			}
-		};
+		},
+		overlay = (function() {
+			var _callback = false,
+			show = function(onClick) {
+				if (onClick) {
+					_$dark.addClass("cursorX");
+					_callback = onClick;
+					_$dark.bind("click", onClick);
+				}
+				_$dark.stop().fadeIn("fast");
+			},
+			hide = function() {
+				if (_callback) {
+					_$dark.removeClass("cursorX");
+					_callback = false;
+					_$dark.unbind("click", _callback);
+				}
+				_$dark.stop().fadeOut("fast");
+			};
+			return {
+				show: show,
+				hide: hide
+			};
+		})();
 		return {
 			CK				: checkError,
 			isEmpty			: isEmpty,
@@ -172,7 +201,8 @@ var App = (function() {
 			cancelEvent		: cancelEvent,
 			enableElement	: enableElement,
 			disableElement	: disableElement,
-			setSpinner		: setSpinner
+			setSpinner		: setSpinner,
+			overlay			: overlay
 		}
 	})(),
 	
@@ -240,8 +270,8 @@ var App = (function() {
 			// queste 2 funzioni che sono uguali in più moduli le possiamo aggiungere col metodo oggetto.method preso dal libro, cosi le scriviamo una volta sola
 		};
 		return {
-			create		: function(file) { return utils.CK(create,	"Error: Worker not created. ",	file) },
-			close		: function(file) { return utils.CK(close,		"Error: Worker not closed. ",	file) },
+			create		: function(file) { return Utils.CK(create,	"Error: Worker not created. ",	file) },
+			close		: function(file) { return Utils.CK(close,		"Error: Worker not closed. ",	file) },
 			one			: one,
 			oneOrNew	: oneOrNew
 		}
@@ -249,7 +279,7 @@ var App = (function() {
 	
 	Dashboard = (function() {
 		var _dom, _imageGroup = {}, _$buttonModify, _zoomLabel, _$zoomLabelDoms, _$coordsLabel, _$allDom, 
-		_draggable = true, _isMouseDown = false, _zoomable = true, _isLoading = false, _timeoutForSpinner = false,
+		_isDebug = Config.debug, _draggable = true, _isMouseDown = false, _zoomable = true, _isLoading = false, _timeoutForSpinner = false,
 		_zoomScaleLevelsDown = [ 1, 0.88, 0.7744, 0.681472, 0.59969536, 0.5277319168, 0.464404086783, 0.408675596397, 0.359634524806, 0.316478381829, 0.278500976009, 0.245080858888, 0.215671155822, 0.189790617123, 0.167015743068, 0.146973853900, 0.129336991432, 0.113816552460, 0.100158566165, 0.088139538225 ],
 		_zoomScaleLevelsUp = [ 1, 1.136363636364, 1.291322314050, 1.467411720511, 1.667513318762, 1.894901498594, 2.153297157493, 2.446928588060, 2.780600668250, 3.159773486648, 3.590651689372, 4.080286010650, 4.636688648466, 5.268964373257, 5.987459515065, 6.803931267119, 7.731740076272, 8.786068268491, 9.984168486921, 11.34564600787 ],
 		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 0, _socketCallsInProgress = 0, _animationZoom = false, _deltaVisibleCoordX = 0, _deltaVisibleCoordY = 0, _minVisibleCoordX = 0, _minVisibleCoordY = 0, _maxVisibleCoordX = 0, _maxVisibleCoordY = 0,
@@ -349,14 +379,14 @@ var App = (function() {
 			_$buttonModify = $("#showEditor");
 			_$allDom = $("#showEditor, #zoomLabel, #zoomLabelCont");
 			_$buttonModify.css({display: "block"});
-			if (Config.debug) {
+			if (_isDebug) {
 				$("#dashboardCoords").css("display", "block");
 				_$coordsLabel = $("#dashboardCoords span");
 				_$allDom = $("#showEditor, #zoomLabel, #zoomLabelCont");
 				_updateCoordsLabel(_currentX, _currentY);
 			}
 		},
-		_updateCoordsLabel = Config.debug ? function(x, y) {
+		_updateCoordsLabel = _isDebug ? function(x, y) {
 			_$coordsLabel.html(["(", x, ", ", y, ")"].join(''));
 		} : function(){},
 		_updateCurrentCoords = function(x, y) {
@@ -378,10 +408,11 @@ var App = (function() {
 			}
 		},
 		_buttonModifyClick = function() {
-			if (!_animationZoom) {
+			if (_animationZoom) return;
+			CurrentUser.doLogin().then(function() {
 				_animationZoom = true;
 				_animZoom();
-			}
+			});
 		},
 		_isVisible = function(img) {	// OK - la zona "visibile" è quella attualmente a video, più una schermata per ogni lato, come sorta di 'cache'
 			return (img.r > _minVisibleCoordX && img.b < _maxVisibleCoordY && img.x < _maxVisibleCoordX && img.y > _minVisibleCoordY);
@@ -457,7 +488,7 @@ var App = (function() {
 				_socketCallsInProgress--;
 				if (_socketCallsInProgress === 0) {
 					_isLoading = false;
-					utils.setSpinner(false);
+					Utils.setSpinner(false);
 				}
 			} else {
 				_addDraws(JSON.parse(data));
@@ -551,7 +582,7 @@ var App = (function() {
 				if (_timeoutForSpinner === false) {
 					_timeoutForSpinner = true;
 					setTimeout(function() {
-						_isLoading && utils.setSpinner(true);
+						_isLoading && Utils.setSpinner(true);
 						_timeoutForSpinner = false;
 					}, 100);
 				}
@@ -574,7 +605,7 @@ var App = (function() {
 		},
 		goToXY = function(x, y) {	// OK
 			// calcolo la differenza in px invece che coord, e chiamo _drag. se si inseriscono coordinate poco distanti dalle attuali, forzo l'aggiornamento e il caricamento delle nuove
-			if (utils.areEmpty([x, y])) return;
+			if (Utils.areEmpty([x, y])) return;
 			var z = _imageGroup.matrix.a,
 				dx = round((x - _currentX) * z),
 				dy = round((y - _currentY) * z);
@@ -586,7 +617,7 @@ var App = (function() {
 		}, 
 		goToDraw = function(id) {	// TODO
 			// precarica (se necessario) il disegno e poi va alle sue coordinate. in questo modo sono sicuro che sarà visualizzato per primo (importante visto che è stato richiesto specificamente)
-			if (utils.isEmpty(id)) return;
+			if (Utils.isEmpty(id)) return;
 			if (_cache.exist(id)) {
 				var draw = _cache.get(id);
 			} else {
@@ -678,7 +709,7 @@ var App = (function() {
 			//_dom.addEventListener('mouseout',		_mouseout,	true);
 			_dom.addEventListener('mouseover',		_mouseover,	true);
 			_dom.addEventListener(_mouseWheelEvent, _mouseWheel,true);
-			Config.debug && DOCUMENT.addEventListener("keydown", _keyDown, false);
+			_isDebug && DOCUMENT.addEventListener("keydown", _keyDown, false);
 			_$buttonModify.bind("mousedown", _buttonModifyClick);
 		},
 		_removeEvents = function() {
@@ -689,7 +720,7 @@ var App = (function() {
 			//_dom.removeEventListener('mouseout',		_mouseout,	true);
 			_dom.removeEventListener('mouseover',		_mouseover,	true);
 			_dom.removeEventListener(_mouseWheelEvent, 	_mouseWheel,true);
-			Config.debug && DOCUMENT.removeEventListener("keydown", _keyDown, false);
+			_isDebug && DOCUMENT.removeEventListener("keydown", _keyDown, false);
 			_$buttonModify.unbind("mousedown", _buttonModifyClick);
 		},
 		overshadow = function() {	// mette in secondo piano e blocca la dashboard per mostrare l'editor
@@ -753,10 +784,8 @@ var App = (function() {
 		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0, _savedDraw = {},
 		_color, _size, _pencilSize = 2, _pencilColor = "", _pencilColorID = 12, _brushSize = 50, _eraserSize = 50, _brushColor, _maxToolSize = 200,
 		_grayscaleColors = ["#FFF", "#EEE", "#DDD", "#CCC", "#BBB", "#AAA", "#999", "#888", "#777", "#666", "#555", "#444", "#333", "#222", "#111", "#000"], 
-		_enableElement = utils.enableElement,
-		_disableElement = utils.disableElement,
-		_labelAnnulla = label["Annulla"],
-		_labelRipeti = label["Ripeti"],
+		utils = Utils, _enableElement = utils.enableElement, _disableElement = utils.disableElement,
+		_labelAnnulla = label["Annulla"], _labelRipeti = label["Ripeti"],
 		__init = function() {
 			_dom = DOCUMENT.querySelector("#editor");
 			_context = _dom.getContext("2d");
@@ -767,8 +796,6 @@ var App = (function() {
 			_$pickerToolColor2 = $("#pickerToolColor2");
 			_$allDomContainer = $("#editorContainer");
 			_$allDom = $("#editorMenu, #editor, #editorSmallTool");
-			_optionsSizeX = _$options.width();
-			_optionsSizeY = _$options.height();
 			_dom.width = XX;
 			_dom.height = YY;
 			_editorMenuActions = [_hide, _selectBrush, _selectPencil, _selectEraser, _selectPicker, _selectRandomColor, _undo, _redo, _save, _showOptions];
@@ -792,7 +819,7 @@ var App = (function() {
 			_disableElement(_$optionRestore);
 			_$sizeToolPreview = $("#sizeToolPreview");
 			$("#toolSize a").html(label['Dimensione']);
-			_$closeButtons = $("#closeOptions");
+			_$closeButtons = $("#editorOptions .close");
 			_$sizeToolLabel = $("#sizeToolLabel");
 			_$sizeToolContainer = $("#sizeToolContainer");
 			_$grayscaleContainer = $("#pencilGrayscaleCont");
@@ -817,7 +844,6 @@ var App = (function() {
 			DOCUMENT.addEventListener('mouseout', 	_mouseend,	true);
 			DOCUMENT.addEventListener("keydown", _keyDown, false);
 			DOCUMENT.addEventListener("keyup", _keyUp, false);
-			_$dark.bind("click", _darkClick);
 			_$brushTool.bind("mousedown", _editorMenuActions[1]);
 			_$pencilTool.bind("mousedown", _editorMenuActions[2]);
 			_$eraserTool.bind("mousedown", _editorMenuActions[3]);
@@ -847,7 +873,6 @@ var App = (function() {
 			DOCUMENT.removeEventListener('mouseout', 	_mouseend);
 			DOCUMENT.removeEventListener("keydown", _keyDown, false);
 			DOCUMENT.removeEventListener("keyup", 	_keyUp, false);
-			_$dark.unbind("click", _darkClick);
 			_$brushTool.unbind("mousedown", _editorMenuActions[1]);
 			_$pencilTool.unbind("mousedown", _editorMenuActions[2]);
 			_$eraserTool.unbind("mousedown", _editorMenuActions[3]);
@@ -1223,8 +1248,7 @@ var App = (function() {
 		},
 		_showOptions = function() {
 			_overlay = true;
-			_$dark.addClass("cursorX");
-			_$dark.stop().fadeIn("fast");
+			utils.overlay.show(_darkClick);
 			_$options.stop().fadeIn("fast");
 			_$pickerToolPreview.fadeOut("fast");
 			_$sizeToolContainer.fadeOut("fast");
@@ -1232,7 +1256,7 @@ var App = (function() {
 		_hideOptions = function() {
 			_overlay = false;
 			_$options.stop().fadeOut("fast");
-			_$dark.stop().fadeOut("fast");
+			utils.overlay.hide();
 			_$sizeToolContainer.fadeOut("fast");
 			if (_toolSelected === 3) {
 				_$pickerToolColor2.css("background-color", _randomColor ? "white" : _color);
@@ -1358,7 +1382,6 @@ var App = (function() {
 			} else {
 				if (Messages.confirm(label['editorSaveConfirm'])) {
 					_isSaving = true;
-					_$dark.removeClass("cursorX");
 					utils.setSpinner(true, true);
 					_savedDraw = _saveLayer();
 					var _coords = Dashboard.getCoords(),
@@ -1392,7 +1415,7 @@ var App = (function() {
 			}
 		},
 		clear = function(force) {
-			if (Messages.confirm("Sei sicuro?")) {
+			if (Messages.confirm(label["areYouSure"])) {
 				_clear();
 				_step = [];
 				_currentStep = 0;
@@ -1403,10 +1426,7 @@ var App = (function() {
 			}
 		},
 		_onResize = function() {
-			_$options.css({
-				'top':  (YY > _optionsSizeY ? ((YY - _optionsSizeY) / 3) : 0) + "px", 
-				'left': (XX > _optionsSizeX ? ((XX - _optionsSizeX) / 2) : 0) + "px"
-			});
+			
 		},
 		setColor = function(rgb) {
 			if (rgb) {
@@ -1492,8 +1512,7 @@ var App = (function() {
 			},
 			_mousemove = function(e) {
 				_updatePoint(e);
-				if (_isMouseDown)
-					_updateOldPoint();
+				_isMouseDown && _updateOldPoint();
 				_update();
 			},
 			_mouseup = function() {
@@ -1619,11 +1638,11 @@ var App = (function() {
 			var params = {			// deve contenere l'identificativo di connessione, e tutto il necessario
 				query	: query	// se query è vuota, il lato server restituirà la pagina default con nuove news
 			};
-			var result = utils.getRemoteData(Config.services.news, params);
-			if (utils.isEmpty(result))
+			var result = Utils.getRemoteData(Config.services.news, params);
+			if (Utils.isEmpty(result))
 				Messages.error(label["ConnectionError"]);
 			else {
-				var html = _render(result, utils.isEmpty(query));
+				var html = _render(result, Utils.isEmpty(query));
 				Overlay.show(html);
 			}
 		};
@@ -1643,8 +1662,8 @@ var App = (function() {
 			var params = {			// deve contenere l'identificativo di connessione, e tutto il necessario
 				idUser	: idUser
 			};
-			var result = utils.getRemoteData(Config.services.news, params);
-			if (utils.isEmpty(result))
+			var result = Utils.getRemoteData(Config.services.news, params);
+			if (Utils.isEmpty(result))
 				Messages.error(label["ConnectionError"]);
 			else {
 				var html = _render(result);
@@ -1657,7 +1676,118 @@ var App = (function() {
 	})();	
 	
 	CurrentUser = (function() {
-		// dati di sessione e utente, pagina modifica dati utente, ecc
+		var _$popup, _$closeButtons,
+			utils = Utils, _logged = false, _userInfo = {}, _callbackLoginOK = false, _callbackLoginKO = false,
+		init = function() {
+			_$popup = $("#socialLoginPopup");
+			_$closeButtons = $("#socialLoginPopup .close");
+			_$closeButtons.bind("click", _hideLogin);
+			_facebook.init();
+		},
+		isLogged = function() {
+			return _logged;
+		},
+		_login = function(mode, data) {
+			// TODO qui recupero i suoi altri dati dal sever se è un utente già registrato, o gli chiedo altre info in fase di registrazione, tipo nome d'arte
+			_userInfo[mode] = data;
+			_logged = true;
+			if (_callbackLoginOK !== false) {
+				_callbackLoginOK(true);
+				_callbackLoginOK = _callbackLoginKO = false;
+			}
+			_hideLogin();
+		},
+		logout = function() {
+			if (Messages.confirm(label["areYouSure"])) {
+				_logged = false;
+				_userInfo = {};
+				_facebook.logout();
+			}
+		},
+		doLogin = function () {
+			return new Promise(_asyncLoginPopup);
+		},
+		_asyncLoginPopup = function(resolve, reject) {
+			if (_logged) {
+				resolve(true);
+			} else {
+				_callbackLoginOK = resolve;
+				_callbackLoginKO = reject;
+				_showLogin();
+			}
+		},
+		_showLogin = function() {
+			utils.overlay.show(_hideLogin);
+			_$popup.stop().fadeIn("fast");
+		},
+		_hideLogin = function() {
+			utils.overlay.hide();
+			_$popup.stop().fadeOut("fast");
+			if (_callbackLoginOK !== false) {
+				_callbackLoginKO(false);
+				_callbackLoginOK = _callbackLoginKO = false;
+			}
+		},
+		_facebook = (function() {
+			var config = Config.fb,
+				_$loginButton, _$logged, _$status,
+			init = function() {
+				WINDOW.fbAsyncInit = function() {
+					FB.init({
+					 	appId: config.appId,
+						cookie: true,  // enable cookies to allow the server to access the session
+						xfbml: true,  // parse social plugins on this page
+						version: config.apiVersion
+					});
+					FB.getLoginStatus(_loginCallback);
+				};
+				(function(d, s, id) {// Load the SDK asynchronously
+					var js, fjs = d.getElementsByTagName(s)[0];
+					if (d.getElementById(id)) return;
+					js = d.createElement(s); js.id = id;
+					js.src = "//connect.facebook.net/en_US/sdk.js";
+					fjs.parentNode.insertBefore(js, fjs);
+				}(document, 'script', 'facebook-jssdk'));
+				_$loginButton = $("#fbLogin");
+				$("img", _$loginButton).bind("click", function() {
+					var fb = FB;
+					fb && fb.login(_loginCallback, { scope: 'public_profile,email' });
+				});
+				_$logged = $("#fbLogged");
+				_$status = $("#fbStatus");
+			},
+			_getUserInfo = function() {
+				FB.api('/me', function(response) {
+					console.log('User Info: ', response);
+					_$status.html(label["loggedAs"] + response.name);
+					_login("fb", response);
+				});
+			},
+			_loginCallback = function(response) {
+				console.log('Login', response);
+				_$status.html('');
+				if (response.status === 'connected') {
+					_$logged.removeClass("displayNone");
+					_$loginButton.addClass("displayNone");
+					_getUserInfo();
+				} else {
+					_$logged.addClass("displayNone");
+					_$loginButton.removeClass("displayNone");
+				}
+			},
+			logout = function() {
+
+			};
+			return {
+				init: init,
+				logout:	logout
+			};
+		})();
+		return {
+			init:	init,
+			isLogged: isLogged,
+			doLogin: doLogin
+		}
 	})(),
 	
 	Messages = (function() {
@@ -1743,6 +1873,7 @@ var App = (function() {
 		var requestUrl = DOCUMENT.location.href;
 		Socket.init();
 		if (true) {	// url corrente corrispondente ad home
+			CurrentUser.init();
 			Dashboard.init();
 		}
 	};
