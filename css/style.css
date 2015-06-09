@@ -38,7 +38,7 @@ body {
     top: 10px;
     left: calc(50% - 0.5em);
     position: absolute;
-    z-index: 1100;
+    z-index: 999;
     list-style: none;
     border-radius: 50%;
     border: .02em solid rgba(0, 128, 255, 0.5); /* Subtle white line circling the dots */
@@ -704,7 +704,7 @@ body {
 	width: 300px;
 	height: 350px;
 	left: calc(50% - 200px);
-	top: calc(40% - 225px);
+	top: calc(50% - 225px);
 	padding: 50px;
 }
 	#fbLogin, #fbLogged {

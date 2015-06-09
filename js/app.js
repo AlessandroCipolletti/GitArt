@@ -409,10 +409,10 @@ var App = (function() {
 		},
 		_buttonModifyClick = function() {
 			if (_animationZoom) return;
-			if (CurrentUser.login()) {
+			CurrentUser.doLogin().then(function() {
 				_animationZoom = true;
 				_animZoom();
-			}
+			});
 		},
 		_isVisible = function(img) {	// OK - la zona "visibile" è quella attualmente a video, più una schermata per ogni lato, come sorta di 'cache'
 			return (img.r > _minVisibleCoordX && img.b < _maxVisibleCoordY && img.x < _maxVisibleCoordX && img.y > _minVisibleCoordY);
@@ -1677,7 +1677,7 @@ var App = (function() {
 	
 	CurrentUser = (function() {
 		var _$popup, _$closeButtons,
-			utils = Utils, _logged = false, _userInfo = {};
+			utils = Utils, _logged = false, _userInfo = {}, _callbackLoginOK = false, _callbackLoginKO = false,
 		init = function() {
 			_$popup = $("#socialLoginPopup");
 			_$closeButtons = $("#socialLoginPopup .close");
@@ -1687,19 +1687,33 @@ var App = (function() {
 		isLogged = function() {
 			return _logged;
 		},
-		login = function() {
-			if (_logged) {
-				return true;
-			} else {
-				_showLogin();
+		_login = function(mode, data) {
+			// TODO qui recupero i suoi altri dati dal sever se è un utente già registrato, o gli chiedo altre info in fase di registrazione, tipo nome d'arte
+			_userInfo[mode] = data;
+			_logged = true;
+			if (_callbackLoginOK !== false) {
+				_callbackLoginOK(true);
+				_callbackLoginOK = _callbackLoginKO = false;
 			}
+			_hideLogin();
 		},
 		logout = function() {
 			if (Messages.confirm(label["areYouSure"])) {
-				// logout Current User
 				_logged = false;
 				_userInfo = {};
 				_facebook.logout();
+			}
+		},
+		doLogin = function () {
+			return new Promise(_asyncLoginPopup);
+		},
+		_asyncLoginPopup = function(resolve, reject) {
+			if (_logged) {
+				resolve(true);
+			} else {
+				_callbackLoginOK = resolve;
+				_callbackLoginKO = reject;
+				_showLogin();
 			}
 		},
 		_showLogin = function() {
@@ -1709,6 +1723,10 @@ var App = (function() {
 		_hideLogin = function() {
 			utils.overlay.hide();
 			_$popup.stop().fadeOut("fast");
+			if (_callbackLoginOK !== false) {
+				_callbackLoginKO(false);
+				_callbackLoginOK = _callbackLoginKO = false;
+			}
 		},
 		_facebook = (function() {
 			var config = Config.fb,
@@ -1742,6 +1760,7 @@ var App = (function() {
 				FB.api('/me', function(response) {
 					console.log('User Info: ', response);
 					_$status.html(label["loggedAs"] + response.name);
+					_login("fb", response);
 				});
 			},
 			_loginCallback = function(response) {
@@ -1767,7 +1786,7 @@ var App = (function() {
 		return {
 			init:	init,
 			isLogged: isLogged,
-			login: login
+			doLogin: doLogin
 		}
 	})(),
 	
