@@ -89,6 +89,7 @@ var App = (function() {
 			"loggedAs"					: "Collegato come ",
 			"salvoDisegno"				: " Salvo disegno...",
 			"nothingToSave"				: "Niente da salvare",
+			"genericError"				: "Errore che 2 palle",
 			"editorSaveError"			: "Oooops :( Ora non &egrave; possibile salvare. Riprova pi&ugrave; tardi",
 			"socketError"				: "Errore di connessione nel Socket",
 			"editorSaveConfirm"			: "Dopo aver salvato non potrai più modificare il disegno. Confermi?"
@@ -238,6 +239,7 @@ var App = (function() {
 					console.log("Socket Connect OK");
 					_onConnect();
 				});
+				_socket.io.on("user login", CurrentUser.onSocketLogin);
 				_socket.io.on("dashboard drag", Dashboard.onSocketMessage);
 				_socket.io.on("editor save", Editor.onSocketMessage);
 			},
@@ -282,7 +284,7 @@ var App = (function() {
 		_isDebug = Config.debug, _draggable = true, _isMouseDown = false, _zoomable = true, _isLoading = false, _timeoutForSpinner = false,
 		_zoomScaleLevelsDown = [ 1, 0.88, 0.7744, 0.681472, 0.59969536, 0.5277319168, 0.464404086783, 0.408675596397, 0.359634524806, 0.316478381829, 0.278500976009, 0.245080858888, 0.215671155822, 0.189790617123, 0.167015743068, 0.146973853900, 0.129336991432, 0.113816552460, 0.100158566165, 0.088139538225 ],
 		_zoomScaleLevelsUp = [ 1, 1.136363636364, 1.291322314050, 1.467411720511, 1.667513318762, 1.894901498594, 2.153297157493, 2.446928588060, 2.780600668250, 3.159773486648, 3.590651689372, 4.080286010650, 4.636688648466, 5.268964373257, 5.987459515065, 6.803931267119, 7.731740076272, 8.786068268491, 9.984168486921, 11.34564600787 ],
-		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 0, _socketCallsInProgress = 0, _animationZoom = false, _deltaVisibleCoordX = 0, _deltaVisibleCoordY = 0, _minVisibleCoordX = 0, _minVisibleCoordY = 0, _maxVisibleCoordX = 0, _maxVisibleCoordY = 0,
+		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 0, socket = Socket, _socketCallsInProgress = 0, _animationZoom = false, _deltaVisibleCoordX = 0, _deltaVisibleCoordY = 0, _minVisibleCoordX = 0, _minVisibleCoordY = 0, _maxVisibleCoordX = 0, _maxVisibleCoordY = 0,
 		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaZoomMax = 2, _deltaZoom = 0, _deltaDragMax = 200, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
 		
 		_cache = (function() {
@@ -511,8 +513,6 @@ var App = (function() {
 				_drawExist && _removeDraw(draw.id, true);
 				var _newDraw = DOCUMENT.createElementNS("http://www.w3.org/2000/svg", "image");
 				_newDraw.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", draw.base64);
-				//_newDraw.setAttribute('x', round((draw.pxx - _imageGroup.pxx) / z, _decimals));
-				//_newDraw.setAttribute('y', round((draw.pxy - _imageGroup.pxy) / z, _decimals));
 				_newDraw.setAttribute('x', round(((draw.x - _currentX) * z + XX2 - _imageGroup.pxx) / z, _decimals));
 				_newDraw.setAttribute('y', round(((_currentY - draw.y) * z + YY2 - _imageGroup.pxy) / z, _decimals));
 				_newDraw.setAttribute('width', draw.w);
@@ -587,7 +587,7 @@ var App = (function() {
 					}, 100);
 				}
 			}
-			Socket.emit("dashboard drag", {
+			socket.emit("dashboard drag", {
 				"area": area,
 				"ids": notIds
 			});
@@ -781,7 +781,7 @@ var App = (function() {
 		_$editorShowOptions, _$optionDraft, _$optionRestore, _$optionSquare, _$optionExport, _$optionClear, _$closeButtons,
 		_minX, _minY, _maxX, _maxY, _oldX, _oldY, _mouseX = 0, _mouseY = 0, _numUndoStep = 31, _currentStep = 0, _oldMidX, _oldMidY, _$sizeToolPreview, _$sizeToolLabel,
 		_isInit, _isMouseDown, _isPressedShift, _restored = false, _randomColor = true, _overlay = false, _grayscaleIsScrolling = false, _isSaving = false,
-		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0, _savedDraw = {},
+		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0, _savedDraw = {}, socket = Socket,
 		_color, _size, _pencilSize = 2, _pencilColor = "", _pencilColorID = 12, _brushSize = 50, _eraserSize = 50, _brushColor, _maxToolSize = 200,
 		_grayscaleColors = ["#FFF", "#EEE", "#DDD", "#CCC", "#BBB", "#AAA", "#999", "#888", "#777", "#666", "#555", "#444", "#333", "#222", "#111", "#000"], 
 		utils = Utils, _enableElement = utils.enableElement, _disableElement = utils.disableElement,
@@ -1356,7 +1356,14 @@ var App = (function() {
 			}
 		},
 		_saveToServer = function(draw) {
-			Socket.emit("editor save", draw);
+			var userId = CurrentUser.getId();
+			if (userId) {
+				draw.userId = userId;
+				socket.emit("editor save", draw);
+			} else {
+				Messages.alert(label['genericError']);
+				utils.setSpinner(false);
+			}
 		},
 		_save = function() {	// TODO : CREDO OK
 			if (_maxX === -1 || _maxY === -1) {
@@ -1663,7 +1670,7 @@ var App = (function() {
 	})();	
 	
 	CurrentUser = (function() {
-		var _$popup, _$closeButtons,
+		var _$popup, _$closeButtons, socket = Socket,
 			utils = Utils, _logged = false, _userInfo = {}, _callbackLoginOK = false, _callbackLoginKO = false,
 		init = function() {
 			_$popup = $("#socialLoginPopup");
@@ -1674,15 +1681,16 @@ var App = (function() {
 		isLogged = function() {
 			return _logged;
 		},
+		getId = function() {
+			return _logged ? _userInfo.id : 0;
+		},
 		_login = function(mode, data) {
-			// TODO qui recupero i suoi altri dati dal sever se è un utente già registrato, o gli chiedo altre info in fase di registrazione, tipo nome d'arte
-			_userInfo[mode] = data;
-			_logged = true;
-			if (_callbackLoginOK !== false) {
-				_callbackLoginOK(true);
-				_callbackLoginOK = _callbackLoginKO = false;
+			if (mode === "fb") {
+				delete data.updated_time;
+				delete data.verified;
 			}
-			_hideLogin();
+			_userInfo[mode] = data;
+			socket.emit("user login", _userInfo);
 		},
 		logout = function() {
 			if (Messages.confirm(label["areYouSure"])) {
@@ -1714,6 +1722,21 @@ var App = (function() {
 				_callbackLoginKO(false);
 				_callbackLoginOK = _callbackLoginKO = false;
 			}
+		},
+		onSocketLogin = function(data) {
+			var user = JSON.parse(data);
+			if (user.id) {
+				if (user.new) {	// TODO: gli chiedo altre info in fase di registrazione, tipo nome d'arte
+					
+				}
+				_userInfo.id = user.id;
+				_logged = true;
+				(_callbackLoginOK !== false) && _callbackLoginOK(true);
+			} else {
+				(_callbackLoginKO !== false) && _callbackLoginKO(false);
+			}
+			(_callbackLoginKO !== false) && _hideLogin();
+			_callbackLoginOK = _callbackLoginKO = false;
 		},
 		_facebook = (function() {
 			var config = Config.fb,
@@ -1771,9 +1794,11 @@ var App = (function() {
 			};
 		})();
 		return {
-			init:	init,
+			init: init,
+			getId: getId,
 			isLogged: isLogged,
-			doLogin: doLogin
+			doLogin: doLogin,
+			onSocketLogin: onSocketLogin
 		}
 	})(),
 	
