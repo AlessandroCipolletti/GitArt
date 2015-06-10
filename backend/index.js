@@ -4,8 +4,7 @@ var io = require('socket.io')(http);
 var mongojs = require('mongojs');
 var ObjectId = mongojs.ObjectId;
 
-
-var db = mongojs("localhost/dev", ["draws"]);
+var db = mongojs("localhost/dev", ["draws", "users"]);
 
 db.on('error', function(err) {
     console.log('database error', err);
@@ -18,11 +17,51 @@ db.on('ready', function() {
 io.on('connection', function(socket) {
 	
 	socket.emittedDraws = [];
+	
+	socket.on("user login", function(data) {
+		
+		var user = JSON.parse(data);
+		
+		if (user.id) {	// aggiunta di un social ad un utente già esistente, o semplice login
+			
+			// TODO aggiorno i dati che ho ricevuto a db
+			socket.emit("user login", JSON.stringify({
+				id: user.id,
+				"new": false
+			}));
+		
+		} else {		// primo login per la sessione corrente
+			
+			db.users.find({
+				"fb.id": user.fb.id 
+			}, {}, {limit: 3}, function(err, users) {
+				if (err || !users || users.length > 1) {
+					console.log("query error: ", err);
+					socket.emit("user login", "error");
+				} else if (users.length === 1) {
+					socket.emit("user login", JSON.stringify({
+						id: users[0]._id,
+						"new": false
+					}));
+				} else {
+					var a = db.users.insert(user, function(err, item) {
+						socket.emit("user login", JSON.stringify({
+							id: item._id,
+							"new": true
+						}));
+					});
+				}
+			});
+			
+		}
+		
+	});
+	
 	socket.on('editor save', function(data) {
 		var draw = JSON.parse(data);
 		console.log(draw);
 		var a = db.draws.insert(draw, function(err, item) {
-			socket.emit('editor save', JSON.stringify({
+			socket.emit("editor save", JSON.stringify({
 				ok: true,
 				id: item._id
 			}));
@@ -48,10 +87,10 @@ io.on('connection', function(socket) {
 		}, {}, {limit: 100}, function(err, draws) {
 			if (err || !draws) {
 				console.log("query error: ", err);
-				socket.emit('dashboard drag', "error");
+				socket.emit("dashboard drag", "error");
 			} else if (draws.length === 0) {
 				//console.log("0 rows found");
-				socket.emit('dashboard drag', "none");
+				socket.emit("dashboard drag", "none");
 			} else {
 				console.log(draws.length + " rows found");
 				draws.forEach(function(draw) {
@@ -59,6 +98,7 @@ io.on('connection', function(socket) {
 					var ris = {
 						id		: draw._id,
 						base64	: draw.base64,
+						userId	: draw.userId,
 						w		: draw.w,
 						h		: draw.h,
 						x		: draw.x,
@@ -67,11 +107,11 @@ io.on('connection', function(socket) {
 						b		: draw.b
 					};
 					console.log([ris.x, ris.y]);
-					socket.emit('dashboard drag', JSON.stringify([ris]));
+					socket.emit("dashboard drag", JSON.stringify([ris]));
 					draw = undefined;
 				});
 				console.log("\n");
-				socket.emit('dashboard drag', "end");
+				socket.emit("dashboard drag", "end");
 			}
 		});	
 	});
