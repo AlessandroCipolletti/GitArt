@@ -21,8 +21,6 @@ io.on('connection', function(socket) {
 	socket.on("user login", function(data) {
 		
 		var user = JSON.parse(data);
-		console.log(user);
-		console.log("\n");
 		
 		if (user.id) {	// aggiunta di un social ad un utente già esistente, o semplice login
 			
@@ -34,14 +32,25 @@ io.on('connection', function(socket) {
 		
 		} else {		// primo login per la sessione corrente
 			
-			// qui devo fare un find in base all'id utente del social network utilizzato, 
-			// se mi restituisce una riga, faccio un emit con id e false,
-			// altrimenti faccio questa insert e poi emit con id e true
-			var a = db.users.insert(user, function(err, item) {
-				socket.emit("user login", JSON.stringify({
-					id: item._id,
-					"new": true
-				}));
+			db.users.find({
+				"fb.id": user.fb.id 
+			}, {}, {limit: 3}, function(err, users) {
+				if (err || !users || users.length > 1) {
+					console.log("query error: ", err);
+					socket.emit("user login", "error");
+				} else if (users.length === 1) {
+					socket.emit("user login", JSON.stringify({
+						id: users[0]._id,
+						"new": false
+					}));
+				} else {
+					var a = db.users.insert(user, function(err, item) {
+						socket.emit("user login", JSON.stringify({
+							id: item._id,
+							"new": true
+						}));
+					});
+				}
 			});
 			
 		}
