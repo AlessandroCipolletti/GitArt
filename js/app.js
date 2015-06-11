@@ -19,9 +19,14 @@ var App = (function() {
 		},
 		orderNumberUp = function(a, b) { return a - b; },
 		orderNumberDown = function(a, b) { return b - a; },
-		orderStringDown = function(a,b) {
+		orderStringDown = function(a, b) {
 			if (a < b) return +1;
 			if (a > b) return -1;
+			return 0;
+		},
+		orderStringUp = function(a, b) {
+			if (a > b) return +1;
+			if (a < b) return -1;
 			return 0;
 		},
 		preventDefault = function(e) {
@@ -280,8 +285,8 @@ var App = (function() {
 	})(),
 	
 	Dashboard = (function() {
-		var _dom, _imageGroup = {}, _$buttonModify, _zoomLabel, _$zoomLabelDoms, _$coordsLabel, _$allDom, 
-		_isDebug = Config.debug, _draggable = true, _isMouseDown = false, _zoomable = true, _isLoading = false, _timeoutForSpinner = false, _idsImagesOnDashboard = [], _idsImagesOnScreen = [],
+		var _dom, _imageGroup = {}, _$buttonModify, _zoomLabel, _$zoomLabelDoms, _$coordsLabel, _$allDom, _canvasForClick = DOCUMENT.createElement("canvas"), _contextForClick = _canvasForClick.getContext('2d'), _imageForDraw =  new Image(),
+		_isDebug = Config.debug, _draggable = true, _isMouseDown = false, _zoomable = true, _isLoading = false, _timeoutForSpinner = false, _idsImagesOnDashboard = [], _idsImagesOnScreen = [], _cacheNeedsUpdate = true,
 		_zoomScaleLevelsDown = [ 1, 0.88, 0.7744, 0.681472, 0.59969536, 0.5277319168, 0.464404086783, 0.408675596397, 0.359634524806, 0.316478381829, 0.278500976009, 0.245080858888, 0.215671155822, 0.189790617123, 0.167015743068, 0.146973853900, 0.129336991432, 0.113816552460, 0.100158566165, 0.088139538225 ],
 		_zoomScaleLevelsUp = [ 1, 1.136363636364, 1.291322314050, 1.467411720511, 1.667513318762, 1.894901498594, 2.153297157493, 2.446928588060, 2.780600668250, 3.159773486648, 3.590651689372, 4.080286010650, 4.636688648466, 5.268964373257, 5.987459515065, 6.803931267119, 7.731740076272, 8.786068268491, 9.984168486921, 11.34564600787 ],
 		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 0, socket = Socket, _socketCallsInProgress = 0, _animationZoom = false, _deltaVisibleCoordX = 0, _deltaVisibleCoordY = 0, _minVisibleCoordX = 0, _minVisibleCoordY = 0, _maxVisibleCoordX = 0, _maxVisibleCoordY = 0,
@@ -421,6 +426,31 @@ var App = (function() {
 			_imageGroup.pxx = round(_groupRect.left, _decimals);
 			_imageGroup.pxy = round(_groupRect.top, _decimals);
 		},
+		_highlightsDraw = function(id) {	// TODO evidenzio il disegno e mostro il box con le sue info 
+			console.log("clicked draw id:", id);
+		},
+		_selectDrawAtPx = function(x, y) {	// OK! capisco su quale disegno l'utente voleva fare click
+			_cacheNeedsUpdate && _updateCache();
+			_idsImagesOnScreen.sort(orderStringUp);
+			var draw, text;
+			for (var i = 0, l = _idsImagesOnScreen.length; i < l; i++) {
+				draw = _cache.get(_idsImagesOnScreen[i]);
+				if (draw.pxx < x && draw.pxr > x && draw.pxy < y && draw.pxb > y) {
+					_canvasForClick.width = draw.pxw;
+					_canvasForClick.height = draw.pxh;
+					_contextForClick.clearRect(0, 0, draw.pxw, draw.pxh);
+					text = draw.data.outerHTML, index = text.indexOf('xlink:href="') + 12;
+					_imageForDraw.src = text.substring(index, text.indexOf('"', index));
+					_contextForClick.drawImage(_imageForDraw, 0, 0, draw.pxw, draw.pxh);
+					if (_contextForClick.getImageData(x - draw.pxx, y - draw.pxy, 1, 1).data[3] > 0) {
+						_contextForClick.clearRect(0, 0, _canvasForClick.width, _canvasForClick.height);
+						_imageForDraw =  new Image();
+						_highlightsDraw(draw.id);
+						break;
+					}
+				}
+			}
+		},
 		_isOnScreen = function(img) {
 			return (img.pxr > 0 && img.pxx < XX && img.pxb > 0 && img.pxy < YY);
 		},
@@ -428,14 +458,14 @@ var App = (function() {
 			return (img.r > _minVisibleCoordX && img.b < _maxVisibleCoordY && img.x < _maxVisibleCoordX && img.y > _minVisibleCoordY);
 		},
 		_updateCache = function() {
-			var ids = _cache.ids();
-				_idsImagesOnScreen = [],
+			var ids = _cache.ids(),
 				isOnDashboard = _isOnDashboard,
 				isOnScreen = _isOnScreen,
-				R = round, decimals = _decimals;
+				R = round, decimals = _decimals, img, rect;
+			_idsImagesOnScreen = [];
 			for (var i = ids.length; i--; ) {
-				var img = _cache.get(ids[i]),
-					rect = img.data.getBoundingClientRect();
+				img = _cache.get(ids[i]);
+				rect = img.data.getBoundingClientRect();
 				img.pxx = R(rect.left, decimals);
 				img.pxy = R(rect.top, decimals);
 				img.pxw = R(rect.width, decimals);
@@ -448,6 +478,8 @@ var App = (function() {
 				img.onScreen && _idsImagesOnScreen.push(img.id);
 				_cache.set(img.id, img);
 			}
+			isOnDashboard = isOnScreen = decimals = R = undefined;
+			_cacheNeedsUpdate = false;
 		},
 		_zoomTo = function(level, x, y, animated) {	// "OK"
 			if (level === _zoom || level > _zoomMax || level < 1) return;
@@ -478,7 +510,11 @@ var App = (function() {
 			_deltaVisibleCoordY = DYY / z;
 			_updateCurrentCoords(_newCoordX, _newCoordY);
 			_updateGroupOrigin();
-			refreshCache && (_deltaZoom > _deltaZoomMax) && _fillScreen(); 	// dopo lo zoom e l'aggiornamento delle imm, scarico e visualizzo le nuove. necessario solo se sto rimpicciolendo la schermata.
+			if (refreshCache && (_deltaZoom > _deltaZoomMax)) {
+				 _fillScreen(); 	// dopo lo zoom e l'aggiornamento delle imm, scarico e visualizzo le nuove. necessario solo se sto rimpicciolendo la schermata.
+			} else {
+				_cacheNeedsUpdate = true;
+			}
 			_zoomLabel.textContent = [round(100 - (95 / _zoomMax) * (level - 1)), "%"].join('');
 		},
 		_drag = function(dx, dy, forceLoad) {	// OK. dx dy sono le differenze in px, non in coordinate (bisogna tenere conto dello zoom)
@@ -494,7 +530,11 @@ var App = (function() {
 				_newCoordY = round(_currentY + _deltaY, _decimals);
 			_updateCurrentCoords(_newCoordX, _newCoordY);
 			_updateGroupOrigin();
-			(forceLoad || MATH.abs(_deltaDragX) > _deltaDragMax || MATH.abs(_deltaDragY) > _deltaDragMax) && _fillScreen();
+			if (forceLoad || MATH.abs(_deltaDragX) > _deltaDragMax || MATH.abs(_deltaDragY) > _deltaDragMax) {
+				_fillScreen();	
+			} else {
+				_cacheNeedsUpdate = true;
+			}
 		},
 		onSocketMessage = function(data) {
 			if (["end", "none", "error"].indexOf(data) >= 0) {
@@ -541,6 +581,7 @@ var App = (function() {
 				_appendDraw(draw);
 				_newDraw = draw = undefined;
 			}
+			_cacheNeedsUpdate = true;
 		    return true;
 		},
 		_removeDraw = function(id, del) {	// OK
@@ -666,10 +707,8 @@ var App = (function() {
 			}
 		},
 		_click = function(e) {
-			// se ho cliccato su un disegno lo evidenzio, con bordo proporzionale allo zoom corrente
-			if (e.target.id === "dashboard") {
-				_cache.log();
-			}
+			console.log("click");
+			_selectDrawAtPx(e.pageX, e.pageY);
 		},
 		_mouseend = function() {
 			_mouseX = 0;
@@ -678,6 +717,7 @@ var App = (function() {
 			_dom.classList.remove('dragging');
 		},
 		_mouseup = function(e) {
+			console.log("mouseup");
 			if (e.button !== 0) return false;
 			_mouseend();
 		},
@@ -1383,7 +1423,7 @@ var App = (function() {
 					utils.setSpinner(true, true);
 					_savedDraw = _saveLayer();
 					var _coords = Dashboard.getCoords(),
-						_tempCanvas = document.createElement("canvas");
+						_tempCanvas = DOCUMENT.createElement("canvas");
 					_tempCanvas.width = _savedDraw.data.width;
 					_tempCanvas.height = _savedDraw.data.height;
 					_tempCanvas.getContext("2d").putImageData(_savedDraw.data, 0, 0);
