@@ -281,7 +281,7 @@ var App = (function() {
 	
 	Dashboard = (function() {
 		var _dom, _imageGroup = {}, _$buttonModify, _zoomLabel, _$zoomLabelDoms, _$coordsLabel, _$allDom, 
-		_isDebug = Config.debug, _draggable = true, _isMouseDown = false, _zoomable = true, _isLoading = false, _timeoutForSpinner = false,
+		_isDebug = Config.debug, _draggable = true, _isMouseDown = false, _zoomable = true, _isLoading = false, _timeoutForSpinner = false, _idsImagesOnDashboard = [], _idsImagesOnScreen = [],
 		_zoomScaleLevelsDown = [ 1, 0.88, 0.7744, 0.681472, 0.59969536, 0.5277319168, 0.464404086783, 0.408675596397, 0.359634524806, 0.316478381829, 0.278500976009, 0.245080858888, 0.215671155822, 0.189790617123, 0.167015743068, 0.146973853900, 0.129336991432, 0.113816552460, 0.100158566165, 0.088139538225 ],
 		_zoomScaleLevelsUp = [ 1, 1.136363636364, 1.291322314050, 1.467411720511, 1.667513318762, 1.894901498594, 2.153297157493, 2.446928588060, 2.780600668250, 3.159773486648, 3.590651689372, 4.080286010650, 4.636688648466, 5.268964373257, 5.987459515065, 6.803931267119, 7.731740076272, 8.786068268491, 9.984168486921, 11.34564600787 ],
 		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 0, socket = Socket, _socketCallsInProgress = 0, _animationZoom = false, _deltaVisibleCoordX = 0, _deltaVisibleCoordY = 0, _minVisibleCoordX = 0, _minVisibleCoordY = 0, _maxVisibleCoordX = 0, _maxVisibleCoordY = 0,
@@ -330,25 +330,25 @@ var App = (function() {
 					
 				}
 			},
-			allInv = function() {
+			reset = function() {
 				for (var i = _ids.length; i--; ) {
-					_list[_ids[i]].isVisible = false;
+					var draw  = _list[_ids[i]];
+					draw.onScreen = draw.onDashboard = false;
 				}
 			};
 			return {
-				get				: get,
-				set				: set,
-				add				: add,
-				del				: del,
-				log				: log,
-				ids				: ids,
-				length			: length,
-				exist			: exist,
-				clean			: clean,
-				setAllInvisible	: allInv
+				get		: get,
+				set		: set,
+				add		: add,
+				del		: del,
+				log		: log,
+				ids		: ids,
+				length	: length,
+				exist	: exist,
+				clean	: clean,
+				reset	: reset
 			};
 		})(),
-		_imagesVisibleIds = [],
 		_initDomGroup = function() {
 			if (_imageGroup.tag) {
 				_dom.removeChild(_imageGroup.tag);
@@ -416,26 +416,37 @@ var App = (function() {
 				_animZoom();
 			});
 		},
-		_isVisible = function(img) {	// OK - la zona "visibile" è quella attualmente a video, più una schermata per ogni lato, come sorta di 'cache'
-			return (img.r > _minVisibleCoordX && img.b < _maxVisibleCoordY && img.x < _maxVisibleCoordX && img.y > _minVisibleCoordY);
-		},
 		_updateGroupOrigin = function() {
 			var _groupRect = _imageGroup.origin.getBoundingClientRect();
 			_imageGroup.pxx = round(_groupRect.left, _decimals);
 			_imageGroup.pxy = round(_groupRect.top, _decimals);
 		},
+		_isOnScreen = function(img) {
+			return (img.pxr > 0 && img.pxx < XX && img.pxb > 0 && img.pxy < YY);
+		},
+		_isOnDashboard = function(img) {	// OK - la zona "visibile" è quella attualmente a video, più una schermata per ogni lato, come sorta di 'cache'
+			return (img.r > _minVisibleCoordX && img.b < _maxVisibleCoordY && img.x < _maxVisibleCoordX && img.y > _minVisibleCoordY);
+		},
 		_updateCache = function() {
-			var _ids = _cache.ids();
-			for (var i = _ids.length; i--; ) {
-				var _img = _cache.get(_ids[i]),
-					rect = _img.data.getBoundingClientRect();
-				_img.pxx = round(rect.left, _decimals);
-				_img.pxy = round(rect.top, _decimals);
-				_img.pxw = round(rect.width, _decimals);
-				_img.pxh = round(rect.height, _decimals);
-				_img.isVisible = _isVisible(_img);
-				(_imagesVisibleIds.indexOf(_img.id) >= 0) && (!_img.isVisible) && _removeDraw(_img.id, false);
-				_cache.set(_img.id, _img);
+			var ids = _cache.ids();
+				_idsImagesOnScreen = [],
+				isOnDashboard = _isOnDashboard,
+				isOnScreen = _isOnScreen,
+				R = round, decimals = _decimals;
+			for (var i = ids.length; i--; ) {
+				var img = _cache.get(ids[i]),
+					rect = img.data.getBoundingClientRect();
+				img.pxx = R(rect.left, decimals);
+				img.pxy = R(rect.top, decimals);
+				img.pxw = R(rect.width, decimals);
+				img.pxh = R(rect.height, decimals);
+				img.pxr = img.pxx + img.pxw;
+				img.pxb = img.pxy + img.pxh;
+				img.onDashboard = isOnDashboard(img);
+				img.onScreen = isOnScreen(img);
+				(_idsImagesOnDashboard.indexOf(img.id) >= 0) && (!img.onDashboard) && _removeDraw(img.id, false);
+				img.onScreen && _idsImagesOnScreen.push(img.id);
+				_cache.set(img.id, img);
 			}
 		},
 		_zoomTo = function(level, x, y, animated) {	// "OK"
@@ -535,25 +546,23 @@ var App = (function() {
 		_removeDraw = function(id, del) {	// OK
 			//console.log("rimuovo:" + id);
 			(del || false) && _cache.del(id);
-			_imagesVisibleIds.splice(_imagesVisibleIds.indexOf(id), 1);
+			_idsImagesOnDashboard.splice(_idsImagesOnDashboard.indexOf(id), 1);
 			var _oldDraw = DOCUMENT.getElementById(id);
 			_oldDraw && _imageGroup.tag.removeChild(_oldDraw);
 		},
 		_appendDraw = function(draw) {	// aggiunge alla dashboard un svg image già elaborato 
-			if (!draw || !draw.id) return false;
-			if (_imagesVisibleIds.indexOf(draw.id) === -1) {
-				//console.log(["aggiungo", draw]);
-				_imagesVisibleIds.push(draw.id);
-				_imagesVisibleIds = _imagesVisibleIds.sort(orderStringDown);
-				var index = _imagesVisibleIds.indexOf(draw.id) + 1;
-				if (index < _imagesVisibleIds.length) {
-					_imageGroup.tag.insertBefore(draw.data, DOCUMENT.getElementById(_imagesVisibleIds[index]));
-				} else {
-					_imageGroup.tag.appendChild(draw.data);
-				}
-				draw.isVisible = true;
-				_cache.add(draw.id, draw);
+			if (!draw || !draw.id || _idsImagesOnDashboard.indexOf(draw.id) >= 0) return false;
+			//console.log(["aggiungo", draw]);
+			_idsImagesOnDashboard.push(draw.id);
+			_idsImagesOnDashboard = _idsImagesOnDashboard.sort(orderStringDown);
+			var index = _idsImagesOnDashboard.indexOf(draw.id) + 1;
+			if (index < _idsImagesOnDashboard.length) {
+				_imageGroup.tag.insertBefore(draw.data, DOCUMENT.getElementById(_idsImagesOnDashboard[index]));
+			} else {
+				_imageGroup.tag.appendChild(draw.data);
 			}
+			draw.onDashboard = true;
+			_cache.add(draw.id, draw);
 		},
 		_getVisibleArea = function() {	// OK - in coordinate assolute
 			// TODO - per adesso cambio qui la dimensione dell'area da scaricare per scaricare tutto in un colpo,
@@ -568,11 +577,11 @@ var App = (function() {
 			}
 		},
 		_findInCache = function() {
-			var _ids = _cache.ids().filter(function(i) {return _imagesVisibleIds.indexOf(i) < 0}),
+			var _ids = _cache.ids().filter(function(i) {return _idsImagesOnDashboard.indexOf(i) < 0}),
 				_draw;
 			for (var i = _ids.length; i--; ) {
 				_draw = _cache.get(_ids[i]);
-				(_isVisible(_draw)) && _appendDraw(_draw);
+				(_isOnDashboard(_draw)) && _appendDraw(_draw);
 			}
 		},
 		_callSocketFor = function(area, notIds) { // OK
@@ -610,8 +619,8 @@ var App = (function() {
 				dx = round((x - _currentX) * z),
 				dy = round((y - _currentY) * z);
 			_updateCurrentCoords(x, y);
-			_imagesVisibleIds = [];
-			_cache.setAllInvisible();
+			_idsImagesOnDashboard = [];
+			_cache.reset();
 			_initDomGroup();
 			_fillScreen();
 		}, 
