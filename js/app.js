@@ -285,7 +285,7 @@ var App = (function() {
 	})(),
 	
 	Dashboard = (function() {
-		var _dom, _imageGroup = {}, _$buttonModify, _zoomLabel, _$zoomLabelDoms, _$coordsLabel, _$allDom, _canvasForClick = DOCUMENT.createElement("canvas"), _contextForClick = _canvasForClick.getContext('2d'), _imageForDraw =  new Image(),
+		var _dom, _imageGroup = {}, _$buttonEditor, _zoomLabel, _$zoomLabelDoms, _$coordsLabel, _$allDom, _canvasForClick = DOCUMENT.createElement("canvas"), _contextForClick = _canvasForClick.getContext('2d'), _imageForDraw =  new Image(),
 		_isDebug = Config.debug, _draggable = true, _isMouseDown = false, _zoomable = true, _isLoading = false, _timeoutForSpinner = false, _idsImagesOnDashboard = [], _idsImagesOnScreen = [], _cacheNeedsUpdate = true,
 		_zoomScaleLevelsDown = [ 1, 0.88, 0.7744, 0.681472, 0.59969536, 0.5277319168, 0.464404086783, 0.408675596397, 0.359634524806, 0.316478381829, 0.278500976009, 0.245080858888, 0.215671155822, 0.189790617123, 0.167015743068, 0.146973853900, 0.129336991432, 0.113816552460, 0.100158566165, 0.088139538225 ],
 		_zoomScaleLevelsUp = [ 1, 1.136363636364, 1.291322314050, 1.467411720511, 1.667513318762, 1.894901498594, 2.153297157493, 2.446928588060, 2.780600668250, 3.159773486648, 3.590651689372, 4.080286010650, 4.636688648466, 5.268964373257, 5.987459515065, 6.803931267119, 7.731740076272, 8.786068268491, 9.984168486921, 11.34564600787 ],
@@ -383,9 +383,9 @@ var App = (function() {
 			_zoomLabel = DOCUMENT.querySelector("#zoomLabel");
 			_$zoomLabelDoms = $("#zoomLabel, #zoomLabelCont");
 			_initDomGroup();
-			_$buttonModify = $("#showEditor");
+			_$buttonEditor = $("#showEditor");
 			_$allDom = $("#showEditor, #zoomLabel, #zoomLabelCont");
-			_$buttonModify.css({display: "block"});
+			_$buttonEditor.css({display: "block"});
 			if (_isDebug) {
 				$("#dashboardCoords").css("display", "block");
 				_$coordsLabel = $("#dashboardCoords span");
@@ -414,7 +414,7 @@ var App = (function() {
 				requestAnimationFrame(_animZoom);
 			}
 		},
-		_buttonModifyClick = function() {
+		_buttonEditorClick = function() {
 			if (_animationZoom) return;
 			CurrentUser.doLogin().then(function() {
 				_animationZoom = true;
@@ -432,24 +432,28 @@ var App = (function() {
 		_selectDrawAtPx = function(x, y) {	// OK! capisco su quale disegno l'utente voleva fare click
 			_cacheNeedsUpdate && _updateCache();
 			_idsImagesOnScreen.sort(orderStringUp);
-			var draw, text;
+			var draw, text, selectedID = false;
 			for (var i = 0, l = _idsImagesOnScreen.length; i < l; i++) {
 				draw = _cache.get(_idsImagesOnScreen[i]);
 				if (draw.pxx < x && draw.pxr > x && draw.pxy < y && draw.pxb > y) {
+					(!selectedID) && (selectedID = draw.id);
+					_contextForClick.clearRect(0, 0, _canvasForClick.width, _canvasForClick.height);
 					_canvasForClick.width = draw.pxw;
 					_canvasForClick.height = draw.pxh;
-					_contextForClick.clearRect(0, 0, draw.pxw, draw.pxh);
-					text = draw.data.outerHTML, index = text.indexOf('xlink:href="') + 12;
+					text = draw.data.outerHTML;
+					var index = text.indexOf('xlink:href="') + 12;
 					_imageForDraw.src = text.substring(index, text.indexOf('"', index));
 					_contextForClick.drawImage(_imageForDraw, 0, 0, draw.pxw, draw.pxh);
 					if (_contextForClick.getImageData(x - draw.pxx, y - draw.pxy, 1, 1).data[3] > 0) {
-						_contextForClick.clearRect(0, 0, _canvasForClick.width, _canvasForClick.height);
-						_imageForDraw =  new Image();
-						_highlightsDraw(draw.id);
+						selectedID = draw.id;
 						break;
 					}
 				}
 			}
+			_contextForClick.clearRect(0, 0, _canvasForClick.width, _canvasForClick.height);
+			_canvasForClick.width = _canvasForClick.height = text = 0;
+			_imageForDraw =  new Image();
+			selectedID && _highlightsDraw(selectedID);
 		},
 		_isOnScreen = function(img) {
 			return (img.pxr > 0 && img.pxx < XX && img.pxb > 0 && img.pxy < YY);
@@ -759,7 +763,7 @@ var App = (function() {
 			_dom.addEventListener('mouseover',		_mouseover,	true);
 			_dom.addEventListener(_mouseWheelEvent, _mouseWheel,true);
 			_isDebug && DOCUMENT.addEventListener("keydown", _keyDown, false);
-			_$buttonModify.bind("mousedown", _buttonModifyClick);
+			_$buttonEditor.bind("mousedown", _buttonEditorClick);
 		},
 		_removeEvents = function() {
 			_dom.removeEventListener('click',			_click,		true);
@@ -770,7 +774,7 @@ var App = (function() {
 			_dom.removeEventListener('mouseover',		_mouseover,	true);
 			_dom.removeEventListener(_mouseWheelEvent, 	_mouseWheel,true);
 			_isDebug && DOCUMENT.removeEventListener("keydown", _keyDown, false);
-			_$buttonModify.unbind("mousedown", _buttonModifyClick);
+			_$buttonEditor.unbind("mousedown", _buttonEditorClick);
 		},
 		overshadow = function() {	// mette in secondo piano e blocca la dashboard per mostrare l'editor
 			_draggable = _zoomable = false;
