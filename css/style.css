@@ -693,6 +693,44 @@ body {
 			font-size: 10px;
 		}
 
+	#dashboardTooltip {
+		position: absolute;
+		position: absolute;
+		width: 400px;
+		height: 250px;
+		margin-left: -202px;
+		margin-top: -275px;
+		color: black;
+		background: white;
+		border: 2px solid #333;
+		text-align: center;
+		border-radius: 10px;
+		box-shadow: 7px 7px 10px #666;
+		z-index: 900;
+	}
+		#dashboardTooltip:before {
+			content: '';
+			position: absolute;
+			top: 100%;
+			left: 50%;
+			margin-left: -12px;
+			width: 0; height: 0;
+			border-top: 12px solid #6D6D6D;
+			border-right: 12px solid transparent;
+			border-left: 12px solid transparent;
+		}
+		#dashboardTooltip:after {
+			content: '';
+			position: absolute;
+			top: 100%;
+			left: 50%;
+			margin-left: -8px;
+			width: 0; height: 0;
+			border-top: 8px solid #FFD4D4;
+			border-right: 8px solid transparent;
+			border-left: 8px solid transparent;
+		}
+
 /*	-----------------------------------------------------------------------------------------------------------------------------
 
 	*****************************************************************************************************************************

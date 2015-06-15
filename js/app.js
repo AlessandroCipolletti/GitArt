@@ -289,7 +289,7 @@ var App = (function() {
 		_isDebug = Config.debug, _draggable = true, _isMouseDown = false, _zoomable = true, _isLoading = false, _timeoutForSpinner = false, _idsImagesOnDashboard = [], _idsImagesOnScreen = [], _cacheNeedsUpdate = true,
 		_zoomScaleLevelsDown = [ 1, 0.88, 0.7744, 0.681472, 0.59969536, 0.5277319168, 0.464404086783, 0.408675596397, 0.359634524806, 0.316478381829, 0.278500976009, 0.245080858888, 0.215671155822, 0.189790617123, 0.167015743068, 0.146973853900, 0.129336991432, 0.113816552460, 0.100158566165, 0.088139538225 ],
 		_zoomScaleLevelsUp = [ 1, 1.136363636364, 1.291322314050, 1.467411720511, 1.667513318762, 1.894901498594, 2.153297157493, 2.446928588060, 2.780600668250, 3.159773486648, 3.590651689372, 4.080286010650, 4.636688648466, 5.268964373257, 5.987459515065, 6.803931267119, 7.731740076272, 8.786068268491, 9.984168486921, 11.34564600787 ],
-		_mouseX, _mouseY, _currentX, _currentY, _zoom = 1, _decimals = 0, socket = Socket, _socketCallsInProgress = 0, _animationZoom = false, _deltaVisibleCoordX = 0, _deltaVisibleCoordY = 0, _minVisibleCoordX = 0, _minVisibleCoordY = 0, _maxVisibleCoordX = 0, _maxVisibleCoordY = 0,
+		_mouseX, _mouseY, _clickX, _clickY, _currentX, _currentY, _zoom = 1, _decimals = 0, socket = Socket, _socketCallsInProgress = 0, _animationZoom = false, _deltaVisibleCoordX = 0, _deltaVisibleCoordY = 0, _minVisibleCoordX = 0, _minVisibleCoordY = 0, _maxVisibleCoordX = 0, _maxVisibleCoordY = 0,
 		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaZoomMax = 2, _deltaZoom = 0, _deltaDragMax = 200, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
 		
 		_cache = (function() {
@@ -352,6 +352,29 @@ var App = (function() {
 				exist	: exist,
 				clean	: clean,
 				reset	: reset
+			};
+		})(),
+		_tooltip = (function() {
+			var _$dom,
+			init = function() {
+				_$dom = $('#dashboardTooltip');
+			},
+			show = function(idDraw, x, y) {
+				var draw = _cache.get(idDraw);
+				if (!draw) return;
+				_$dom.css({
+					top: y + "px",
+					left: x + "px"
+				});
+				_$dom.removeClass("displayNone");
+			},
+			hide = function() {
+				_$dom.addClass("displayNone");
+			};
+			return {
+				init: init,
+				show: show,
+				hide: hide
 			};
 		})(),
 		_initDomGroup = function() {
@@ -426,8 +449,9 @@ var App = (function() {
 			_imageGroup.pxx = round(_groupRect.left, _decimals);
 			_imageGroup.pxy = round(_groupRect.top, _decimals);
 		},
-		_highlightsDraw = function(id) {	// TODO evidenzio il disegno e mostro il box con le sue info 
+		_highlightsDraw = function(id, x, y) {	// TODO evidenzio il disegno e mostro il box con le sue info 
 			console.log("clicked draw id:", id);
+			_tooltip.show(id, x, y);
 		},
 		_selectDrawAtPx = function(x, y) {	// OK! capisco su quale disegno l'utente voleva fare click
 			_cacheNeedsUpdate && _updateCache();
@@ -453,7 +477,7 @@ var App = (function() {
 			_contextForClick.clearRect(0, 0, _canvasForClick.width, _canvasForClick.height);
 			_canvasForClick.width = _canvasForClick.height = text = 0;
 			_imageForDraw =  new Image();
-			selectedID && _highlightsDraw(selectedID);
+			selectedID && _highlightsDraw(selectedID, x, y);
 		},
 		_isOnScreen = function(img) {
 			return (img.pxr > 0 && img.pxx < XX && img.pxb > 0 && img.pxy < YY);
@@ -691,9 +715,10 @@ var App = (function() {
 		_mousedown = function(e) {
 			if (e.button !== 0) return false;
 			_isMouseDown = true;
+			_tooltip.hide();
 			_dom.classList.add('dragging');
-			_mouseX = e.pageX;
-			_mouseY = e.pageY;
+			_mouseX = _clickX = e.pageX;
+			_mouseY = _clickY = e.pageY;
 			_imageGroup.matrix = _imageGroup.tag.getCTM();
 		},
 		__mousemove = function() {
@@ -711,8 +736,7 @@ var App = (function() {
 			}
 		},
 		_click = function(e) {
-			console.log("click");
-			_selectDrawAtPx(e.pageX, e.pageY);
+			
 		},
 		_mouseend = function() {
 			_mouseX = 0;
@@ -721,8 +745,9 @@ var App = (function() {
 			_dom.classList.remove('dragging');
 		},
 		_mouseup = function(e) {
-			console.log("mouseup");
 			if (e.button !== 0) return false;
+			var abs = MATH.abs;
+			(abs(_clickX - e.pageX) < 5 && abs(_clickY - e.pageY) < 5) && _selectDrawAtPx(e.pageX, e.pageY);
 			_mouseend();
 		},
 		_mouseout = function(e) {
@@ -811,6 +836,7 @@ var App = (function() {
 				_imageGroup.tag.setAttribute("transform", "matrix(" + matrix.a + "," + matrix.b + "," + matrix.c + "," + matrix.d + "," + round(matrix.e, 4) + "," + round(matrix.f, 4) + ")");
 			};
 			_initDom();
+			_tooltip.init();
 			_addEvents();
 			goToXY(0, 0);
 		};
