@@ -355,21 +355,100 @@ var App = (function() {
 			};
 		})(),
 		_tooltip = (function() {
-			var _$dom,
+			var _$dom, _$close, _$like, _$comments, _$share, _$save, _$userImage, _$title, _$userName, _$drawContainer, _$location, _$likeTot, _$commentsTot, _$shareTot,
+				_selectedId, _idUser, _location, _previewWidth = 170, _previewHeight = 130,
 			init = function() {
 				_$dom = $('#dashboardTooltip');
+				_$close = $(".close", _$dom);
+				_$userImage = $("#tooltipUserImage");
+				_$title = $("#tooltipTitle");
+				_$userName = $("#tooltipUserName");
+				_$location = $("#tooltipLocation");
+				_$likeTot = $("#tooltipLikeTot");
+				_$commentsTot = $("#tooltipCommentsTot");
+				_$shareTot = $("#tooltipShareTot");
+				_$drawContainer = $("#tooltipDrawContainer");
+				_$like = $("#tooltipLike");
+				_$comments = $("#tooltipComment");
+				_$share = $("#tooltipShare");
+				_$save = $("#tooltipSave");
+				_$close.bind("click", hide);
+				_$title.bind("click", _goToDrawPage);
+				_$userName.bind("click", _goToUserPage);
+				_$location.bind("click", _goToLocation)
+				_$drawContainer.bind("click", _goToDrawPage);
+				_$userImage.bind("click", _goToUserPage);
+				_$like.bind("click", _like);
+				_$comments.bind("click", _comments);
+				_$share.bind("click", _share);
+				_$save.bind("click", _save);
 			},
 			show = function(idDraw, x, y) {
-				var draw = _cache.get(idDraw);
-				if (!draw) return;
-				_$dom.css({
-					top: y + "px",
-					left: x + "px"
-				});
-				_$dom.removeClass("displayNone");
+				if (idDraw && x && y) {
+					_selectedId = idDraw;
+					var draw = _cache.get(_selectedId);
+					if (!draw) return;
+
+					_idUser = draw.idUser;
+					_location = draw.location;
+					_$title.html("Disegno mattutino");
+					_$userName.html("Alessandro Cipolletti");
+					_$userImage.css("background-image", "url('img/profilo.jpg')");
+					_$location.html("Paris, France");
+					_$likeTot.html("421 Mi Piace");
+					_$commentsTot.html("32 Commenti");
+					_$shareTot.html("23 Condivisioni");
+
+					var scale = draw.pxw / draw.pxh,
+						w, h, text;
+					if (scale > (_previewWidth / _previewHeight)) {
+						w = _canvasForClick.width = _previewWidth;
+						h = _canvasForClick.height = round(_previewWidth / scale);
+					} else {
+						h = _canvasForClick.height = _previewHeight;
+						w = _canvasForClick.width = round(_previewHeight * scale);
+					}
+					text = draw.data.outerHTML;
+					var index = text.indexOf('xlink:href="') + 12;
+					_imageForDraw.src = text.substring(index, text.indexOf('"', index));
+					_contextForClick.drawImage(_imageForDraw, 0, 0, w, h);
+					_$drawContainer.css("padding-top", (_previewHeight - h) / 2 + "px");
+					_$drawContainer.append(_canvasForClick);
+
+					_$dom.css({
+						top: y + "px",
+						left: x + "px"
+					});
+					_$dom.removeClass("displayNone");
+				}
+			},
+			_goToDrawPage = function() {
+				//_selectedId
+			},
+			_goToUserPage = function() {
+				//_idUser
+			},
+			_goToLocation = function() {
+				//_location
 			},
 			hide = function() {
 				_$dom.addClass("displayNone");
+				_$drawContainer.css("padding-top", "");
+				_contextForClick.clearRect(0, 0, _canvasForClick.width, _canvasForClick.height);
+				_canvasForClick.width = _canvasForClick.height = text = 0;
+				_imageForDraw =  new Image();
+			},
+			_like = function() {
+
+			},
+			_comments = function() {
+
+			},
+			_share = function() {
+
+			},
+			_save = function() {
+
 			};
 			return {
 				init: init,
@@ -511,6 +590,7 @@ var App = (function() {
 		},
 		_zoomTo = function(level, x, y, animated) {	// "OK"
 			if (level === _zoom || level > _zoomMax || level < 1) return;
+			_tooltip.hide();
 			var refreshCache = (level === 1 || animated !== true),
 				deltaZoomLevel = level - _zoom,
 				newp = _dom.createSVGPoint(),
@@ -804,6 +884,7 @@ var App = (function() {
 		overshadow = function() {	// mette in secondo piano e blocca la dashboard per mostrare l'editor
 			_draggable = _zoomable = false;
 			_removeEvents();
+			_tooltip.hide();
 			_$allDom.fadeOut("fast");
 		},
 		foreground = function() {	// riporta in primo piano la dashboard e la rende funzionante

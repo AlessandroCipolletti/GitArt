@@ -693,43 +693,171 @@ body {
 			font-size: 10px;
 		}
 
+	/* TOOLTIP TOOLTIP TOOLTIP TOOLTIP TOOLTIP TOOLTIP TOOLTIP */
 	#dashboardTooltip {
 		position: absolute;
-		position: absolute;
 		width: 400px;
-		height: 250px;
+		height: 225px;
 		margin-left: -202px;
 		margin-top: -275px;
 		color: black;
 		background: white;
-		border: 2px solid #333;
+		border: 1px solid #87cefa;
 		text-align: center;
-		border-radius: 10px;
-		box-shadow: 7px 7px 10px #666;
+		box-shadow: 10px 10px 10px #666;
 		z-index: 900;
 	}
+		#dashboardTooltip > * {
+			cursor: pointer;
+			position: absolute;
+		}
+		#dashboardTooltip .close {
+			width: 20px;
+			height: 20px;
+			top: 5px;
+			right: 5px;
+		}
+			#dashboardTooltip .close img {
+				width: 100%;
+			}
 		#dashboardTooltip:before {
 			content: '';
 			position: absolute;
 			top: 100%;
 			left: 50%;
-			margin-left: -12px;
-			width: 0; height: 0;
-			border-top: 12px solid #6D6D6D;
-			border-right: 12px solid transparent;
-			border-left: 12px solid transparent;
+			margin-left: -15px;
+			width: 0;
+			height: 0;
+			border-top: 40px solid #999;
+			border-right: 15px solid transparent;
+			border-left: 15px solid transparent;
 		}
 		#dashboardTooltip:after {
 			content: '';
 			position: absolute;
 			top: 100%;
 			left: 50%;
-			margin-left: -8px;
-			width: 0; height: 0;
-			border-top: 8px solid #FFD4D4;
-			border-right: 8px solid transparent;
-			border-left: 8px solid transparent;
+			margin-left: -12px;
+			width: 0;
+			height: 0;
+			border-top: 36px solid white;
+			border-right: 12px solid transparent;
+			border-left: 12px solid transparent;
 		}
+
+		#dashboardTooltip > p:hover, #tooltipLocation:hover {
+			text-decoration: underline;
+		}
+		#tooltipTitle {
+			left: 85px;
+			top: 5px;
+			max-width: 285px;
+			height: 27px;
+			overflow: hidden;
+			font-size: 20px;
+		}
+		#tooltipUserName {
+			left: 80px;
+			top: 35px;
+			font-size: 13px;
+			line-height: 13px;
+			max-width: 140px;
+			text-align: left;
+		}
+		#tooltipUserImage {
+			width: 70px;
+			height: 70px;
+			top: 5px;
+			left: 5px;
+			background-size: 100%;
+		}
+
+		#dashboardTooltip > span {
+			font-size: 12px;
+			left: 15px;
+			cursor: default;
+			background-size: 15px;
+			background-repeat: no-repeat;
+			padding-left: 20px;
+		}
+		#tooltipLocation {
+			top: 85px;
+			background-image: url('../img/icon/location.png');
+			cursor: pointer !important;
+		}
+		#tooltipLikeTot {
+			top: 105px;
+			background-image: url('../img/icon/likeOn.png');
+		}
+		#tooltipCommentsTot {
+			top: 125px;
+			background-image: url('../img/icon/comment.png');
+		}
+		#tooltipShareTot {
+			top: 145px;
+			background-image: url('../img/icon/share.png');
+		}
+
+		#tooltipDrawContainer {
+			width: 170px;
+			height: 130px;
+			right: 5px;
+			top: 35px;
+		}
+
+		#tooltipFooter {
+			width: 100%;
+			height: 50px;
+			bottom: 0px;
+			border-top: solid 1px #87cefa;
+		}
+			#tooltipFooter div {
+				width: 25%;
+				height: 100%;
+				float: left;
+				-webkit-mask-size: 40px;
+				-moz-mask-size: 40px;
+				mask-size: 40px;
+				-webkit-mask-repeat: no-repeat;
+				-moz-mask-repeat: no-repeat;
+				mask-repeat: no-repeat;
+				-webkit-mask-position: 50%;
+				-moz-mask-position: 50%;
+				mask-position: 50%;
+				background-color: #87cefa;
+				background-repeat: no-repeat;
+				-webkit-transition: background-color 0.3s;
+				-moz-transition: background-color 0.3s;
+				transition: background-color 0.3s;
+			}
+			#tooltipFooter div:hover {
+				background-color: blue;
+			}
+			#tooltipLike {
+				-webkit-mask-image: url(../img/icon/likeOff.png);
+			    -moz-mask-image: url(../img/icon/likeOff.png);
+			    mask-image: url(../img/icon/likeOff.png);
+			}
+			#tooltipLike.like {
+				-webkit-mask-image: url(../img/icon/likeOn.png);
+			    -moz-mask-image: url(../img/icon/likeOn.png);
+			    mask-image: url(../img/icon/likeOn.png);
+			}
+			#tooltipComment {
+				-webkit-mask-image: url(../img/icon/comment.png);
+			    -moz-mask-image: url(../img/icon/comment.png);
+			    mask-image: url(../img/icon/comment.png);
+			}
+			#tooltipShare {
+				-webkit-mask-image: url(../img/icon/share.png);
+			    -moz-mask-image: url(../img/icon/share.png);
+			    mask-image: url(../img/icon/share.png);
+			}
+			#tooltipSave {
+				-webkit-mask-image: url(../img/icon/download.png);
+			    -moz-mask-image: url(../img/icon/download.png);
+			    mask-image: url(../img/icon/download.png);
+			}
 
 /*	-----------------------------------------------------------------------------------------------------------------------------
 
