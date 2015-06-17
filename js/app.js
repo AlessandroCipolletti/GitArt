@@ -37,7 +37,7 @@ var App = (function() {
 		PI2 = 2 * PI,
 		EmptyFN = function() {},
 		_mouseWheelEvent,
-		
+
 	Config = (function() {
 		return {
 			debug: true,
@@ -52,7 +52,7 @@ var App = (function() {
 			}
 		}
 	})(),
-	
+
 	Info = (function() {
 		var get_len = function(len) {
 			return 'ita'; 	// TODO da implementare per filtrare le lingue non supportate, e restituire il formato a 3 caratteri
@@ -65,7 +65,7 @@ var App = (function() {
 			firefox		: /Firefox/i.test(navigator.userAgent)
 		}
 	})(),
-	
+
 	label = (function(len) {
 		var _labels = {};
 		_labels['ita'] = {
@@ -88,8 +88,6 @@ var App = (function() {
 			"Chiudi"					: "Chiudi",
 			"Pausa"						: "Pausa",
 			"NienteDaEsportare"			: "Niente da esportare",
-			"Pennello"					: "Pennello",
-			"Gomma"						: "Gomma",
 			"areYouSure"				: "Sei sicuro?",
 			"loggedAs"					: "Collegato come ",
 			"salvoDisegno"				: " Salvo disegno...",
@@ -100,12 +98,12 @@ var App = (function() {
 			"editorSaveConfirm"			: "Dopo aver salvato non potrai più modificare il disegno. Confermi?"
 		};
 		_labels['eng'] = {
-		
+
 		};
 		var _lingua = _labels[len] || {};
 		return _lingua;
 	})(Info.lenguage),
-	
+
 	Utils = (function() {
 		var _checkError = (function _checkError() {
 			var _function, errorMsg,
@@ -148,7 +146,7 @@ var App = (function() {
 				for (;i--;)
 					if (isEmpty(obj[i])) return true;
 				return false;
-			} else 
+			} else
 				return isEmpty(obj);
 		},
 		getRemoteData = function(url, params) {
@@ -211,25 +209,25 @@ var App = (function() {
 			overlay			: overlay
 		}
 	})(),
-	
+
 	Socket = (function() {
 		var _socket = {},
+			_buffer = [],
 			_onError = function() {
-				
-			}
+
+			},
 			init = function() {
-				var url = Config.socketUrl;
-				_socket = {
-					url: url,
-					io: io(url)
-				},
-				_buffer = [],
+				var url = Config.socketUrl,
 				_onConnect = function() {
 					var data;
 					for (var i = _buffer.length; i--; ) {
 						data = _buffer.pop();
 						_socket.io.emit(data[0], data[1]);
 					}
+				};
+				_socket = {
+					url: url,
+					io: io(url)
 				};
 				_socket.io.on("error", function() {
 					console.log(label['socketError']);
@@ -261,17 +259,17 @@ var App = (function() {
 			emit:	emit
 		};
 	})(),
-	
+
 	Worker = (function() {
 		var _list = {},
 		create = function(file) {
-			
+
 		},
 		close = function(file) {
-			
+
 		},
 		one = function(file) {
-			
+
 		},
 		oneOrNew = function(file) {
 			// queste 2 funzioni che sono uguali in più moduli le possiamo aggiungere col metodo oggetto.method preso dal libro, cosi le scriviamo una volta sola
@@ -283,7 +281,7 @@ var App = (function() {
 			oneOrNew	: oneOrNew
 		}
 	})(),
-	
+
 	Dashboard = (function() {
 		var _dom, _imageGroup = {}, _$buttonEditor, _zoomLabel, _$zoomLabelDoms, _$coordsLabel, _$allDom, _canvasForClick = DOCUMENT.createElement("canvas"), _contextForClick = _canvasForClick.getContext('2d'), _imageForDraw =  new Image(),
 		_isDebug = Config.debug, _draggable = true, _isMouseDown = false, _zoomable = true, _isLoading = false, _timeoutForSpinner = false, _idsImagesOnDashboard = [], _idsImagesOnScreen = [], _cacheNeedsUpdate = true,
@@ -291,7 +289,7 @@ var App = (function() {
 		_zoomScaleLevelsUp = [ 1, 1.136363636364, 1.291322314050, 1.467411720511, 1.667513318762, 1.894901498594, 2.153297157493, 2.446928588060, 2.780600668250, 3.159773486648, 3.590651689372, 4.080286010650, 4.636688648466, 5.268964373257, 5.987459515065, 6.803931267119, 7.731740076272, 8.786068268491, 9.984168486921, 11.34564600787 ],
 		_mouseX, _mouseY, _clickX, _clickY, _currentX, _currentY, _zoom = 1, _decimals = 0, socket = Socket, _socketCallsInProgress = 0, _animationZoom = false, _deltaVisibleCoordX = 0, _deltaVisibleCoordY = 0, _minVisibleCoordX = 0, _minVisibleCoordY = 0, _maxVisibleCoordX = 0, _maxVisibleCoordY = 0,
 		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaZoomMax = 2, _deltaZoom = 0, _deltaDragMax = 200, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
-		
+
 		_cache = (function() {
 			var _list = {},
 				_ids = [],
@@ -332,7 +330,7 @@ var App = (function() {
 			},
 			clean = function(force) {	// magari anche un metodo che controlli quanto abbiamo in cache e se necessario la liberi
 				if (force || _ids.length > _maxCacheSize) {
-					
+
 				}
 			},
 			reset = function() {
@@ -400,7 +398,7 @@ var App = (function() {
 					_$shareTot.html("23 Condivisioni");
 
 					var scale = draw.pxw / draw.pxh,
-						w, h, text;
+						w, h;
 					if (scale > (_previewWidth / _previewHeight)) {
 						w = _canvasForClick.width = _previewWidth;
 						h = _canvasForClick.height = round(_previewWidth / scale);
@@ -408,13 +406,10 @@ var App = (function() {
 						h = _canvasForClick.height = _previewHeight;
 						w = _canvasForClick.width = round(_previewHeight * scale);
 					}
-					text = draw.data.outerHTML;
-					var index = text.indexOf('xlink:href="') + 12;
-					_imageForDraw.src = text.substring(index, text.indexOf('"', index));
+					_imageForDraw.src = _imageForDraw.src = draw.data.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
 					_contextForClick.drawImage(_imageForDraw, 0, 0, w, h);
 					_$drawContainer.css("padding-top", (_previewHeight - h) / 2 + "px");
 					_$drawContainer.append(_canvasForClick);
-
 					_$dom.css({
 						top: y + "px",
 						left: x + "px"
@@ -435,7 +430,7 @@ var App = (function() {
 				_$dom.addClass("displayNone");
 				_$drawContainer.css("padding-top", "");
 				_contextForClick.clearRect(0, 0, _canvasForClick.width, _canvasForClick.height);
-				_canvasForClick.width = _canvasForClick.height = text = 0;
+				_canvasForClick.width = _canvasForClick.height = 0;
 				_imageForDraw =  new Image();
 			},
 			_like = function() {
@@ -528,14 +523,14 @@ var App = (function() {
 			_imageGroup.pxx = round(_groupRect.left, _decimals);
 			_imageGroup.pxy = round(_groupRect.top, _decimals);
 		},
-		_highlightsDraw = function(id, x, y) {	// TODO evidenzio il disegno e mostro il box con le sue info 
+		_highlightsDraw = function(id, x, y) {	// TODO evidenzio il disegno e mostro il box con le sue info
 			console.log("clicked draw id:", id);
 			_tooltip.show(id, x, y);
 		},
 		_selectDrawAtPx = function(x, y) {	// OK! capisco su quale disegno l'utente voleva fare click
 			_cacheNeedsUpdate && _updateCache();
 			_idsImagesOnScreen.sort(orderStringUp);
-			var draw, text, selectedID = false;
+			var draw, selectedID = false;
 			for (var i = 0, l = _idsImagesOnScreen.length; i < l; i++) {
 				draw = _cache.get(_idsImagesOnScreen[i]);
 				if (draw.pxx < x && draw.pxr > x && draw.pxy < y && draw.pxb > y) {
@@ -543,9 +538,7 @@ var App = (function() {
 					_contextForClick.clearRect(0, 0, _canvasForClick.width, _canvasForClick.height);
 					_canvasForClick.width = draw.pxw;
 					_canvasForClick.height = draw.pxh;
-					text = draw.data.outerHTML;
-					var index = text.indexOf('xlink:href="') + 12;
-					_imageForDraw.src = text.substring(index, text.indexOf('"', index));
+					_imageForDraw.src = draw.data.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
 					_contextForClick.drawImage(_imageForDraw, 0, 0, draw.pxw, draw.pxh);
 					if (_contextForClick.getImageData(x - draw.pxx, y - draw.pxy, 1, 1).data[3] > 0) {
 						selectedID = draw.id;
@@ -554,7 +547,7 @@ var App = (function() {
 				}
 			}
 			_contextForClick.clearRect(0, 0, _canvasForClick.width, _canvasForClick.height);
-			_canvasForClick.width = _canvasForClick.height = text = 0;
+			_canvasForClick.width = _canvasForClick.height = 0;
 			_imageForDraw =  new Image();
 			selectedID && _highlightsDraw(selectedID, x, y);
 		},
@@ -639,7 +632,7 @@ var App = (function() {
 			_updateCurrentCoords(_newCoordX, _newCoordY);
 			_updateGroupOrigin();
 			if (forceLoad || MATH.abs(_deltaDragX) > _deltaDragMax || MATH.abs(_deltaDragY) > _deltaDragMax) {
-				_fillScreen();	
+				_fillScreen();
 			} else {
 				_cacheNeedsUpdate = true;
 			}
@@ -699,7 +692,7 @@ var App = (function() {
 			var _oldDraw = DOCUMENT.getElementById(id);
 			_oldDraw && _imageGroup.tag.removeChild(_oldDraw);
 		},
-		_appendDraw = function(draw) {	// aggiunge alla dashboard un svg image già elaborato 
+		_appendDraw = function(draw) {	// aggiunge alla dashboard un svg image già elaborato
 			if (!draw || !draw.id || _idsImagesOnDashboard.indexOf(draw.id) >= 0) return false;
 			//console.log(["aggiungo", draw]);
 			_idsImagesOnDashboard.push(draw.id);
@@ -772,7 +765,7 @@ var App = (function() {
 			_cache.reset();
 			_initDomGroup();
 			_fillScreen();
-		}, 
+		},
 		goToDraw = function(id) {	// TODO
 			// precarica (se necessario) il disegno e poi va alle sue coordinate. in questo modo sono sicuro che sarà visualizzato per primo (importante visto che è stato richiesto specificamente)
 			if (Utils.isEmpty(id)) return;
@@ -816,7 +809,7 @@ var App = (function() {
 			}
 		},
 		_click = function(e) {
-			
+
 		},
 		_mouseend = function() {
 			_mouseX = 0;
@@ -934,16 +927,16 @@ var App = (function() {
 			init			: init
 		};
 	})(),
-	
+
 	Editor = (function() {
 		var _dom, _$dom, _context, _$allDom, _$allDomContainer, _$allMenuTool, _$brushTool, _$pencilTool, _$eraserTool, _$pickerTool, _$editorUndo, _$editorRedo, _$editorHide,
-		_$ptions, _$pickerToolPreview, _$pickerToolColor, _$pickerToolColor2, _$randomColorButton, _$editorSave, _$sizeToolContainer, _$grayscaleContainer, _$grayscalePointer,
+		_$options, _$pickerToolPreview, _$pickerToolColor, _$pickerToolColor2, _$randomColorButton, _$editorSave, _$sizeToolContainer, _$grayscaleContainer, _$grayscalePointer,
 		_$editorShowOptions, _$optionDraft, _$optionRestore, _$optionSquare, _$optionExport, _$optionClear, _$closeButtons,
 		_minX, _minY, _maxX, _maxY, _oldX, _oldY, _mouseX = 0, _mouseY = 0, _numUndoStep = 31, _currentStep = 0, _oldMidX, _oldMidY, _$sizeToolPreview, _$sizeToolLabel,
 		_isInit, _isMouseDown, _isPressedShift, _restored = false, _randomColor = true, _overlay = false, _grayscaleIsScrolling = false, _isSaving = false,
 		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0, _savedDraw = {}, socket = Socket,
 		_color, _size, _pencilSize = 2, _pencilColor = "", _pencilColorID = 12, _brushSize = 50, _eraserSize = 50, _brushColor, _maxToolSize = 200,
-		_grayscaleColors = ["#FFF", "#EEE", "#DDD", "#CCC", "#BBB", "#AAA", "#999", "#888", "#777", "#666", "#555", "#444", "#333", "#222", "#111", "#000"], 
+		_grayscaleColors = ["#FFF", "#EEE", "#DDD", "#CCC", "#BBB", "#AAA", "#999", "#888", "#777", "#666", "#555", "#444", "#333", "#222", "#111", "#000"],
 		utils = Utils, _enableElement = utils.enableElement, _disableElement = utils.disableElement,
 		_labelAnnulla = label["Annulla"], _labelRipeti = label["Ripeti"],
 		__init = function() {
@@ -1207,7 +1200,7 @@ var App = (function() {
 		_darkClick = function() {
 			(_isSaving === false) && _hideOptions();
 		},
-		__keyDown = Info.macOS ? 
+		__keyDown = Info.macOS ?
 			function(e) {
 				return e.metaKey;
 			} :
@@ -1241,7 +1234,7 @@ var App = (function() {
 						_draft();
 						e.preventDefault();
 						return;
-					} 
+					}
 				if (e.shiftKey) {
 					_isPressedShift = true;
 					e.preventDefault();
@@ -1276,7 +1269,7 @@ var App = (function() {
 					_context.lineCap = "round";
 					_oldMidX = _mouseX;
 					_oldMidY = _mouseY;
-					_restored = false;	
+					_restored = false;
 				}
 			}
 			return false;
@@ -1353,7 +1346,7 @@ var App = (function() {
 			_grayscaleIsScrolling = true;
 			if (y < 0)
 				_pencilColorID = MATH.min(_pencilColorID + 1, 15);
-			else 
+			else
 				_pencilColorID = MATH.max(_pencilColorID - 1, 0);
 			_color = _pencilColor = _grayscaleColors[_pencilColorID];
 			_$grayscalePointer.css({
@@ -1449,7 +1442,7 @@ var App = (function() {
 		},
 		show = function(x,y) {
 			var _tot = _step.length - _currentStep - 1;
-			if (!_isInit) 
+			if (!_isInit)
 				_init();
 			_$dom.addClass('semiTransparent');
 			Dashboard.overshadow();
@@ -1466,8 +1459,6 @@ var App = (function() {
 			(_toolSelected === 0) && _getColor();
 		},
 		_hide = function() {
-			if (_maxX > 0 && _maxY > 0 && !_draft.data)     
-				_draft();
 			_hideOptions();
 			_colorPicker.hide();
 			_$allDom.fadeOut(function() {_$allDomContainer.hide()});
@@ -1580,7 +1571,7 @@ var App = (function() {
 			}
 		},
 		_onResize = function() {
-			
+
 		},
 		setColor = function(rgb) {
 			if (rgb) {
@@ -1612,7 +1603,7 @@ var App = (function() {
 				}
 				_imagePicker.src = "img/colors.png";
 				_imageSelector.src = "img/selector.png";
-				for (var i = 0; i < _numOldColors; i++) 
+				for (var i = 0; i < _numOldColors; i++)
 					_$oldColors[i] = $("#oldColor" + i);
 				_$oldColorsDiv = $("#oldColorsCont > div");
 			},
@@ -1721,7 +1712,7 @@ var App = (function() {
 				getColor:		getColor
 			}
 		})();
-		
+
 		// auto-init del modulo Editor
 		_minX = _minY = _maxX = _maxY = _oldX = _oldY = -1;
 		_isInit = _isMouseDown = _isPressedShift = false;
@@ -1732,9 +1723,9 @@ var App = (function() {
 			hide	: hide,
 			save	: function(data) { return utils.CK(save,	"Error: editor cannot save. ",	data) },
 			*/
-		} 
+		}
 	})(),
-	
+
 	Overlay = (function() {
 		// rappresenta l'elemento che finisce sopra la lavagna per mostrare le ricerche, utenti, pagine ecc.
 		// gli altri moduli lo possono richiamare e riempire
@@ -1778,7 +1769,7 @@ var App = (function() {
 			close	: close
 		}
 	})(),
-	
+
 	News = (function() {
 		// modulo che renderizza la pagina a quadrettoni delle news / risultati ricerca per tag, data, paese, classifica
 		var _template = "",
@@ -1804,7 +1795,7 @@ var App = (function() {
 			show	: show
 		}
 	})(),
-	
+
 	UserPage = (function() {
 		// elemento che renderizza le pagine degli utenti
 		var _render = function(params) {
@@ -1827,8 +1818,8 @@ var App = (function() {
 		return {
 			show	: show
 		}
-	})();	
-	
+	})(),
+
 	CurrentUser = (function() {
 		var _$popup, _$closeButtons, socket = Socket,
 			utils = Utils, _logged = false, _userInfo = {}, _callbackLoginOK = false, _callbackLoginKO = false,
@@ -1887,7 +1878,7 @@ var App = (function() {
 			var user = JSON.parse(data);
 			if (user.id) {
 				if (user.new) {	// TODO: gli chiedo altre info in fase di registrazione, tipo nome d'arte
-					
+
 				}
 				_userInfo.id = user.id;
 				_logged = true;
@@ -1961,7 +1952,7 @@ var App = (function() {
 			onSocketLogin: onSocketLogin
 		}
 	})(),
-	
+
 	Messages = (function() {
 		// overlay per i messaggi agli utenti: caricamento, errore, salvataggio ecc
 		var _dom = DOCUMENT.querySelector("#messages"),
@@ -1986,7 +1977,7 @@ var App = (function() {
 			//_show(_render(image, msg, buttons));
 		},
 		remove = function() {
-			// rimuove il messages, usato per far terminare il loading 
+			// rimuove il messages, usato per far terminare il loading
 		},
 		info = function(msg) {
 			var image = '<img src="" class="">';		// logo info
@@ -1996,7 +1987,7 @@ var App = (function() {
 		_close = function() {
 			// fa scomparire l'elemento e toglie overlay scuro
 			return true;
-		}, 
+		},
 		warning = function(msg) {
 			// pensata come piccolo messaggio in un angolo dello schermo che scompare da solo e non richiede interazione
 			WINDOW.alert(msg);
@@ -2009,7 +2000,7 @@ var App = (function() {
 			WINDOW.alert(msg);
 		},
 		custom = function(msg, buttons) {
-		
+
 		};
 		return {
 			error	: error,
@@ -2022,7 +2013,7 @@ var App = (function() {
 			remove	: remove
 		}
 	})(),
-	
+
 	Init = function() {
 		// qui ci sarà il driver lato client che legge l'url corrente e si inizializza e crea la pagina di conseguenza
 		var _onResize = function() {
@@ -2049,7 +2040,7 @@ var App = (function() {
 			Dashboard.init();
 		}
 	};
-	
+
 	return {	// moduli pubblici di App
 		Init		: Init,
 		Config		: Config,
