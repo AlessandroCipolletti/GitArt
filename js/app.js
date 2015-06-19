@@ -7,9 +7,9 @@ var App = (function() {
 		XX, YY, XX2, YY2, DXX, DYY,
 		MATH = Math,
 		round = function(n, d) {
-            var m = d ? MATH.pow(10, d) : 1;
-            return MATH.round(n * m) / m;
-        },
+			var m = d ? MATH.pow(10, d) : 1;
+			return MATH.round(n * m) / m;
+		},
 		random = function(n) {
 			return MATH.random() * n | 0;
 		},
@@ -387,11 +387,10 @@ var App = (function() {
 					var draw = _cache.get(_selectedId);
 					if (!draw) return;
 
-					_idUser = draw.idUser;
 					_location = draw.location;
-					_$title.html("Disegno mattutino");
-					_$userName.html("Alessandro Cipolletti");
-					_$userImage.css("background-image", "url('img/profilo.jpg')");
+					_$title.html("Titolo Disegno");
+					_$userName.html(draw.user.name);
+					_$userImage.css("background-image", "url('https://graph.facebook.com/" + draw.user.fb.id + "/picture?type=large')");
 					_$location.html("Paris, France");
 					_$likeTot.html("421 Mi Piace");
 					_$commentsTot.html("32 Commenti");
@@ -462,11 +461,11 @@ var App = (function() {
 			var origin = document.createElementNS("http://www.w3.org/2000/svg", 'rect');
 			g.setAttribute('id', 'imageGroup');
 			origin.setAttributeNS(null, 'x', 0);
-	        origin.setAttributeNS(null, 'y', 0);
-	        origin.setAttributeNS(null, 'height', '1');
-	        origin.setAttributeNS(null, 'width', '1');
-	        origin.setAttributeNS(null, 'fill', '#FFF');
-	        g.appendChild(origin);
+			origin.setAttributeNS(null, 'y', 0);
+			origin.setAttributeNS(null, 'height', '1');
+			origin.setAttributeNS(null, 'width', '1');
+			origin.setAttributeNS(null, 'fill', '#FFF');
+			g.appendChild(origin);
 			_dom.appendChild(g);
 			_imageGroup.tag = g;
 			_imageGroup.origin = origin;
@@ -645,6 +644,7 @@ var App = (function() {
 					Utils.setSpinner(false);
 				}
 			} else {
+				console.log(JSON.parse(data));
 				_addDraws(JSON.parse(data));
 			}
 		},
@@ -683,7 +683,7 @@ var App = (function() {
 				_newDraw = draw = undefined;
 			}
 			_cacheNeedsUpdate = true;
-		    return true;
+		  return true;
 		},
 		_removeDraw = function(id, del) {	// OK
 			//console.log("rimuovo:" + id);
@@ -895,14 +895,6 @@ var App = (function() {
 			// calcolo coordinate, punto in centro pagina, aggiungo o rimuovo disegni
 			// i disegni non devono spostarsi rispetto allo schermo, ma le coordinate correnti devono essere calcolate al centro della finestra
 		},
-		TESTdrawRect = function(x, y) {
-			var rect = DOCUMENT.createElementNS("http://www.w3.org/2000/svg", 'rect');
-	        rect.setAttributeNS(null, 'x', x);
-	        rect.setAttributeNS(null, 'y', y);
-	        rect.setAttributeNS(null, 'height', '10');
-	        rect.setAttributeNS(null, 'width', '10');
-	        _imageGroup.tag.appendChild(rect);
-		},
 		init = function() {
 			//scelgo a che posizione aprire la lavagna
 			_imageGroup.updateMatrix = function() {
@@ -937,7 +929,7 @@ var App = (function() {
 		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0, _savedDraw = {}, socket = Socket,
 		_color, _size, _pencilSize = 2, _pencilColor = "", _pencilColorID = 12, _brushSize = 50, _eraserSize = 50, _brushColor, _maxToolSize = 200,
 		_grayscaleColors = ["#FFF", "#EEE", "#DDD", "#CCC", "#BBB", "#AAA", "#999", "#888", "#777", "#666", "#555", "#444", "#333", "#222", "#111", "#000"],
-		utils = Utils, _enableElement = utils.enableElement, _disableElement = utils.disableElement,
+		utils = Utils, _enableElement = utils.enableElement, _disableElement = utils.disableElement, _currentUser = {},
 		_labelAnnulla = label["Annulla"], _labelRipeti = label["Ripeti"],
 		__init = function() {
 			_dom = DOCUMENT.querySelector("#editor");
@@ -1102,14 +1094,14 @@ var App = (function() {
 			_context.strokeStyle = _color;
 			_context.lineJoin = "round";
 			_context.lineCap = "round";
-        	_context.lineTo(X, Y);
-      		_context.stroke();
+			_context.lineTo(X, Y);
+			_context.stroke();
 		},
 		_circle = function(X, Y) {
 			_context.beginPath();
 			_context.fillStyle = _color;
-    	    _context.arc(X, Y, _size / 2, 0, PI2, true);
-	        _context.fill();
+			_context.arc(X, Y, _size / 2, 0, PI2, true);
+			_context.fill();
 		},
 		_checkCoord = function(X, Y) {
 			if (_toolSelected === 0 || _toolSelected === 1) {
@@ -1487,12 +1479,19 @@ var App = (function() {
 				//_draft = {};
 			}
 		},
+		onUserLogin = function(user) {
+			_currentUser = user;
+		},
+		onUserLogout = function() {
+			_currentUser = {};
+		},
 		onSocketMessage = function(data) {	// OK - qui riceviamo le risposte ai salvataggi
 			utils.setSpinner(false);
 			_isSaving = false;
 			data = JSON.parse(data);
 			if (data.ok) {
 				_savedDraw.id = data.id;
+				(_currentUser.id) && (_savedDraw.user = _currentUser);
 				Dashboard.addDraw(_savedDraw, true);
 				_savedDraw = undefined;
 				_clear();
@@ -1507,16 +1506,15 @@ var App = (function() {
 			}
 		},
 		_saveToServer = function(draw) {
-			var userId = CurrentUser.getId();
-			if (userId) {
-				draw.userId = userId;
+			if (_currentUser.id) {
+				draw.userId = _currentUser.id;
 				socket.emit("editor save", draw);
 			} else {
 				Messages.alert(label['genericError']);
 				utils.setSpinner(false);
 			}
 		},
-		_save = function() {	// TODO : CREDO OK
+		_save = function() { 	// OK
 			if (_maxX === -1 || _maxY === -1) {
 				Messages.alert(label["nothingToSave"]);
 			} else {
@@ -1717,9 +1715,11 @@ var App = (function() {
 		_minX = _minY = _maxX = _maxY = _oldX = _oldY = -1;
 		_isInit = _isMouseDown = _isPressedShift = false;
 		return {
-			show			: show,
-			setColor		: setColor,
-			onSocketMessage	: onSocketMessage /*,
+			show: show,
+			setColor: setColor,
+			onSocketMessage	: onSocketMessage,
+			onUserLogin: onUserLogin,
+			onUserLogout: onUserLogout /*,
 			hide	: hide,
 			save	: function(data) { return utils.CK(save,	"Error: editor cannot save. ",	data) },
 			*/
@@ -1832,14 +1832,14 @@ var App = (function() {
 		isLogged = function() {
 			return _logged;
 		},
-		getId = function() {
-			return _logged ? _userInfo.id : 0;
-		},
 		_login = function(mode, data) {
 			if (mode === "fb") {
 				delete data.updated_time;
 				delete data.verified;
 			}
+			(!_userInfo.name) && (_userInfo.name = data.name);
+			(!_userInfo.email) && (_userInfo.email = data.email);
+			(!_userInfo.locale) && (_userInfo.locale = data.locale);
 			_userInfo[mode] = data;
 			socket.emit("user login", _userInfo);
 		},
@@ -1847,6 +1847,7 @@ var App = (function() {
 			if (Messages.confirm(label["areYouSure"])) {
 				_logged = false;
 				_userInfo = {};
+				_onLogout();
 				_facebook.logout();
 			}
 		},
@@ -1874,6 +1875,12 @@ var App = (function() {
 				_callbackLoginOK = _callbackLoginKO = false;
 			}
 		},
+		_onLogin = function() {
+			Editor.onUserLogin(_userInfo);
+		},
+		_onLogout = function() {
+			Editor.onUserLogout();
+		},
 		onSocketLogin = function(data) {
 			var user = JSON.parse(data);
 			if (user.id) {
@@ -1882,6 +1889,7 @@ var App = (function() {
 				}
 				_userInfo.id = user.id;
 				_logged = true;
+				_onLogin();
 				(_callbackLoginOK !== false) && _callbackLoginOK(true);
 			} else {
 				(_callbackLoginKO !== false) && _callbackLoginKO(false);
@@ -1921,6 +1929,8 @@ var App = (function() {
 				FB.api('/me', function(response) {
 					console.log('User Info: ', response);
 					_$status.html(label["loggedAs"] + response.name);
+					// TODO qui devo cercare con le api di fb le altre info che voglio salvare, tipo l'immagine di profilo
+					//graph.facebook.com/{{fid}}/picture?type=large
 					_login("fb", response);
 				});
 			},
@@ -1946,7 +1956,6 @@ var App = (function() {
 		})();
 		return {
 			init: init,
-			getId: getId,
 			isLogged: isLogged,
 			doLogin: doLogin,
 			onSocketLogin: onSocketLogin
