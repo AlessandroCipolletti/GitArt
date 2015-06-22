@@ -1369,6 +1369,7 @@ var App = (function() {
 		},
 		_getColor = function() {
 			if (_randomColor && _toolSelected === 0) {
+				//function(a,b,c){return"#"+((256+a<<8|b)<<8|c).toString(16).slice(1)};
 				_color = "rgb(" + random(255) + ", " + random(255) + ", " + random(255) + ")";
 				_colorPicker.setColor(_color);
 			}
