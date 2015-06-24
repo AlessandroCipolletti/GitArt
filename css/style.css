@@ -318,7 +318,7 @@ body {
 	-webkit-mask-image: url(../img/icon/brush.png);
     -o-mask-image: url(../img/icon/brush.png);
     -moz-mask-image: url(../img/icon/brush.png);
-    mask-image: url(../img/icon/brush.png);
+	mask-image: url(../img/icon/brush.png);
 }
 #editorMenu1::before {
 	content:"1";
@@ -698,14 +698,24 @@ body {
 		position: absolute;
 		width: 400px;
 		height: 225px;
-		margin-left: -202px;
-		margin-top: -275px;
+		margin-left: -200px;
+		margin-top: -265px;
 		color: black;
 		background: white;
 		border: 1px solid #87cefa;
 		text-align: center;
 		box-shadow: 10px 10px 10px #666;
+		opacity: 0;
+		left: -1000px;
+		top: -1000px;
 		z-index: 900;
+	}
+	#dashboardTooltip.visible {
+		-webkit-transition: margin-top 0.4s, opacity 0.4s;
+	    transition: margin-top 0.4s, opacity 0.4s;
+		margin-top: -280px;
+		display: block;
+		opacity: 1;
 	}
 		#dashboardTooltip > * {
 			cursor: pointer;

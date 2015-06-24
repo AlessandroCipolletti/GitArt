@@ -413,7 +413,7 @@ var App = (function() {
 						top: y + "px",
 						left: x + "px"
 					});
-					_$dom.removeClass("displayNone");
+					_$dom.addClass("visible");
 				}
 			},
 			_goToDrawPage = function() {
@@ -426,7 +426,11 @@ var App = (function() {
 				//_location
 			},
 			hide = function() {
-				_$dom.addClass("displayNone");
+				_$dom.css({
+					top: "-1000px",
+					left: "-1000px"
+				});
+				_$dom.removeClass("visible");
 				_$drawContainer.css("padding-top", "");
 				_contextForClick.clearRect(0, 0, _canvasForClick.width, _canvasForClick.height);
 				_canvasForClick.width = _canvasForClick.height = 0;
@@ -848,9 +852,9 @@ var App = (function() {
 		},
 		_keyDown = function(e) {
 			if (e.keyCode === 37) _drag(-1, 0);
-			if (e.keyCode === 38) _drag(0, -1);
-			if (e.keyCode === 39) _drag(1, 0);
-			if (e.keyCode === 40) _drag(0, 1);
+			else if (e.keyCode === 38) _drag(0, -1);
+			else if (e.keyCode === 39) _drag(1, 0);
+			else if (e.keyCode === 40) _drag(0, 1);
 		},
 		_addEvents = function() {
 			_dom.addEventListener('click',			_click,		true);
