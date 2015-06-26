@@ -1010,7 +1010,7 @@ var App = (function() {
 			_$optionClear.bind("click", clear);
 			_$closeButtons.bind("click", _hideOptions);
 			_colorPicker.addEvents();
-			//WINDOW.onbeforeunload = function() { return label['closePrevent']; };
+			(Config.debug === false) && (WINDOW.onbeforeunload = function() { return label['closePrevent']; });
 			WINDOW.addEventListener("resize", _onResize, true);
 			_dom.addEventListener(_mouseWheelEvent, _mouseWheel, true);
 			_$sizeToolContainer[0].addEventListener(_mouseWheelEvent, _mouseWheel, true);
