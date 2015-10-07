@@ -44,7 +44,7 @@ var App = (function() {
 			socketUrl: "http://46.252.150.61:5000",
 			fb: {
 				appId: '1448620825449065',
-				apiVersion: 'v2.3'
+				apiVersion: 'v2.2'
 			},
 			workers: {
 				blur:		"file blur.js",
