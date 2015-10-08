@@ -1591,7 +1591,7 @@ var App = (function() {
 		
 		_colorPicker = (function() {	// sottomodulo di editor per gestire il color-picker
 			var _$container, _$dom, _context, _dom, _imagePicker = new Image(), _imageSelector = new Image(), _$preview,
-			_isMouseDown = false, width = 190, height = 120,
+			_isMouseDown = false, width = 240, height = 120,
 			_mouseX, _mouseY, _oldX, _oldY, _color = false,
 			init = function() {
 				_dom = DOCUMENT.querySelector("#colorPicker");

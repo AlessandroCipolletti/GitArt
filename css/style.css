@@ -564,7 +564,7 @@ body {
 
 /*	INIZIO COLOR PICKER -------------------------------------------------------------------------------------------------------------------*/
 #colorPickerCont {
-	width: 270px;
+	width: 320px;
 	height: 120px;
 	padding: 10px;
 	position: fixed;
@@ -581,7 +581,7 @@ body {
 }
 	#colorPicker {
 		float: right;
-		width: 190px;
+		width: 240px;
 		height: 120px;
 		cursor: url('../img/point.png') 5 5, auto;
 		background-color: white;
