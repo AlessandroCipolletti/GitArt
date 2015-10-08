@@ -863,7 +863,7 @@ var App = (function() {
 			_dom.addEventListener('mouseup',		_mouseup,	true);
 			//_dom.addEventListener('mouseout',		_mouseout,	true);
 			_dom.addEventListener('mouseover',		_mouseover,	true);
-			_dom.addEventListener(_mouseWheelEvent, _mouseWheel,true);
+			DOCUMENT.addEventListener(_mouseWheelEvent, _mouseWheel,true);
 			_isDebug && DOCUMENT.addEventListener("keydown", _keyDown, false);
 			_$buttonEditor.bind("mousedown", _buttonEditorClick);
 		},
