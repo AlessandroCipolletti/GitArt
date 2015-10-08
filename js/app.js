@@ -1588,10 +1588,11 @@ var App = (function() {
 			}
 			_selectBrush();
 		},
+		
 		_colorPicker = (function() {	// sottomodulo di editor per gestire il color-picker
 			var _$container, _$dom, _context, _dom, _imagePicker = new Image(), _imageSelector = new Image(), _$preview,
-			_isMouseDown = false, _lastColors = [], _numOldColors = 10, _$oldColors = [], _$oldColorsDiv, width = 143, height = 90,
-			_mouseX, _mouseY, _oldX, _oldY, _color = false, _newColor = true, _moreColors = false,
+			_isMouseDown = false, width = 190, height = 120,
+			_mouseX, _mouseY, _oldX, _oldY, _color = false,
 			init = function() {
 				_dom = DOCUMENT.querySelector("#colorPicker");
 				_dom.width = width;
@@ -1606,23 +1607,18 @@ var App = (function() {
 				}
 				_imagePicker.src = "img/colors.png";
 				_imageSelector.src = "img/selector.png";
-				for (var i = 0; i < _numOldColors; i++)
-					_$oldColors[i] = $("#oldColor" + i);
-				_$oldColorsDiv = $("#oldColorsCont > div");
 			},
 			addEvents = function() {
 				DOCUMENT.addEventListener('mouseup',	_mouseup,	true);
 				_dom.addEventListener('mousedown',		_mousedown,	true);
 				_dom.addEventListener('mousemove', 		_mousemove,	true);
 				_dom.addEventListener('mouseout', 		_mouseout,	true);
-				_$oldColorsDiv.bind("click", _oldColorClick);
 			},
 			removeEvents = function() {
 				DOCUMENT.removeEventListener('mouseup',	_mouseup,	true);
 				_dom.removeEventListener('mousedown',	_mousedown,	true);
 				_dom.removeEventListener('mousemove', 	_mousemove,	true);
 				_dom.removeEventListener('mouseout', 	_mouseout,	true);
-				_$oldColorsDiv.unbind("click", _oldColorClick);
 			},
 			_update = function() {
 				var px, __color;
@@ -1633,14 +1629,6 @@ var App = (function() {
 				_context.drawImage(_imageSelector, _oldX - 5, _oldY - 5);
 				if (_isMouseDown) {
 					_color = __color;
-					if (_newColor) {
-						_newColor = false;
-						_lastColors = [_color].concat(_lastColors);
-						var len = _lastColors.length;
-						if (len > _numOldColors)
-							_lastColors.splice(len - 1, 1);
-					}
-					_lastColors[0] = _color;
 					Editor.setColor(_color);
 				}
 			},
@@ -1673,22 +1661,8 @@ var App = (function() {
 			_mouseout = function() {
 				_$preview.css("backgroundColor", _color ? _color : "#FFF");
 			},
-			_oldColorClick = function() {
-				if (this.id.slice(-1) < _lastColors.length) {
-					_oldX = _oldY = -10;
-					_color = $(this).css("backgroundColor");
-					_context.drawImage(_imagePicker, 0, 0, width, height);
-					_$preview.css("backgroundColor", _color);
-					Editor.setColor(_color);
-				}
-			},
 			show = function() {
 				_$container.fadeIn();
-				if (!_newColor) {
-					_newColor = true;
-					for (var i = 0, len = _lastColors.length; i < len; i++)
-						_$oldColors[i].css("backgroundColor", _lastColors[i]);
-				}
 			},
 			hide = function() {
 				_$container.fadeOut();
