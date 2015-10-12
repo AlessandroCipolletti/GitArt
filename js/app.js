@@ -454,6 +454,7 @@ var App = (function() {
 				hide: hide
 			};
 		})(),
+
 		_initDomGroup = function() {
 			if (_imageGroup.tag) {
 				_dom.removeChild(_imageGroup.tag);
@@ -935,6 +936,108 @@ var App = (function() {
 		_grayscaleColors = ["#FFF", "#EEE", "#DDD", "#CCC", "#BBB", "#AAA", "#999", "#888", "#777", "#666", "#555", "#444", "#333", "#222", "#111", "#000"],
 		utils = Utils, _enableElement = utils.enableElement, _disableElement = utils.disableElement, _currentUser = {},
 		_labelAnnulla = label["Annulla"], _labelRipeti = label["Ripeti"],
+
+		_colorPicker = (function() {	// sottomodulo di editor per gestire il color-picker
+			var _$container, _$dom, _context, _dom, _imagePicker = new Image(), _imageSelector = new Image(), _$preview,
+			_isMouseDown = false, width = 240, height = 120,
+			_mouseX, _mouseY, _oldX, _oldY, _color = false,
+			init = function() {
+				_dom = DOCUMENT.querySelector("#colorPicker");
+				_dom.width = width;
+				_dom.height = height;
+				_context = _dom.getContext("2d");
+				_$dom = $("#colorPicker");
+				_$container = $("#colorPickerCont");
+				_$preview = $("#colorPreview");
+				_imagePicker.onload = function() {
+					_context.drawImage(_imagePicker, 0, 0, width, height);
+					_imagePicker.onload = undefined;
+				}
+				_imagePicker.src = "img/colors.png";
+				_imageSelector.src = "img/selector.png";
+			},
+			addEvents = function() {
+				DOCUMENT.addEventListener('mouseup',	_mouseup,	true);
+				_dom.addEventListener('mousedown',		_mousedown,	true);
+				_dom.addEventListener('mousemove', 		_mousemove,	true);
+				_dom.addEventListener('mouseout', 		_mouseout,	true);
+			},
+			removeEvents = function() {
+				DOCUMENT.removeEventListener('mouseup',	_mouseup,	true);
+				_dom.removeEventListener('mousedown',	_mousedown,	true);
+				_dom.removeEventListener('mousemove', 	_mousemove,	true);
+				_dom.removeEventListener('mouseout', 	_mouseout,	true);
+			},
+			_update = function() {
+				var px, __color;
+				_context.drawImage(_imagePicker, 0, 0, width, height);
+				px = _context.getImageData(_mouseX, _mouseY, 1, 1).data;
+				__color = "rgb(" + px[0] + "," + px[1] + "," + px[2] + ")";
+				_$preview.css("backgroundColor", __color);
+				_context.drawImage(_imageSelector, _oldX - 5, _oldY - 5);
+				if (_isMouseDown) {
+					_color = __color;
+					Editor.setColor(_color);
+				}
+			},
+			_updatePoint = function(e) {
+				_mouseX = e.offsetX;
+				_mouseY = e.offsetY;
+			},
+			_updateOldPoint = function() {
+				_oldX = _mouseX;
+				_oldY = _mouseY;
+			},
+			_mousedown = function(e) {
+				_isMouseDown = true;
+				_updatePoint(e);
+				_updateOldPoint();
+				_update();
+			},
+			_mousemove = function(e) {
+				_updatePoint(e);
+				_isMouseDown && _updateOldPoint();
+				_update();
+			},
+			_mouseup = function() {
+				if (_isMouseDown) {
+					_isMouseDown = false;
+					_updateOldPoint();
+					_update();
+				}
+			},
+			_mouseout = function() {
+				_$preview.css("backgroundColor", _color ? _color : "#FFF");
+			},
+			show = function() {
+				_$container.fadeIn();
+			},
+			hide = function() {
+				_$container.fadeOut();
+			},
+			setColor = function(color) {
+				_color = color;
+				_context.drawImage(_imagePicker, 0, 0, width, height);
+				_$preview.css("backgroundColor", color);
+				_oldX = _oldY = -10;
+			},
+			getColor = function() {
+				return _color;
+			};
+			// auto-init del sottomodulo _colorPicker
+			_mouseX = _mouseY = 0;
+			_oldX = _oldY = -10;
+			return {
+				init:			init,
+				show: 			show,
+				hide:			hide,
+				addEvents:		addEvents,
+				removeEvents:	removeEvents,
+				setColor:		setColor,
+				getColor:		getColor
+			}
+		})(),
+
 		__init = function() {
 			_dom = DOCUMENT.querySelector("#editor");
 			_context = _dom.getContext("2d");
@@ -1053,7 +1156,7 @@ var App = (function() {
 			}
 			_pencilColor = _grayscaleColors[_pencilColorID];
 			_$grayscalePointer.css({
-				'top':			_pencilColorID * 20 + 2 + 'px',
+				'top': _pencilColorID * 20 + 2 + 'px',
 				'border-color':	["transparent transparent transparent ", _pencilColor].join('')
 			});
 		},
@@ -1587,108 +1690,7 @@ var App = (function() {
 				_brushColor = _color;
 			}
 			_selectBrush();
-		},
-		
-		_colorPicker = (function() {	// sottomodulo di editor per gestire il color-picker
-			var _$container, _$dom, _context, _dom, _imagePicker = new Image(), _imageSelector = new Image(), _$preview,
-			_isMouseDown = false, width = 240, height = 120,
-			_mouseX, _mouseY, _oldX, _oldY, _color = false,
-			init = function() {
-				_dom = DOCUMENT.querySelector("#colorPicker");
-				_dom.width = width;
-				_dom.height = height;
-				_context = _dom.getContext("2d");
-				_$dom = $("#colorPicker");
-				_$container = $("#colorPickerCont");
-				_$preview = $("#colorPreview");
-				_imagePicker.onload = function() {
-					_context.drawImage(_imagePicker, 0, 0, width, height);
-					_imagePicker.onload = undefined;
-				}
-				_imagePicker.src = "img/colors.png";
-				_imageSelector.src = "img/selector.png";
-			},
-			addEvents = function() {
-				DOCUMENT.addEventListener('mouseup',	_mouseup,	true);
-				_dom.addEventListener('mousedown',		_mousedown,	true);
-				_dom.addEventListener('mousemove', 		_mousemove,	true);
-				_dom.addEventListener('mouseout', 		_mouseout,	true);
-			},
-			removeEvents = function() {
-				DOCUMENT.removeEventListener('mouseup',	_mouseup,	true);
-				_dom.removeEventListener('mousedown',	_mousedown,	true);
-				_dom.removeEventListener('mousemove', 	_mousemove,	true);
-				_dom.removeEventListener('mouseout', 	_mouseout,	true);
-			},
-			_update = function() {
-				var px, __color;
-				_context.drawImage(_imagePicker, 0, 0, width, height);
-				px = _context.getImageData(_mouseX, _mouseY, 1, 1).data;
-				__color = "rgb(" + px[0] + "," + px[1] + "," + px[2] + ")";
-				_$preview.css("backgroundColor", __color);
-				_context.drawImage(_imageSelector, _oldX - 5, _oldY - 5);
-				if (_isMouseDown) {
-					_color = __color;
-					Editor.setColor(_color);
-				}
-			},
-			_updatePoint = function(e) {
-				_mouseX = e.offsetX;
-				_mouseY = e.offsetY;
-			},
-			_updateOldPoint = function() {
-				_oldX = _mouseX;
-				_oldY = _mouseY;
-			},
-			_mousedown = function(e) {
-				_isMouseDown = true;
-				_updatePoint(e);
-				_updateOldPoint();
-				_update();
-			},
-			_mousemove = function(e) {
-				_updatePoint(e);
-				_isMouseDown && _updateOldPoint();
-				_update();
-			},
-			_mouseup = function() {
-				if (_isMouseDown) {
-					_isMouseDown = false;
-					_updateOldPoint();
-					_update();
-				}
-			},
-			_mouseout = function() {
-				_$preview.css("backgroundColor", _color ? _color : "#FFF");
-			},
-			show = function() {
-				_$container.fadeIn();
-			},
-			hide = function() {
-				_$container.fadeOut();
-			},
-			setColor = function(color) {
-				_color = color;
-				_context.drawImage(_imagePicker, 0, 0, width, height);
-				_$preview.css("backgroundColor", color);
-				_oldX = _oldY = -10;
-			},
-			getColor = function() {
-				return _color;
-			};
-			// auto-init del sottomodulo _colorPicker
-			_mouseX = _mouseY = 0;
-			_oldX = _oldY = -10;
-			return {
-				init:			init,
-				show: 			show,
-				hide:			hide,
-				addEvents:		addEvents,
-				removeEvents:	removeEvents,
-				setColor:		setColor,
-				getColor:		getColor
-			}
-		})();
+		};
 
 		// auto-init del modulo Editor
 		_minX = _minY = _maxX = _maxY = _oldX = _oldY = -1;
@@ -2030,17 +2032,26 @@ var App = (function() {
 	};
 
 	return {	// moduli pubblici di App
-		Init		: Init,
-		Config		: Config,
-		Info		: Info,
-		Socket		: Socket,
-		Worker		: Worker,
-		Dashboard	: Dashboard,
-		Editor		: Editor,
-		Messages	: Messages,
-		Overlay		: Overlay,
-		News		: News,
-		UserPage	: UserPage,
-		CurrentUser	: CurrentUser
+		Init: Init,
+		Config: Config,
+		Info: Info,
+		Socket: Socket,
+		Worker: Worker,
+		Dashboard: Dashboard,
+		Editor: Editor,
+		Messages: Messages,
+		Overlay: Overlay,
+		News: News,
+		UserPage: UserPage,
+		CurrentUser: CurrentUser
 	};
 })();
+
+
+if (navigator.geolocation) {
+	navigator.geolocation.getCurrentPosition(function(position) {
+		console.log(position);
+	});
+} else {
+	console.log("porcodio");
+}
