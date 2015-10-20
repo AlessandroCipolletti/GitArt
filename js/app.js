@@ -2046,12 +2046,3 @@ var App = (function() {
 		CurrentUser: CurrentUser
 	};
 })();
-
-
-if (navigator.geolocation) {
-	navigator.geolocation.getCurrentPosition(function(position) {
-		console.log(position);
-	});
-} else {
-	console.log("porcodio");
-}
