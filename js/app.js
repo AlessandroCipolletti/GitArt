@@ -1,9 +1,9 @@
 var App = (function () {
 	var DOCUMENT = document,
-		_$ = function (selector) {
+		_domGet = function (selector) {
 			return DOCUMENT.querySelector(selector);
 		},
-		_$$ = function (selector) {
+		_domGetAll = function (selector) {
 			return DOCUMENT.querySelectorAll(selector);
 		},
 		_body = DOCUMENT.body,
@@ -161,13 +161,19 @@ var App = (function () {
 		cancelEvent = function (e) {
 			e.preventDefault();
 		},
-		fadeInElement = function (el) {
+		_fadeInEl = function (el) {
 			el.classList.remove("fadeOut");
 			el.classList.add("fadeIn");
 		},
-		fadeOutElement = function (el) {
+		fadeInElements = function (el) {
+			Array.prototype.forEach.call(els.length ? els : [els], _fadeInEl);
+		},
+		_fadeOutEl = function (el) {
 			el.classList.remove("fadeIn");
 			el.classList.add("fadeOut");
+		},
+		fadeOutElements = function (els) {
+			Array.prototype.forEach.call(els.length ? els : [els], _fadeOutEl);
 		},
 		enableElement = function (el) {
 			el.addClass("enabled").removeClass("disabled");
@@ -181,10 +187,10 @@ var App = (function () {
 		},
 		setSpinner = function (state, dark) {
 			if (state) {
-				fadeInElement(_spinner);
+				fadeInElements(_spinner);
 				dark && overlay.show();
 			} else {
-				fadeOutElement(_spinner);;
+				fadeOutElements(_spinner);;
 				dark && overlay.hide();
 			}
 		},
@@ -196,7 +202,7 @@ var App = (function () {
 					_callback = onClick;
 					_darkOverlay.addEventListener("click", onClick);
 				}
-				fadeInElement(_darkOverlay);
+				fadeInElements(_darkOverlay);
 			},
 			hide = function () {
 				if (_callback) {
@@ -204,7 +210,7 @@ var App = (function () {
 					_callback = false;
 					_darkOverlay.removeEventListener("click", _callback);
 				}
-				fadeOutElement(_darkOverlay);
+				fadeOutElements(_darkOverlay);
 			};
 			return {
 				show: show,
@@ -219,8 +225,8 @@ var App = (function () {
 			cancelEvent		: cancelEvent,
 			enableElement	: enableElement,
 			disableElement	: disableElement,
-			fadeInElement: fadeInElement,
-			fadeOutElement: fadeOutElement,
+			fadeInElements: fadeInElements,
+			fadeOutElements: fadeOutElements,
 			setSpinner		: setSpinner,
 			overlay			: overlay
 		}
@@ -299,7 +305,7 @@ var App = (function () {
 	})(),
 
 	Dashboard = (function () {
-		var _dom, _imageGroup = {}, _buttonEditor, _zoomLabel, _$zoomLabelDoms, _$coordsLabel, _$allDom, _canvasForClick = DOCUMENT.createElement("canvas"), _contextForClick = _canvasForClick.getContext('2d'), _imageForDraw =  new Image(),
+		var _dom, _imageGroup = {}, _buttonEditor, _zoomLabel, _coordsLabel, _allDom, _canvasForClick = DOCUMENT.createElement("canvas"), _contextForClick = _canvasForClick.getContext('2d'), _imageForDraw =  new Image(),
 		_isDebug = Config.debug, _draggable = true, _isMouseDown = false, _zoomable = true, _isLoading = false, _timeoutForSpinner = false, _idsImagesOnDashboard = [], _idsImagesOnScreen = [], _cacheNeedsUpdate = true,
 		_zoomScaleLevelsDown = [ 1, 0.88, 0.7744, 0.681472, 0.59969536, 0.5277319168, 0.464404086783, 0.408675596397, 0.359634524806, 0.316478381829, 0.278500976009, 0.245080858888, 0.215671155822, 0.189790617123, 0.167015743068, 0.146973853900, 0.129336991432, 0.113816552460, 0.100158566165, 0.088139538225 ],
 		_zoomScaleLevelsUp = [ 1, 1.136363636364, 1.291322314050, 1.467411720511, 1.667513318762, 1.894901498594, 2.153297157493, 2.446928588060, 2.780600668250, 3.159773486648, 3.590651689372, 4.080286010650, 4.636688648466, 5.268964373257, 5.987459515065, 6.803931267119, 7.731740076272, 8.786068268491, 9.984168486921, 11.34564600787 ],
@@ -369,106 +375,102 @@ var App = (function () {
 			};
 		})(),
 		_tooltip = (function () {
-			var _$dom, _$close, _$like, _$comments, _$share, _$save, _$userImage, _$title, _$userName, _$drawContainer, _$location, _$likeTot, _$commentsTot, _$shareTot,
-				_selectedId, _idUser, _location, _previewWidth = 170, _previewHeight = 130,
-			init = function () {
-				_$dom = $('#dashboardTooltip');
-				_$close = $(".close", _$dom);
-				_$userImage = $("#tooltipUserImage");
-				_$title = $("#tooltipTitle");
-				_$userName = $("#tooltipUserName");
-				_$location = $("#tooltipLocation");
-				_$likeTot = $("#tooltipLikeTot");
-				_$commentsTot = $("#tooltipCommentsTot");
-				_$shareTot = $("#tooltipShareTot");
-				_$drawContainer = $("#tooltipDrawContainer");
-				_$like = $("#tooltipLike");
-				_$comments = $("#tooltipComment");
-				_$share = $("#tooltipShare");
-				_$save = $("#tooltipSave");
-				_$close.bind("click", hide);
-				_$title.bind("click", _goToDrawPage);
-				_$userName.bind("click", _goToUserPage);
-				_$location.bind("click", _goToLocation)
-				_$drawContainer.bind("click", _goToDrawPage);
-				_$userImage.bind("click", _goToUserPage);
-				_$like.bind("click", _like);
-				_$comments.bind("click", _comments);
-				_$share.bind("click", _share);
-				_$save.bind("click", _save);
-			},
-			show = function (idDraw, x, y) {
-				if (idDraw && x && y) {
-					_selectedId = idDraw;
-					var draw = _cache.get(_selectedId);
-					if (!draw) return;
+		  var _dom, _close, _like, _comments, _share, _save, _userImage, _title, _userName, _drawContainer, _location, _likeTot, _commentsTot, _shareTot,
+		    _selectedId, _idUser, _location, _previewWidth = 170, _previewHeight = 130,
+		  init = function () {
+		    _dom = _domGet('#dashboardTooltip');
+		    _close = _domGet(".close", _dom);
+		    _userImage = _domGet("#tooltipUserImage");
+		    _title = _domGet("#tooltipTitle");
+		    _userName = _domGet("#tooltipUserName");
+		    _location = _domGet("#tooltipLocation");
+		    _likeTot = _domGet("#tooltipLikeTot");
+		    _commentsTot = _domGet("#tooltipCommentsTot");
+		    _shareTot = _domGet("#tooltipShareTot");
+		    _drawContainer = _domGet("#tooltipDrawContainer");
+		    _like = _domGet("#tooltipLike");
+		    _comments = _domGet("#tooltipComment");
+		    _share = _domGet("#tooltipShare");
+		    _save = _domGet("#tooltipSave");
+		    _close.addEventListener("click", hide);
+		    _title.addEventListener("click", _goToDrawPage);
+		    _userName.addEventListener("click", _goToUserPage);
+		    _location.addEventListener("click", _goToLocation)
+		    _drawContainer.addEventListener("click", _goToDrawPage);
+		    _userImage.addEventListener("click", _goToUserPage);
+		    _like.addEventListener("click", _like);
+		    _comments.addEventListener("click", _comments);
+		    _share.addEventListener("click", _share);
+		    _save.addEventListener("click", _save);
+		  },
+		  show = function (idDraw, x, y) {
+		    if (idDraw && x && y) {
+		      _selectedId = idDraw;
+		      var draw = _cache.get(_selectedId);
+		      if (!draw) return;
 
-					_location = draw.location;
-					_$title.html("Titolo Disegno");
-					_$userName.html(draw.user.name);
-					_$userImage.css("background-image", "url('https://graph.facebook.com/" + draw.user.fb.id + "/picture?type=large')");
-					_$location.html("Paris, France");
-					_$likeTot.html("421 Mi Piace");
-					_$commentsTot.html("32 Commenti");
-					_$shareTot.html("23 Condivisioni");
+		      _location = draw.location;
+		      _title.innerHTML("Titolo Disegno");
+		      _userName.innerHTML(draw.user.name);
+		      _userImage.style.backgroundImage = "url('https://graph.facebook.com/" + draw.user.fb.id + "/picture?type=large')";
+		      _location.innerHTML("Paris, France");
+		      _likeTot.innerHTML("421 Mi Piace");
+		      _commentsTot.innerHTML("32 Commenti");
+		      _shareTot.innerHTML("23 Condivisioni");
 
-					var scale = draw.pxw / draw.pxh,
-						w, h;
-					if (scale > (_previewWidth / _previewHeight)) {
-						w = _canvasForClick.width = _previewWidth;
-						h = _canvasForClick.height = round(_previewWidth / scale);
-					} else {
-						h = _canvasForClick.height = _previewHeight;
-						w = _canvasForClick.width = round(_previewHeight * scale);
-					}
-					_imageForDraw.src = _imageForDraw.src = draw.data.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
-					_contextForClick.drawImage(_imageForDraw, 0, 0, w, h);
-					_$drawContainer.css("padding-top", (_previewHeight - h) / 2 + "px");
-					_$drawContainer.append(_canvasForClick);
-					_$dom.css({
-						top: y + "px",
-						left: x + "px"
-					});
-					_$dom.addClass("visible");
-				}
-			},
-			_goToDrawPage = function () {
-				//_selectedId
-			},
-			_goToUserPage = function () {
-				//_idUser
-			},
-			_goToLocation = function () {
-				//_location
-			},
-			hide = function () {
-				_$dom.css({
-					top: "-1000px",
-					left: "-1000px"
-				});
-				_$dom.removeClass("visible");
-				_$drawContainer.css("padding-top", "");
-				_contextForClick.clearRect(0, 0, _canvasForClick.width, _canvasForClick.height);
-				_canvasForClick.width = _canvasForClick.height = 0;
-				_imageForDraw =  new Image();
-			},
-			_like = function () {
+		      var scale = draw.pxw / draw.pxh,
+		          w, h;
+		      if (scale > (_previewWidth / _previewHeight)) {
+		        w = _canvasForClick.width = _previewWidth;
+		        h = _canvasForClick.height = round(_previewWidth / scale);
+		      } else {
+		        h = _canvasForClick.height = _previewHeight;
+		        w = _canvasForClick.width = round(_previewHeight * scale);
+		      }
+		      _imageForDraw.src = _imageForDraw.src = draw.data.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+		      _contextForClick.drawImage(_imageForDraw, 0, 0, w, h);
+		      _drawContainer.style.paddingTop = (_previewHeight - h) / 2 + "px";
+		      _drawContainer.appendChild(_canvasForClick);
+		      _dom.style.left = x + "px";
+		      _dom.style.top = y + "px";
+		      _dom.classList.add("visible");
+		    }
+		  },
+		  _goToDrawPage = function () {
+		    //_selectedId
+		  },
+		  _goToUserPage = function () {
+		    //_idUser
+		  },
+		  _goToLocation = function () {
+		    //_location
+		  },
+		  hide = function () {
+		    _dom.style.left = "-1000px";
+		    _dom.style.top = "-1000px";
+		    _dom.classList.remove("visible");
+		    _drawContainer.style.paddingTop = "";
+		    _contextForClick.clearRect(0, 0, _canvasForClick.width, _canvasForClick.height);
+		    _canvasForClick.width = _canvasForClick.height = 0;
+		    _imageForDraw =  new Image();
+		  },
+		  _like = function () {
 
-			},
-			_comments = function () {
+		  },
+		  _comments = function () {
 
-			},
-			_share = function () {
+		  },
+		  _share = function () {
 
-			},
-			_save = function () {
+		  },
+		  _save = function () {
 
-			};
-			return {
-				init: init,
-				show: show,
-				hide: hide
-			};
+		  };
+		  return {
+		    init: init,
+		    show: show,
+		    hide: hide
+		  };
 		})(),
 
 		_initDomGroup = function () {
@@ -498,20 +500,18 @@ var App = (function () {
 		_initDom = function () {
 			_dom = DOCUMENT.querySelector("#dashboard");
 			_zoomLabel = DOCUMENT.querySelector("#zoomLabel");
-			_$zoomLabelDoms = $("#zoomLabel, #zoomLabelCont");
 			_initDomGroup();
-			_buttonEditor = _$("#showEditor");
-			_$allDom = $("#showEditor, #zoomLabel, #zoomLabelCont");
+			_buttonEditor = _domGet("#showEditor");
+			_allDom = _domGetAll("#showEditor, #zoomLabel, #zoomLabelCont");
 			_buttonEditor.style.display = "block";
 			if (_isDebug) {
 				$("#dashboardCoords").css("display", "block");
-				_$coordsLabel = $("#dashboardCoords span");
-				_$allDom = $("#showEditor, #zoomLabel, #zoomLabelCont");
+				_coordsLabel = _domGet("#dashboardCoords span");
 				_updateCoordsLabel(_currentX, _currentY);
 			}
 		},
 		_updateCoordsLabel = _isDebug ? function (x, y) {
-			_$coordsLabel.html(["(", x, ", ", y, ")"].join(''));
+			_coordsLabel.innerHTML("(" + x + ", " + y + ")");
 		} : function (){},
 		_updateCurrentCoords = function (x, y) {
 			_currentX = x;
@@ -899,12 +899,12 @@ var App = (function () {
 			_draggable = _zoomable = false;
 			_removeEvents();
 			_tooltip.hide();
-			_$allDom.fadeOut("fast");
+			Utils.fadeOutElements(_allDom);
 		},
 		foreground = function () {	// riporta in primo piano la dashboard e la rende funzionante
 			_draggable = _zoomable = true;
 			_addEvents();
-			_$allDom.fadeIn("fast");
+			Utils.fadeInElements(_allDom);
 		},
 		getCoords = function () {
 			return {
@@ -2031,8 +2031,8 @@ var App = (function () {
 			DYY = 2 * YY;
 		};
 		_onResize();
-		_darkOverlay = _$('#darkOverlay');
-		_spinner = _$('#spinner');
+		_darkOverlay = _domGet('#darkOverlay');
+		_spinner = _domGet('#spinner');
 		_mouseWheelEvent = Info.firefox ? "DOMMouseScroll" : "mousewheel";
 		WINDOW.addEventListener("resize", _onResize, true);
 		DOCUMENT.body.addEventListener("mousedown", preventDefault, true);
