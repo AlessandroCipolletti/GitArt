@@ -1,44 +1,50 @@
-var App = (function() {
+var App = (function () {
 	var DOCUMENT = document,
+		_$ = function (selector) {
+			return DOCUMENT.querySelector(selector);
+		},
+		_$$ = function (selector) {
+			return DOCUMENT.querySelectorAll(selector);
+		},
 		_body = DOCUMENT.body,
 		WINDOW = window,
-		_$dark,
-		_$spinner,
+		_darkOverlay,
+		_spinner,
 		XX, YY, XX2, YY2, DXX, DYY,
 		MATH = Math,
-		round = function(n, d) {
+		round = function (n, d) {
 			var m = d ? MATH.pow(10, d) : 1;
 			return MATH.round(n * m) / m;
 		},
-		random = function(n) {
+		random = function (n) {
 			return MATH.random() * n | 0;
 		},
-		toHex = function(n) {
+		toHex = function (n) {
 			n = n.toString(16);
 			return (n.length === 1 ? "0" + n : n);
 		},
-		orderNumberUp = function(a, b) { return a - b; },
-		orderNumberDown = function(a, b) { return b - a; },
-		orderStringDown = function(a, b) {
+		orderNumberUp = function (a, b) { return a - b; },
+		orderNumberDown = function (a, b) { return b - a; },
+		orderStringDown = function (a, b) {
 			if (a < b) return +1;
 			if (a > b) return -1;
 			return 0;
 		},
-		orderStringUp = function(a, b) {
+		orderStringUp = function (a, b) {
 			if (a > b) return +1;
 			if (a < b) return -1;
 			return 0;
 		},
-		preventDefault = function(e) {
+		preventDefault = function (e) {
 			e.preventDefault();
 		},
-		requestAnimationFrame = WINDOW.requestAnimationFrame || WINDOW.mozRequestAnimationFrame || WINDOW.webkitRequestAnimationFrame || function(callback){setTimeout(callback, 25)},
+		requestAnimationFrame = WINDOW.requestAnimationFrame || WINDOW.mozRequestAnimationFrame || WINDOW.webkitRequestAnimationFrame || function (callback){setTimeout(callback, 25)},
 		PI = MATH.PI,
 		PI2 = 2 * PI,
-		EmptyFN = function() {},
+		EmptyFN = function () {},
 		_mouseWheelEvent,
 
-	Config = (function() {
+	Config = (function () {
 		return {
 			debug: true,
 			socketUrl: "http://46.252.150.61:5000",
@@ -53,8 +59,8 @@ var App = (function() {
 		}
 	})(),
 
-	Info = (function() {
-		var get_len = function(len) {
+	Info = (function () {
+		var get_len = function (len) {
 			return 'ita'; 	// TODO da implementare per filtrare le lingue non supportate, e restituire il formato a 3 caratteri
 		};
 		return {
@@ -66,7 +72,7 @@ var App = (function() {
 		}
 	})(),
 
-	label = (function(len) {
+	label = (function (len) {
 		var _labels = {};
 		_labels['ita'] = {
 			'closePrevent'				: 'Salva una bozza prima di uscire!',
@@ -104,20 +110,20 @@ var App = (function() {
 		return _lingua;
 	})(Info.lenguage),
 
-	Utils = (function() {
+	Utils = (function () {
 		var _checkError = (function _checkError() {
 			var _function, errorMsg,
-			setFunc = function(func) {
+			setFunc = function (func) {
 				_function = func;
 				return this;
 			},
-			setError = function(error) {
+			setError = function (error) {
 				errorMsg = error;
 				return this;
 			},
-			exec = function(params) {
+			exec = function (params) {
 				try {
-					return _function(params);
+					return _function (params);
 				} catch(error) {
 					if (Config.debug) {
 						var msg = errorMsg + "[" + error.code + " - " + error.message + "] {" + JSON.stringify(params) + "}";
@@ -132,13 +138,13 @@ var App = (function() {
 				setError	: setError
 			}
 		})(),
-		checkError = function(func, error, params) {
+		checkError = function (func, error, params) {
 			return _checkError.setFunc(func).setError(error).exec(params);
 		},
-		isEmpty = function(value) {
+		isEmpty = function (value) {
 			return ((typeof value == 'undefined' || value === null || value === '' || value === false || value === [] || value === {} || value === NaN || value === undefined) ? true : false);
 		},
-		areEmpty = function(obj) {
+		areEmpty = function (obj) {
 			var res = false;
 			if (obj instanceof Array) {
 				var i = obj.length;
@@ -149,48 +155,56 @@ var App = (function() {
 			} else
 				return isEmpty(obj);
 		},
-		getRemoteData = function(url, params) {
+		getRemoteData = function (url, params) {
 			// chiamata AJAX (magari jquery) con paramsin post che restituisce un oggetto de-jsonato, o false
 		},
-		cancelEvent = function(e) {
+		cancelEvent = function (e) {
 			e.preventDefault();
 		},
-		enableElement = function(el) {
+		fadeInElement = function (el) {
+			el.classList.remove("fadeOut");
+			el.classList.add("fadeIn");
+		},
+		fadeOutElement = function (el) {
+			el.classList.remove("fadeIn");
+			el.classList.add("fadeOut");
+		},
+		enableElement = function (el) {
 			el.addClass("enabled").removeClass("disabled");
 		},
-		disableElement = function(el) {
+		disableElement = function (el) {
 			el.addClass("disabled").removeClass("enabled");
 		},
-		logError = function(msg) {
+		logError = function (msg) {
 			console.log(msg);
 			// qui possiamo anche tentare una chiamata ajax per inviarci _msg per le statistiche sugli errori,
 		},
-		setSpinner = function(state, dark) {
+		setSpinner = function (state, dark) {
 			if (state) {
-				_$spinner.stop().fadeIn("fast");
+				fadeInElement(_spinner);
 				dark && overlay.show();
 			} else {
-				_$spinner.stop().fadeOut("fast");
+				fadeOutElement(_spinner);;
 				dark && overlay.hide();
 			}
 		},
-		overlay = (function() {
+		overlay = (function () {
 			var _callback = false,
-			show = function(onClick) {
+			show = function (onClick) {
 				if (onClick) {
-					_$dark.addClass("cursorX");
+					_darkOverlay.classList.add("cursorX");
 					_callback = onClick;
-					_$dark.bind("click", onClick);
+					_darkOverlay.addEventListener("click", onClick);
 				}
-				_$dark.stop().fadeIn("fast");
+				fadeInElement(_darkOverlay);
 			},
-			hide = function() {
+			hide = function () {
 				if (_callback) {
-					_$dark.removeClass("cursorX");
+					_darkOverlay.classList.remove("cursorX");
 					_callback = false;
-					_$dark.unbind("click", _callback);
+					_darkOverlay.removeEventListener("click", _callback);
 				}
-				_$dark.stop().fadeOut("fast");
+				fadeOutElement(_darkOverlay);
 			};
 			return {
 				show: show,
@@ -205,20 +219,22 @@ var App = (function() {
 			cancelEvent		: cancelEvent,
 			enableElement	: enableElement,
 			disableElement	: disableElement,
+			fadeInElement: fadeInElement,
+			fadeOutElement: fadeOutElement,
 			setSpinner		: setSpinner,
 			overlay			: overlay
 		}
 	})(),
 
-	Socket = (function() {
+	Socket = (function () {
 		var _socket = {},
 			_buffer = [],
-			_onError = function() {
+			_onError = function () {
 
 			},
-			init = function() {
+			init = function () {
 				var url = Config.socketUrl,
-				_onConnect = function() {
+				_onConnect = function () {
 					var data;
 					for (var i = _buffer.length; i--; ) {
 						data = _buffer.pop();
@@ -229,16 +245,16 @@ var App = (function() {
 					url: url,
 					io: io(url)
 				};
-				_socket.io.on("error", function() {
+				_socket.io.on("error", function () {
 					console.log(label['socketError']);
 				});
-				_socket.io.on("disconnect", function() {
+				_socket.io.on("disconnect", function () {
 					console.log("socket disconnect");
 				});
-				_socket.io.on("reconnect", function() {
+				_socket.io.on("reconnect", function () {
 					_onConnect();
 				});
-				_socket.io.on("connect", function() {
+				_socket.io.on("connect", function () {
 					console.log("Socket Connect OK");
 					_onConnect();
 				});
@@ -246,7 +262,7 @@ var App = (function() {
 				_socket.io.on("dashboard drag", Dashboard.onSocketMessage);
 				_socket.io.on("editor save", Editor.onSocketMessage);
 			},
-			emit = function(event, data) {
+			emit = function (event, data) {
 				(typeof data === "object") && (data = JSON.stringify(data));
 				if (_socket.io.connected) {
 					_socket.io.emit(event, data);
@@ -260,80 +276,80 @@ var App = (function() {
 		};
 	})(),
 
-	Worker = (function() {
+	Worker = (function () {
 		var _list = {},
-		create = function(file) {
+		create = function (file) {
 
 		},
-		close = function(file) {
+		close = function (file) {
 
 		},
-		one = function(file) {
+		one = function (file) {
 
 		},
-		oneOrNew = function(file) {
+		oneOrNew = function (file) {
 			// queste 2 funzioni che sono uguali in più moduli le possiamo aggiungere col metodo oggetto.method preso dal libro, cosi le scriviamo una volta sola
 		};
 		return {
-			create		: function(file) { return Utils.CK(create,	"Error: Worker not created. ",	file) },
-			close		: function(file) { return Utils.CK(close,		"Error: Worker not closed. ",	file) },
+			create		: function (file) { return Utils.CK(create,	"Error: Worker not created. ",	file) },
+			close		: function (file) { return Utils.CK(close,		"Error: Worker not closed. ",	file) },
 			one			: one,
 			oneOrNew	: oneOrNew
 		}
 	})(),
 
-	Dashboard = (function() {
-		var _dom, _imageGroup = {}, _$buttonEditor, _zoomLabel, _$zoomLabelDoms, _$coordsLabel, _$allDom, _canvasForClick = DOCUMENT.createElement("canvas"), _contextForClick = _canvasForClick.getContext('2d'), _imageForDraw =  new Image(),
+	Dashboard = (function () {
+		var _dom, _imageGroup = {}, _buttonEditor, _zoomLabel, _$zoomLabelDoms, _$coordsLabel, _$allDom, _canvasForClick = DOCUMENT.createElement("canvas"), _contextForClick = _canvasForClick.getContext('2d'), _imageForDraw =  new Image(),
 		_isDebug = Config.debug, _draggable = true, _isMouseDown = false, _zoomable = true, _isLoading = false, _timeoutForSpinner = false, _idsImagesOnDashboard = [], _idsImagesOnScreen = [], _cacheNeedsUpdate = true,
 		_zoomScaleLevelsDown = [ 1, 0.88, 0.7744, 0.681472, 0.59969536, 0.5277319168, 0.464404086783, 0.408675596397, 0.359634524806, 0.316478381829, 0.278500976009, 0.245080858888, 0.215671155822, 0.189790617123, 0.167015743068, 0.146973853900, 0.129336991432, 0.113816552460, 0.100158566165, 0.088139538225 ],
 		_zoomScaleLevelsUp = [ 1, 1.136363636364, 1.291322314050, 1.467411720511, 1.667513318762, 1.894901498594, 2.153297157493, 2.446928588060, 2.780600668250, 3.159773486648, 3.590651689372, 4.080286010650, 4.636688648466, 5.268964373257, 5.987459515065, 6.803931267119, 7.731740076272, 8.786068268491, 9.984168486921, 11.34564600787 ],
 		_mouseX, _mouseY, _clickX, _clickY, _currentX, _currentY, _zoom = 1, _decimals = 0, socket = Socket, _socketCallsInProgress = 0, _animationZoom = false, _deltaVisibleCoordX = 0, _deltaVisibleCoordY = 0, _minVisibleCoordX = 0, _minVisibleCoordY = 0, _maxVisibleCoordX = 0, _maxVisibleCoordY = 0,
 		_zoomScale = 0.12, _zoom = 1, _zoomMax = 20, _deltaZoomMax = 2, _deltaZoom = 0, _deltaDragMax = 200, _deltaDragX = 0, _deltaDragY = 0, // per ricalcolare le immagini visibili o no durante il drag
 
-		_cache = (function() {
+		_cache = (function () {
 			var _list = {},
 				_ids = [],
 				_maxCacheSize = 100,	// forse sarebbe cool parametrizzare questo in base alle prestazioni locali
-			_updateIds = function() {
+			_updateIds = function () {
 				_ids = Object.keys(_list);
 			},
-			add = function(id, data) {
+			add = function (id, data) {
 				// se la cache html5 può fare al caso nostro, salviamo data in cache, e id nella lista cosi sappiamo cosa abbiamo e cosa no
 				// altrimenti mettiamo entrambi nel dizionario _list
 				if (_list[id]) return;
 				_list[id] = data;
 				_updateIds();
 			},
-			get = function(id) {
+			get = function (id) {
 				return _list[id] || false;
 			},
-			set = function(id, data) {
+			set = function (id, data) {
 				del(id);
 				add(id, data);
 			},
-			del = function(id) {
+			del = function (id) {
 				_list[id] = undefined;
 				delete _list[id];
 				_updateIds();
 			},
-			log = function() {
+			log = function () {
 				console.log(_list);
 			},
-			ids = function() {
+			ids = function () {
 				return _ids;
 			},
-			length = function() {
+			length = function () {
 				return _ids.length;
 			},
-			exist = function(id) {
+			exist = function (id) {
 				return _ids.indexOf(id) >= 0;
 			},
-			clean = function(force) {	// magari anche un metodo che controlli quanto abbiamo in cache e se necessario la liberi
+			clean = function (force) {	// magari anche un metodo che controlli quanto abbiamo in cache e se necessario la liberi
 				if (force || _ids.length > _maxCacheSize) {
 
 				}
 			},
-			reset = function() {
+			reset = function () {
 				for (var i = _ids.length; i--; ) {
 					var draw  = _list[_ids[i]];
 					draw.onScreen = draw.onDashboard = false;
@@ -352,10 +368,10 @@ var App = (function() {
 				reset	: reset
 			};
 		})(),
-		_tooltip = (function() {
+		_tooltip = (function () {
 			var _$dom, _$close, _$like, _$comments, _$share, _$save, _$userImage, _$title, _$userName, _$drawContainer, _$location, _$likeTot, _$commentsTot, _$shareTot,
 				_selectedId, _idUser, _location, _previewWidth = 170, _previewHeight = 130,
-			init = function() {
+			init = function () {
 				_$dom = $('#dashboardTooltip');
 				_$close = $(".close", _$dom);
 				_$userImage = $("#tooltipUserImage");
@@ -381,7 +397,7 @@ var App = (function() {
 				_$share.bind("click", _share);
 				_$save.bind("click", _save);
 			},
-			show = function(idDraw, x, y) {
+			show = function (idDraw, x, y) {
 				if (idDraw && x && y) {
 					_selectedId = idDraw;
 					var draw = _cache.get(_selectedId);
@@ -416,16 +432,16 @@ var App = (function() {
 					_$dom.addClass("visible");
 				}
 			},
-			_goToDrawPage = function() {
+			_goToDrawPage = function () {
 				//_selectedId
 			},
-			_goToUserPage = function() {
+			_goToUserPage = function () {
 				//_idUser
 			},
-			_goToLocation = function() {
+			_goToLocation = function () {
 				//_location
 			},
-			hide = function() {
+			hide = function () {
 				_$dom.css({
 					top: "-1000px",
 					left: "-1000px"
@@ -436,16 +452,16 @@ var App = (function() {
 				_canvasForClick.width = _canvasForClick.height = 0;
 				_imageForDraw =  new Image();
 			},
-			_like = function() {
+			_like = function () {
 
 			},
-			_comments = function() {
+			_comments = function () {
 
 			},
-			_share = function() {
+			_share = function () {
 
 			},
-			_save = function() {
+			_save = function () {
 
 			};
 			return {
@@ -455,7 +471,7 @@ var App = (function() {
 			};
 		})(),
 
-		_initDomGroup = function() {
+		_initDomGroup = function () {
 			if (_imageGroup.tag) {
 				_dom.removeChild(_imageGroup.tag);
 				_imageGroup.origin = _imageGroup.tag = null;
@@ -479,14 +495,14 @@ var App = (function() {
 			_deltaVisibleCoordX = DXX / z;
 			_deltaVisibleCoordY = DYY / z;
 		},
-		_initDom = function() {
+		_initDom = function () {
 			_dom = DOCUMENT.querySelector("#dashboard");
 			_zoomLabel = DOCUMENT.querySelector("#zoomLabel");
 			_$zoomLabelDoms = $("#zoomLabel, #zoomLabelCont");
 			_initDomGroup();
-			_$buttonEditor = $("#showEditor");
+			_buttonEditor = _$("#showEditor");
 			_$allDom = $("#showEditor, #zoomLabel, #zoomLabelCont");
-			_$buttonEditor.css({display: "block"});
+			_buttonEditor.style.display = "block";
 			if (_isDebug) {
 				$("#dashboardCoords").css("display", "block");
 				_$coordsLabel = $("#dashboardCoords span");
@@ -494,10 +510,10 @@ var App = (function() {
 				_updateCoordsLabel(_currentX, _currentY);
 			}
 		},
-		_updateCoordsLabel = _isDebug ? function(x, y) {
+		_updateCoordsLabel = _isDebug ? function (x, y) {
 			_$coordsLabel.html(["(", x, ", ", y, ")"].join(''));
-		} : function(){},
-		_updateCurrentCoords = function(x, y) {
+		} : function (){},
+		_updateCurrentCoords = function (x, y) {
 			_currentX = x;
 			_currentY = y;
 			_minVisibleCoordX = x - _deltaVisibleCoordX;
@@ -506,7 +522,7 @@ var App = (function() {
 			_maxVisibleCoordY = y + _deltaVisibleCoordY;
 			_updateCoordsLabel(x, y);
 		},
-		_animZoom = function() {
+		_animZoom = function () {
 			if (_zoom === 1) {
 				Editor.show();
 				_animationZoom = false;
@@ -515,23 +531,23 @@ var App = (function() {
 				requestAnimationFrame(_animZoom);
 			}
 		},
-		_buttonEditorClick = function() {
+		_buttonEditorClick = function () {
 			if (_animationZoom) return;
-			CurrentUser.doLogin().then(function() {
+			CurrentUser.doLogin().then(function () {
 				_animationZoom = true;
 				_animZoom();
 			});
 		},
-		_updateGroupOrigin = function() {
+		_updateGroupOrigin = function () {
 			var _groupRect = _imageGroup.origin.getBoundingClientRect();
 			_imageGroup.pxx = round(_groupRect.left, _decimals);
 			_imageGroup.pxy = round(_groupRect.top, _decimals);
 		},
-		_highlightsDraw = function(id, x, y) {	// TODO evidenzio il disegno e mostro il box con le sue info
+		_highlightsDraw = function (id, x, y) {	// TODO evidenzio il disegno e mostro il box con le sue info
 			console.log("clicked draw id:", id);
 			_tooltip.show(id, x, y);
 		},
-		_selectDrawAtPx = function(x, y) {	// OK! capisco su quale disegno l'utente voleva fare click
+		_selectDrawAtPx = function (x, y) {	// OK! capisco su quale disegno l'utente voleva fare click
 			_cacheNeedsUpdate && _updateCache();
 			_idsImagesOnScreen.sort(orderStringUp);
 			var draw, selectedID = false;
@@ -555,13 +571,13 @@ var App = (function() {
 			_imageForDraw =  new Image();
 			selectedID && _highlightsDraw(selectedID, x, y);
 		},
-		_isOnScreen = function(img) {
+		_isOnScreen = function (img) {
 			return (img.pxr > 0 && img.pxx < XX && img.pxb > 0 && img.pxy < YY);
 		},
-		_isOnDashboard = function(img) {	// OK - la zona "visibile" è quella attualmente a video, più una schermata per ogni lato, come sorta di 'cache'
+		_isOnDashboard = function (img) {	// OK - la zona "visibile" è quella attualmente a video, più una schermata per ogni lato, come sorta di 'cache'
 			return (img.r > _minVisibleCoordX && img.b < _maxVisibleCoordY && img.x < _maxVisibleCoordX && img.y > _minVisibleCoordY);
 		},
-		_updateCache = function() {
+		_updateCache = function () {
 			var ids = _cache.ids(),
 				isOnDashboard = _isOnDashboard,
 				isOnScreen = _isOnScreen,
@@ -585,7 +601,7 @@ var App = (function() {
 			isOnDashboard = isOnScreen = decimals = R = undefined;
 			_cacheNeedsUpdate = false;
 		},
-		_zoomTo = function(level, x, y, animated) {	// "OK"
+		_zoomTo = function (level, x, y, animated) {	// "OK"
 			if (level === _zoom || level > _zoomMax || level < 1) return;
 			_tooltip.hide();
 			var refreshCache = (level === 1 || animated !== true),
@@ -622,7 +638,7 @@ var App = (function() {
 			}
 			_zoomLabel.textContent = [round(100 - (95 / _zoomMax) * (level - 1)), "%"].join('');
 		},
-		_drag = function(dx, dy, forceLoad) {	// OK. dx dy sono le differenze in px, non in coordinate (bisogna tenere conto dello zoom)
+		_drag = function (dx, dy, forceLoad) {	// OK. dx dy sono le differenze in px, non in coordinate (bisogna tenere conto dello zoom)
 			if (dx === 0 && dy === 0) return;
 			var scale = _imageGroup.matrix.a,
 				_deltaX = round(dx / scale, _decimals),
@@ -641,7 +657,7 @@ var App = (function() {
 				_cacheNeedsUpdate = true;
 			}
 		},
-		onSocketMessage = function(data) {
+		onSocketMessage = function (data) {
 			if (["end", "none", "error"].indexOf(data) >= 0) {
 				_socketCallsInProgress--;
 				if (_socketCallsInProgress === 0) {
@@ -653,7 +669,7 @@ var App = (function() {
 				_addDraws(JSON.parse(data));
 			}
 		},
-		_addDraws = function(draws) {	// aggiunge uno ad uno i disegni ricevuti dal socket
+		_addDraws = function (draws) {	// aggiunge uno ad uno i disegni ricevuti dal socket
 			var draw;
 			for (var i = 0, l = draws.length; i < l; i++) {
 				draw = draws[i];
@@ -661,7 +677,7 @@ var App = (function() {
 				addDraw(draw);
 			}
 		},
-		addDraw = function(draw, replace) {	// OK	aggiunge e salva un disegno passato dall editor o dal socket
+		addDraw = function (draw, replace) {	// OK	aggiunge e salva un disegno passato dall editor o dal socket
 			//console.log(draw);
 			if (!draw || !draw.id) return false;
 			var _drawExist = _cache.exist(draw.id),
@@ -690,14 +706,14 @@ var App = (function() {
 			_cacheNeedsUpdate = true;
 		  return true;
 		},
-		_removeDraw = function(id, del) {	// OK
+		_removeDraw = function (id, del) {	// OK
 			//console.log("rimuovo:" + id);
 			(del || false) && _cache.del(id);
 			_idsImagesOnDashboard.splice(_idsImagesOnDashboard.indexOf(id), 1);
 			var _oldDraw = DOCUMENT.getElementById(id);
 			_oldDraw && _imageGroup.tag.removeChild(_oldDraw);
 		},
-		_appendDraw = function(draw) {	// aggiunge alla dashboard un svg image già elaborato
+		_appendDraw = function (draw) {	// aggiunge alla dashboard un svg image già elaborato
 			if (!draw || !draw.id || _idsImagesOnDashboard.indexOf(draw.id) >= 0) return false;
 			//console.log(["aggiungo", draw]);
 			_idsImagesOnDashboard.push(draw.id);
@@ -711,7 +727,7 @@ var App = (function() {
 			draw.onDashboard = true;
 			_cache.add(draw.id, draw);
 		},
-		_getVisibleArea = function() {	// OK - in coordinate assolute
+		_getVisibleArea = function () {	// OK - in coordinate assolute
 			// TODO - per adesso cambio qui la dimensione dell'area da scaricare per scaricare tutto in un colpo,
 			//			ma in futuro sarà meglio fare prima la chiamata per la schermata a video e poi un'altra chiamata per la zona intorno
 			return {
@@ -723,21 +739,21 @@ var App = (function() {
 				y : _currentY
 			}
 		},
-		_findInCache = function() {
-			var _ids = _cache.ids().filter(function(i) {return _idsImagesOnDashboard.indexOf(i) < 0}),
+		_findInCache = function () {
+			var _ids = _cache.ids().filter(function (i) {return _idsImagesOnDashboard.indexOf(i) < 0}),
 				_draw;
 			for (var i = _ids.length; i--; ) {
 				_draw = _cache.get(_ids[i]);
 				(_isOnDashboard(_draw)) && _appendDraw(_draw);
 			}
 		},
-		_callSocketFor = function(area, notIds) { // OK
+		_callSocketFor = function (area, notIds) { // OK
 			_socketCallsInProgress++;
 			if (!_isLoading) {
 				_isLoading = true;
 				if (_timeoutForSpinner === false) {
 					_timeoutForSpinner = true;
-					setTimeout(function() {
+					setTimeout(function () {
 						_isLoading && Utils.setSpinner(true);
 						_timeoutForSpinner = false;
 					}, 100);
@@ -748,7 +764,7 @@ var App = (function() {
 				"ids": notIds
 			});
 		},
-		_fillScreen = function() {	// OK
+		_fillScreen = function () {	// OK
 			// 1 - aggiorna le coordinate in px delle immagini in cache (e rimuove quelle non piu visibili)
 			_deltaDragX = _deltaDragY = _deltaZoom = 0;
 			_updateCache();
@@ -759,7 +775,7 @@ var App = (function() {
 			// 4° avvia trasferimenti di ciò che non è in cache e che deve comparire
 			_callSocketFor(_area, _cache.ids());
 		},
-		goToXY = function(x, y) {	// OK
+		goToXY = function (x, y) {	// OK
 			// calcolo la differenza in px invece che coord, e chiamo _drag. se si inseriscono coordinate poco distanti dalle attuali, forzo l'aggiornamento e il caricamento delle nuove
 			if (Utils.areEmpty([x, y])) return;
 			var z = _imageGroup.matrix.a,
@@ -771,7 +787,7 @@ var App = (function() {
 			_initDomGroup();
 			_fillScreen();
 		},
-		goToDraw = function(id) {	// TODO
+		goToDraw = function (id) {	// TODO
 			// precarica (se necessario) il disegno e poi va alle sue coordinate. in questo modo sono sicuro che sarà visualizzato per primo (importante visto che è stato richiesto specificamente)
 			if (Utils.isEmpty(id)) return;
 			if (_cache.exist(id)) {
@@ -790,7 +806,7 @@ var App = (function() {
 			}
 			goToXY(draw.x + draw.w / 2, draw.y + draw.h / 2);
 		},
-		_mousedown = function(e) {
+		_mousedown = function (e) {
 			if (e.button !== 0) return false;
 			_isMouseDown = true;
 			_tooltip.hide();
@@ -799,13 +815,13 @@ var App = (function() {
 			_mouseY = _clickY = e.pageY;
 			_imageGroup.matrix = _imageGroup.tag.getCTM();
 		},
-		__mousemove = function() {
+		__mousemove = function () {
 			_drag(this[0], this[1], false);
 			_mouseX = this[2];	// questo init lo metto qui perché se ci sono dei mousemove che vanno persi nell'attesa di requestAnimationFrame, i delta cords non vanno persi
 			_mouseY = this[3];
 			_draggable = true;
 		},
-		_mousemove = function(e) {
+		_mousemove = function (e) {
 			if (_isMouseDown && _draggable) {
 				var dx = e.pageX - _mouseX,
 					dy = e.pageY - _mouseY;
@@ -813,31 +829,31 @@ var App = (function() {
 				requestAnimationFrame(__mousemove.bind([dx, dy, e.pageX, e.pageY]));
 			}
 		},
-		_click = function(e) {
+		_click = function (e) {
 
 		},
-		_mouseend = function() {
+		_mouseend = function () {
 			_mouseX = 0;
 			_mouseY = 0;
 			_isMouseDown = false;
 			_dom.classList.remove('dragging');
 		},
-		_mouseup = function(e) {
+		_mouseup = function (e) {
 			if (e.button !== 0) return false;
 			var abs = MATH.abs;
 			(abs(_clickX - e.pageX) < 5 && abs(_clickY - e.pageY) < 5) && _selectDrawAtPx(e.pageX, e.pageY);
 			_mouseend();
 		},
-		_mouseout = function(e) {
+		_mouseout = function (e) {
 			_mouseend();
 		},
-		_mouseover = function(e) {
+		_mouseover = function (e) {
 			if (e.target.id === "dashboard") {
 				_mouseX = e.pageX;
 				_mouseY = e.pageY;
 			}
 		},
-		__mouseWheel = function() {
+		__mouseWheel = function () {
 			_zoomTo(this[0] > 0 ? _zoom - 1 : _zoom + 1, this[1], this[2]);
 			_zoomable = true;
 		},
@@ -851,13 +867,13 @@ var App = (function() {
 				requestAnimationFrame(__mouseWheel.bind([_delta, e.clientX, e.clientY]));
 			}
 		},
-		_keyDown = function(e) {
+		_keyDown = function (e) {
 			if (e.keyCode === 37) _drag(-1, 0);
 			else if (e.keyCode === 38) _drag(0, -1);
 			else if (e.keyCode === 39) _drag(1, 0);
 			else if (e.keyCode === 40) _drag(0, 1);
 		},
-		_addEvents = function() {
+		_addEvents = function () {
 			_dom.addEventListener('click',			_click,		true);
 			_dom.addEventListener('mousedown',		_mousedown,	true);
 			_dom.addEventListener('mousemove', 		_mousemove,	true);
@@ -866,9 +882,9 @@ var App = (function() {
 			_dom.addEventListener('mouseover',		_mouseover,	true);
 			DOCUMENT.addEventListener(_mouseWheelEvent, _mouseWheel,true);
 			_isDebug && DOCUMENT.addEventListener("keydown", _keyDown, false);
-			_$buttonEditor.bind("mousedown", _buttonEditorClick);
+			_buttonEditor.addEventListener("mousedown", _buttonEditorClick);
 		},
-		_removeEvents = function() {
+		_removeEvents = function () {
 			_dom.removeEventListener('click',			_click,		true);
 			_dom.removeEventListener('mousedown',		_mousedown,	true);
 			_dom.removeEventListener('mousemove', 		_mousemove,	true);
@@ -877,20 +893,20 @@ var App = (function() {
 			_dom.removeEventListener('mouseover',		_mouseover,	true);
 			_dom.removeEventListener(_mouseWheelEvent, 	_mouseWheel,true);
 			_isDebug && DOCUMENT.removeEventListener("keydown", _keyDown, false);
-			_$buttonEditor.unbind("mousedown", _buttonEditorClick);
+			_buttonEditor.removeEventListener("mousedown", _buttonEditorClick);
 		},
-		overshadow = function() {	// mette in secondo piano e blocca la dashboard per mostrare l'editor
+		overshadow = function () {	// mette in secondo piano e blocca la dashboard per mostrare l'editor
 			_draggable = _zoomable = false;
 			_removeEvents();
 			_tooltip.hide();
 			_$allDom.fadeOut("fast");
 		},
-		foreground = function() {	// riporta in primo piano la dashboard e la rende funzionante
+		foreground = function () {	// riporta in primo piano la dashboard e la rende funzionante
 			_draggable = _zoomable = true;
 			_addEvents();
 			_$allDom.fadeIn("fast");
 		},
-		getCoords = function() {
+		getCoords = function () {
 			return {
 				x: round(_currentX),
 				y: round(_currentY)
@@ -900,9 +916,9 @@ var App = (function() {
 			// calcolo coordinate, punto in centro pagina, aggiungo o rimuovo disegni
 			// i disegni non devono spostarsi rispetto allo schermo, ma le coordinate correnti devono essere calcolate al centro della finestra
 		},
-		init = function() {
+		init = function () {
 			//scelgo a che posizione aprire la lavagna
-			_imageGroup.updateMatrix = function() {
+			_imageGroup.updateMatrix = function () {
 				var matrix = _imageGroup.matrix;
 				_imageGroup.tag.setAttribute("transform", "matrix(" + matrix.a + "," + matrix.b + "," + matrix.c + "," + matrix.d + "," + round(matrix.e, 4) + "," + round(matrix.f, 4) + ")");
 			};
@@ -925,7 +941,7 @@ var App = (function() {
 		};
 	})(),
 
-	Editor = (function() {
+	Editor = (function () {
 		var _dom, _$dom, _context, _$allDom, _$allDomContainer, _$allMenuTool, _$brushTool, _$pencilTool, _$eraserTool, _$pickerTool, _$editorUndo, _$editorRedo, _$editorHide,
 		_$options, _$pickerToolPreview, _$pickerToolColor, _$pickerToolColor2, _$randomColorButton, _$editorSave, _$sizeToolContainer, _$grayscaleContainer, _$grayscalePointer,
 		_$editorShowOptions, _$optionDraft, _$optionRestore, _$optionSquare, _$optionExport, _$optionClear, _$closeButtons,
@@ -937,11 +953,11 @@ var App = (function() {
 		utils = Utils, _enableElement = utils.enableElement, _disableElement = utils.disableElement, _currentUser = {},
 		_labelAnnulla = label["Annulla"], _labelRipeti = label["Ripeti"],
 
-		_colorPicker = (function() {	// sottomodulo di editor per gestire il color-picker
+		_colorPicker = (function () {	// sottomodulo di editor per gestire il color-picker
 			var _$container, _$dom, _context, _dom, _imagePicker = new Image(), _imageSelector = new Image(), _$preview,
 			_isMouseDown = false, width = 240, height = 120,
 			_mouseX, _mouseY, _oldX, _oldY, _color = false,
-			init = function() {
+			init = function () {
 				_dom = DOCUMENT.querySelector("#colorPicker");
 				_dom.width = width;
 				_dom.height = height;
@@ -949,26 +965,26 @@ var App = (function() {
 				_$dom = $("#colorPicker");
 				_$container = $("#colorPickerCont");
 				_$preview = $("#colorPreview");
-				_imagePicker.onload = function() {
+				_imagePicker.onload = function () {
 					_context.drawImage(_imagePicker, 0, 0, width, height);
 					_imagePicker.onload = undefined;
 				}
 				_imagePicker.src = "img/colors.png";
 				_imageSelector.src = "img/selector.png";
 			},
-			addEvents = function() {
+			addEvents = function () {
 				DOCUMENT.addEventListener('mouseup',	_mouseup,	true);
 				_dom.addEventListener('mousedown',		_mousedown,	true);
 				_dom.addEventListener('mousemove', 		_mousemove,	true);
 				_dom.addEventListener('mouseout', 		_mouseout,	true);
 			},
-			removeEvents = function() {
+			removeEvents = function () {
 				DOCUMENT.removeEventListener('mouseup',	_mouseup,	true);
 				_dom.removeEventListener('mousedown',	_mousedown,	true);
 				_dom.removeEventListener('mousemove', 	_mousemove,	true);
 				_dom.removeEventListener('mouseout', 	_mouseout,	true);
 			},
-			_update = function() {
+			_update = function () {
 				var px, __color;
 				_context.drawImage(_imagePicker, 0, 0, width, height);
 				px = _context.getImageData(_mouseX, _mouseY, 1, 1).data;
@@ -980,48 +996,48 @@ var App = (function() {
 					Editor.setColor(_color);
 				}
 			},
-			_updatePoint = function(e) {
+			_updatePoint = function (e) {
 				_mouseX = e.offsetX;
 				_mouseY = e.offsetY;
 			},
-			_updateOldPoint = function() {
+			_updateOldPoint = function () {
 				_oldX = _mouseX;
 				_oldY = _mouseY;
 			},
-			_mousedown = function(e) {
+			_mousedown = function (e) {
 				_isMouseDown = true;
 				_updatePoint(e);
 				_updateOldPoint();
 				_update();
 			},
-			_mousemove = function(e) {
+			_mousemove = function (e) {
 				_updatePoint(e);
 				_isMouseDown && _updateOldPoint();
 				_update();
 			},
-			_mouseup = function() {
+			_mouseup = function () {
 				if (_isMouseDown) {
 					_isMouseDown = false;
 					_updateOldPoint();
 					_update();
 				}
 			},
-			_mouseout = function() {
+			_mouseout = function () {
 				_$preview.css("backgroundColor", _color ? _color : "#FFF");
 			},
-			show = function() {
+			show = function () {
 				_$container.fadeIn();
 			},
-			hide = function() {
+			hide = function () {
 				_$container.fadeOut();
 			},
-			setColor = function(color) {
+			setColor = function (color) {
 				_color = color;
 				_context.drawImage(_imagePicker, 0, 0, width, height);
 				_$preview.css("backgroundColor", color);
 				_oldX = _oldY = -10;
 			},
-			getColor = function() {
+			getColor = function () {
 				return _color;
 			};
 			// auto-init del sottomodulo _colorPicker
@@ -1038,7 +1054,7 @@ var App = (function() {
 			}
 		})(),
 
-		__init = function() {
+		__init = function () {
 			_dom = DOCUMENT.querySelector("#editor");
 			_context = _dom.getContext("2d");
 			_$dom = $("#editor");
@@ -1077,7 +1093,7 @@ var App = (function() {
 			_$grayscaleContainer = $("#pencilGrayscaleCont");
 			_$grayscalePointer = $("#grayscalePointer");
 		},
-		_init = function() {
+		_init = function () {
 			if (!_isInit) {
 				_isInit = true;
 				__init();
@@ -1089,7 +1105,7 @@ var App = (function() {
 				_selectBrush();
 			}
 		},
-		_addEvents = function() {
+		_addEvents = function () {
 			_dom.addEventListener('mouseup', _mouseend,	true);
 			_dom.addEventListener('mousedown', _mousedown,	true);
 			DOCUMENT.addEventListener('mousemove', _mousemove,	true);
@@ -1113,12 +1129,12 @@ var App = (function() {
 			_$optionClear.bind("click", clear);
 			_$closeButtons.bind("click", _hideOptions);
 			_colorPicker.addEvents();
-			(Config.debug === false) && (WINDOW.onbeforeunload = function() { return label['closePrevent']; });
+			(Config.debug === false) && (WINDOW.onbeforeunload = function () { return label['closePrevent']; });
 			WINDOW.addEventListener("resize", _onResize, true);
 			_dom.addEventListener(_mouseWheelEvent, _mouseWheel, true);
 			_$sizeToolContainer[0].addEventListener(_mouseWheelEvent, _mouseWheel, true);
 		},
-		_removeEvents = function() {
+		_removeEvents = function () {
 			_dom.removeEventListener('mouseup',	_mouseend);
 			_dom.removeEventListener('mousedown', _mousedown);
 			DOCUMENT.removeEventListener('mousemove', 	_mousemove);
@@ -1147,7 +1163,7 @@ var App = (function() {
 			_dom.removeEventListener(_mouseWheelEvent, _mouseWheel, true);
 			_$sizeToolContainer[0].addEventListener(_mouseWheelEvent, _mouseWheel, true);
 		},
-		_initGrayscale = function() {
+		_initGrayscale = function () {
 			var length = _grayscaleColors.length;
 			for (var i = 0; i < length; i++) {
 				var div = $('<div>');
@@ -1160,7 +1176,7 @@ var App = (function() {
 				'border-color':	["transparent transparent transparent ", _pencilColor].join('')
 			});
 		},
-		_saveLayer = function() {
+		_saveLayer = function () {
 			return {
 				data : _minX === -1 ? _context.getImageData(-1, -1, -1, -1) : _context.getImageData(_minX, _minY, _maxX - _minX, _maxY - _minY),
 				minX : _minX,
@@ -1171,7 +1187,7 @@ var App = (function() {
 				oldY : _oldY
 			}
 		},
-		_saveStep = function() {
+		_saveStep = function () {
 			if (_currentStep !== 0) {
 				_step.splice(0, _currentStep);
 				_currentStep = 0;
@@ -1185,7 +1201,7 @@ var App = (function() {
 				_disableElement(_$editorUndo);
 			_disableElement(_$editorRedo);
 		},
-		_restoreStep = function(step) {
+		_restoreStep = function (step) {
 			_context.putImageData(step.data, step.minX, step.minY);
 			_minX = step.minX;
 			_minY = step.minY;
@@ -1194,7 +1210,7 @@ var App = (function() {
 			_oldX = step.oldX;
 			_oldY = step.oldY
 		},
-		_line = function(X, Y) {
+		_line = function (X, Y) {
 			_context.beginPath();
 			_context.moveTo(_oldX, _oldY);
 			_context.lineWidth = _size;
@@ -1204,13 +1220,13 @@ var App = (function() {
 			_context.lineTo(X, Y);
 			_context.stroke();
 		},
-		_circle = function(X, Y) {
+		_circle = function (X, Y) {
 			_context.beginPath();
 			_context.fillStyle = _color;
 			_context.arc(X, Y, _size / 2, 0, PI2, true);
 			_context.fill();
 		},
-		_checkCoord = function(X, Y) {
+		_checkCoord = function (X, Y) {
 			if (_toolSelected === 0 || _toolSelected === 1) {
 				var offset = _size / 2;
 				if (_minX === -1 || _minX > (X - offset)) _minX = X - offset;
@@ -1225,7 +1241,7 @@ var App = (function() {
 			_oldX = X;
 			_oldY = Y;
 		},
-		_selectBrush = function() {
+		_selectBrush = function () {
 			if (_toolSelected !== 0) {
 				_toolSelected = 0; 			// PENNELLO
 				_$dom.removeClass("usePencil useEraser usePicker").addClass("useBrush");
@@ -1239,7 +1255,7 @@ var App = (function() {
 			_color = _brushColor;
 			_getColor();
 		},
-		_selectPencil = function() {
+		_selectPencil = function () {
 			if (_toolSelected !== 1) {
 				_toolSelected = 1;			// MATITA
 				_$dom.removeClass("useBrush useEraser usePicker").addClass("usePencil");
@@ -1252,7 +1268,7 @@ var App = (function() {
 			_color = _pencilColor;
 			_size = _pencilSize;
 		},
-		_selectEraser = function() {
+		_selectEraser = function () {
 			if (_toolSelected !== 2) {
 				_toolSelected = 2;			// GOMMA
 				_$dom.removeClass("usePencil useBrush usePicker").addClass("useEraser");
@@ -1264,7 +1280,7 @@ var App = (function() {
 			}
 			_size = _eraserSize;
 		},
-		_selectPicker = function() {
+		_selectPicker = function () {
 			if (_toolSelected !== 3) {
 				_toolSelected = 3;			// PIPETTA
 				_$dom.removeClass("usePencil useEraser useBrush").addClass("usePicker");
@@ -1276,7 +1292,7 @@ var App = (function() {
 			}
 			_color = _brushColor;
 		},
-		_selectRandomColor = function() {
+		_selectRandomColor = function () {
 			if (!_randomColor) {
 				if (_toolSelected === 3)
 					_selectBrush();
@@ -1285,7 +1301,7 @@ var App = (function() {
 			}
 			_getColor();
 		},
-		_updatePickerTool = function() {
+		_updatePickerTool = function () {
 			var px = _context.getImageData(_mouseX, _mouseY, 1, 1).data, __color = px[3] === 0 ? "white" : "rgb(" + px[0] + "," + px[1] + "," + px[2] + ")";
 			_$pickerToolColor.css("background-color", __color);
 			if (_isMouseDown && px[3] > 0) {
@@ -1296,17 +1312,17 @@ var App = (function() {
 				_colorPicker.setColor(__color);
 			}
 		},
-		_darkClick = function() {
+		_darkClick = function () {
 			(_isSaving === false) && _hideOptions();
 		},
 		__keyDown = Info.macOS ?
-			function(e) {
+			function (e) {
 				return e.metaKey;
 			} :
 			function (e) {
 				return e.ctrlKey;
 			},
-		_keyDown = function(e) {
+		_keyDown = function (e) {
 			//console.log("editor: " + e.keyCode);
 			var keyCode = e.keyCode;
 			if (keyCode === 27) {
@@ -1340,12 +1356,12 @@ var App = (function() {
 				}
 			}
 		},
-		_keyUp = function(e) {
+		_keyUp = function (e) {
 			e.preventDefault();
 			if (e.keyCode === 16)
 				_isPressedShift = false;
 		},
-		_mousedown = function(e) {
+		_mousedown = function (e) {
 			var x = e.clientX, y = e.clientY;
 			_$sizeToolContainer.hide();
 			_$grayscaleContainer.hide();
@@ -1373,7 +1389,7 @@ var App = (function() {
 			}
 			return false;
 		},
-		_mousemove = function(e) {
+		_mousemove = function (e) {
 			_mouseX = e.clientX;
 			_mouseY = e.clientY;
 			if (_overlay) return;
@@ -1394,7 +1410,7 @@ var App = (function() {
 				_restored = false;
 			}
 		},
-		_mouseend = function(e) {
+		_mouseend = function (e) {
 			if (!_isMouseDown) return;
 			_isMouseDown = false;
 			if (_toolSelected === 3) return;
@@ -1411,7 +1427,7 @@ var App = (function() {
 			}
 			_saveStep();
 		},
-		_getMouseWheelDelta = function(deltaY) {
+		_getMouseWheelDelta = function (deltaY) {
 			var delta = MATH.round(deltaY / 20, 0);
 			if (delta === 0)
 				delta = deltaY < 0 ? -1 : 1;
@@ -1424,7 +1440,7 @@ var App = (function() {
 			}
 			return delta;
 		},
-		_mouseWheel = function(e) {
+		_mouseWheel = function (e) {
 			if (_isMouseDown || [0, 1, 2].indexOf(_toolSelected) === -1) return;
 			var wheelY = Info.firefox ? -e.detail : e.wheelDeltaY;
 			if (_toolSelected === 1) { // matita, quindi color picker a scrollbar
@@ -1437,10 +1453,10 @@ var App = (function() {
 				_$sizeToolContainer.show();
 			}
 		},
-		__grayscaleScroll = function() {
+		__grayscaleScroll = function () {
 			_grayscaleIsScrolling = false;
 		},
-		_grayscaleScroll = function(y) {
+		_grayscaleScroll = function (y) {
 			if (_grayscaleIsScrolling) return;
 			_grayscaleIsScrolling = true;
 			if (y < 0)
@@ -1454,7 +1470,7 @@ var App = (function() {
 			});
 			setTimeout(__grayscaleScroll, 100);
 		},
-		_setToolSize = function(tool, size) {
+		_setToolSize = function (tool, size) {
 			// setta un valore per il picker del tool passato -> 0: brush, 2: eraser
 			size = MATH.min(size, 200);
 			size = MATH.max(size, 1);
@@ -1474,20 +1490,20 @@ var App = (function() {
 				'background-color':	(tool === 0 && !_randomColor ? _color : "white")
 			});
 		},
-		_getColor = function() {
+		_getColor = function () {
 			if (_randomColor && _toolSelected === 0) {
-				//function(a,b,c){return"#"+((256+a<<8|b)<<8|c).toString(16).slice(1)};
+				//function (a,b,c){return"#"+((256+a<<8|b)<<8|c).toString(16).slice(1)};
 				_color = "rgb(" + random(255) + ", " + random(255) + ", " + random(255) + ")";
 				_colorPicker.setColor(_color);
 			}
 			return _color;
 		},
-		_clear = function() {
+		_clear = function () {
 			_context.clearRect(0, 0, XX, YY);
 			_minX = _minY = _maxX = _maxY = _oldX = _oldY = -1;
 			_restored = false;
 		},
-		_toggleBackground = function() {
+		_toggleBackground = function () {
 			if (_$dom.hasClass("squares")) {
 				_$dom.removeClass("squares").addClass("lines");
 				$("#optionSquare").html(label['FoglioBianco']);
@@ -1499,14 +1515,14 @@ var App = (function() {
 				$("#optionSquare").html(label['FoglioRighe']);
 			}
 		},
-		_showOptions = function() {
+		_showOptions = function () {
 			_overlay = true;
 			utils.overlay.show(_darkClick);
 			_$options.stop().fadeIn("fast");
 			_$pickerToolPreview.fadeOut("fast");
 			_$sizeToolContainer.fadeOut("fast");
 		},
-		_hideOptions = function() {
+		_hideOptions = function () {
 			_overlay = false;
 			_$options.stop().fadeOut("fast");
 			utils.overlay.hide();
@@ -1516,7 +1532,7 @@ var App = (function() {
 				_$pickerToolPreview.fadeIn("fast");
 			}
 		},
-		_undo = function(e) {
+		_undo = function (e) {
 			var step = _step[_currentStep + 1];
 			if (step) {
 				var _tot = _step.length - _currentStep - 2;
@@ -1529,7 +1545,7 @@ var App = (function() {
 				_restored = false;
 			}
 		},
-		_redo = function() {
+		_redo = function () {
 			if (_currentStep > 0) {
 				_currentStep -= 1;
 				var step = _step[_currentStep];
@@ -1540,7 +1556,7 @@ var App = (function() {
 					_disableElement(_$editorRedo);
 			}
 		},
-		show = function(x,y) {
+		show = function (x,y) {
 			var _tot = _step.length - _currentStep - 1;
 			if (!_isInit)
 				_init();
@@ -1558,20 +1574,20 @@ var App = (function() {
 				_disableElement(_$editorRedo);
 			(_toolSelected === 0) && _getColor();
 		},
-		_hide = function() {
+		_hide = function () {
 			_hideOptions();
 			_colorPicker.hide();
-			_$allDom.fadeOut(function() {_$allDomContainer.hide()});
+			_$allDom.fadeOut(function () {_$allDomContainer.hide()});
 			_removeEvents();
 			Dashboard.foreground();
 		},
-		_draft = function() {
+		_draft = function () {
 			if (_maxX !== -1 || _maxY !== -1) {
 				_draft = _saveLayer();
 				_enableElement($("#optionRestore"));
 			}
 		},
-		_restore = function() {
+		_restore = function () {
 			if (_draft.minX && !_restored) {
 				_clear();
 				_context.putImageData(_draft.data, _draft.minX, _draft.minY);
@@ -1587,13 +1603,13 @@ var App = (function() {
 				//_draft = {};
 			}
 		},
-		onUserLogin = function(user) {
+		onUserLogin = function (user) {
 			_currentUser = user;
 		},
-		onUserLogout = function() {
+		onUserLogout = function () {
 			_currentUser = {};
 		},
-		onSocketMessage = function(data) {	// OK - qui riceviamo le risposte ai salvataggi
+		onSocketMessage = function (data) {	// OK - qui riceviamo le risposte ai salvataggi
 			utils.setSpinner(false);
 			_isSaving = false;
 			data = JSON.parse(data);
@@ -1613,7 +1629,7 @@ var App = (function() {
 				Messages.error(label["editorSaveError"]);
 			}
 		},
-		_saveToServer = function(draw) {
+		_saveToServer = function (draw) {
 			if (_currentUser.id) {
 				draw.userId = _currentUser.id;
 				socket.emit("editor save", draw);
@@ -1622,7 +1638,7 @@ var App = (function() {
 				utils.setSpinner(false);
 			}
 		},
-		_save = function() { 	// OK
+		_save = function () { 	// OK
 			if (_maxX === -1 || _maxY === -1) {
 				Messages.alert(label["nothingToSave"]);
 			} else {
@@ -1654,7 +1670,7 @@ var App = (function() {
 				}
 			}
 		},
-		_export = function() {
+		_export = function () {
 			if (_maxX === -1 || _maxY === -1)
 				Messages.warning(label["NienteDaEsportare"]);
 			else {
@@ -1665,7 +1681,7 @@ var App = (function() {
 				WINDOW.open(canvas.toDataURL("image/png"), "_blank");
 			}
 		},
-		clear = function(force) {
+		clear = function (force) {
 			if (Messages.confirm(label["areYouSure"])) {
 				_clear();
 				_step = [];
@@ -1676,10 +1692,10 @@ var App = (function() {
 				//_$editorUndo.html(_labelAnnulla);
 			}
 		},
-		_onResize = function() {
+		_onResize = function () {
 
 		},
-		setColor = function(rgb) {
+		setColor = function (rgb) {
 			if (rgb) {
 				_brushColor = _color= rgb;
 				_randomColor = false;
@@ -1702,24 +1718,24 @@ var App = (function() {
 			onUserLogin: onUserLogin,
 			onUserLogout: onUserLogout /*,
 			hide	: hide,
-			save	: function(data) { return utils.CK(save,	"Error: editor cannot save. ",	data) },
+			save	: function (data) { return utils.CK(save,	"Error: editor cannot save. ",	data) },
 			*/
 		}
 	})(),
 
-	Overlay = (function() {
+	Overlay = (function () {
 		// rappresenta l'elemento che finisce sopra la lavagna per mostrare le ricerche, utenti, pagine ecc.
 		// gli altri moduli lo possono richiamare e riempire
 		var _dom = DOCUMENT.querySelector("#overlay"),
 		_isVisible = false,
 		_html = "",
-		_appear = function(html) {
+		_appear = function (html) {
 			// fa comparire l'overlay già al centro con effetto fade
 			_isVisible = true;
 			_html = html;
 			return true;
 		},
-		_reappear = function() {
+		_reappear = function () {
 			if (_html > "") {
 				// fa comparire l'overlay dal basso per mostrare quello che già conteneva in _html
 				_isVisible = true;
@@ -1727,7 +1743,7 @@ var App = (function() {
 			} else
 				return false;
 		},
-		show = function(html) {
+		show = function (html) {
 			if (html)
 				return _appear(html);	// se voglio visualizzare qualcosa di nuovo, basta passare l'html e quello già presente viene ignorato
 			else if (_html > "")
@@ -1735,11 +1751,11 @@ var App = (function() {
 			else
 				return false;			// se non ho passato niente, e non avevo niente, non faccio niente. per aprire pagina news base si farà App.News.show();
 		},
-		hide = function() {
+		hide = function () {
 			// fa scomparire verso il basso senza svuotare contenuto
 			_isVisible = false;
 		},
-		close = function() {
+		close = function () {
 			// se si preme sulla X in alto dx, fa scomparire con effetto fade, poi viene svuotato.
 			_html = "";
 			_isVisible = false;
@@ -1751,16 +1767,16 @@ var App = (function() {
 		}
 	})(),
 
-	News = (function() {
+	News = (function () {
 		// modulo che renderizza la pagina a quadrettoni delle news / risultati ricerca per tag, data, paese, classifica
 		var _template = "",
-		_render = function(params, VisEffettoFigo) {
+		_render = function (params, VisEffettoFigo) {
 			// riempie _template coi parametri
 			// se VisEffettoFigo è true si aggiunge il js per muovere i quadrettoni con effetto comparsa da dx
 			var result = _template;
 			return result;
 		},
-		show = function(query) {
+		show = function (query) {
 			var params = {			// deve contenere l'identificativo di connessione, e tutto il necessario
 				query	: query	// se query è vuota, il lato server restituirà la pagina default con nuove news
 			};
@@ -1777,14 +1793,14 @@ var App = (function() {
 		}
 	})(),
 
-	UserPage = (function() {
+	UserPage = (function () {
 		// elemento che renderizza le pagine degli utenti
-		var _render = function(params) {
+		var _render = function (params) {
 			// contiene template html e lo riempie coi parametri
 			var template = "bla bla bla ";
 			return template;
 		},
-		show = function(idUser) {
+		show = function (idUser) {
 			var params = {			// deve contenere l'identificativo di connessione, e tutto il necessario
 				idUser	: idUser
 			};
@@ -1801,19 +1817,19 @@ var App = (function() {
 		}
 	})(),
 
-	CurrentUser = (function() {
+	CurrentUser = (function () {
 		var _$popup, _$closeButtons, socket = Socket,
 			utils = Utils, _logged = false, _userInfo = {}, _callbackLoginOK = false, _callbackLoginKO = false,
-		init = function() {
+		init = function () {
 			_$popup = $("#socialLoginPopup");
 			_$closeButtons = $("#socialLoginPopup .close");
 			_$closeButtons.bind("click", _hideLogin);
 			_facebook.init();
 		},
-		isLogged = function() {
+		isLogged = function () {
 			return _logged;
 		},
-		_login = function(mode, data) {
+		_login = function (mode, data) {
 			if (mode === "fb") {
 				delete data.updated_time;
 				delete data.verified;
@@ -1824,7 +1840,7 @@ var App = (function() {
 			_userInfo[mode] = data;
 			socket.emit("user login", _userInfo);
 		},
-		logout = function() {
+		logout = function () {
 			if (Messages.confirm(label["areYouSure"])) {
 				_logged = false;
 				_userInfo = {};
@@ -1835,7 +1851,7 @@ var App = (function() {
 		doLogin = function () {
 			return new Promise(_asyncLoginPopup);
 		},
-		_asyncLoginPopup = function(resolve, reject) {
+		_asyncLoginPopup = function (resolve, reject) {
 			if (_logged) {
 				resolve(true);
 			} else {
@@ -1844,11 +1860,11 @@ var App = (function() {
 				_showLogin();
 			}
 		},
-		_showLogin = function() {
+		_showLogin = function () {
 			utils.overlay.show(_hideLogin);
 			_$popup.stop().fadeIn("fast");
 		},
-		_hideLogin = function() {
+		_hideLogin = function () {
 			utils.overlay.hide();
 			_$popup.stop().fadeOut("fast");
 			if (_callbackLoginOK !== false) {
@@ -1856,13 +1872,13 @@ var App = (function() {
 				_callbackLoginOK = _callbackLoginKO = false;
 			}
 		},
-		_onLogin = function() {
+		_onLogin = function () {
 			Editor.onUserLogin(_userInfo);
 		},
-		_onLogout = function() {
+		_onLogout = function () {
 			Editor.onUserLogout();
 		},
-		onSocketLogin = function(data) {
+		onSocketLogin = function (data) {
 			var user = JSON.parse(data);
 			if (user.id) {
 				if (user.new) {	// TODO: gli chiedo altre info in fase di registrazione, tipo nome d'arte
@@ -1878,11 +1894,11 @@ var App = (function() {
 			(_callbackLoginKO !== false) && _hideLogin();
 			_callbackLoginOK = _callbackLoginKO = false;
 		},
-		_facebook = (function() {
+		_facebook = (function () {
 			var config = Config.fb,
 				_$loginButton, _$logged, _$status,
-			init = function() {
-				WINDOW.fbAsyncInit = function() {
+			init = function () {
+				WINDOW.fbAsyncInit = function () {
 					FB.init({
 					 	appId: config.appId,
 						cookie: true,  // enable cookies to allow the server to access the session
@@ -1891,7 +1907,7 @@ var App = (function() {
 					});
 					FB.getLoginStatus(_loginCallback);
 				};
-				(function(d, s, id) {// Load the SDK asynchronously
+				(function (d, s, id) {// Load the SDK asynchronously
 					var js, fjs = d.getElementsByTagName(s)[0];
 					if (d.getElementById(id)) return;
 					js = d.createElement(s); js.id = id;
@@ -1899,15 +1915,15 @@ var App = (function() {
 					fjs.parentNode.insertBefore(js, fjs);
 				}(document, 'script', 'facebook-jssdk'));
 				_$loginButton = $("#fbLogin");
-				$("img", _$loginButton).bind("click", function() {
+				$("img", _$loginButton).bind("click", function () {
 					var fb = FB;
 					fb && fb.login(_loginCallback, { scope: 'public_profile,email' });
 				});
 				_$logged = $("#fbLogged");
 				_$status = $("#fbStatus");
 			},
-			_getUserInfo = function() {
-				FB.api('/me', function(response) {
+			_getUserInfo = function () {
+				FB.api('/me', function (response) {
 					console.log('User Info: ', response);
 					_$status.html(label["loggedAs"] + response.name);
 					// TODO qui devo cercare con le api di fb le altre info che voglio salvare, tipo l'immagine di profilo
@@ -1915,7 +1931,7 @@ var App = (function() {
 					_login("fb", response);
 				});
 			},
-			_loginCallback = function(response) {
+			_loginCallback = function (response) {
 				console.log('Login', response);
 				_$status.html('');
 				if (response.status === 'connected') {
@@ -1927,7 +1943,7 @@ var App = (function() {
 					_$loginButton.removeClass("displayNone");
 				}
 			},
-			logout = function() {
+			logout = function () {
 
 			};
 			return {
@@ -1943,53 +1959,53 @@ var App = (function() {
 		}
 	})(),
 
-	Messages = (function() {
+	Messages = (function () {
 		// overlay per i messaggi agli utenti: caricamento, errore, salvataggio ecc
 		var _dom = DOCUMENT.querySelector("#messages"),
 		_template = "",
 		_btnTemplate,
-		_render = function(image, msg, buttons) {
+		_render = function (image, msg, buttons) {
 			// inserisce le variabili dentro ai template
 			var result = "";
 			return result;
 		},
-		_show = function(html) {
+		_show = function (html) {
 			// oscura lo sfondo e fa comparire l'elemento dom
 			_dom.innerHTML(html);
 			return true;
 		},
-		error = function(msg) {
+		error = function (msg) {
 			var image = '<img src="" class="">';		// logo di errore
 			var buttons = { 'OK': Messages._close };
 			//_show(_render(image, msg, buttons));
 		},
-		loading = function(msg) {
+		loading = function (msg) {
 			//_show(_render(image, msg, buttons));
 		},
-		remove = function() {
+		remove = function () {
 			// rimuove il messages, usato per far terminare il loading
 		},
-		info = function(msg) {
+		info = function (msg) {
 			var image = '<img src="" class="">';		// logo info
 			var buttons = { 'Annulla': Messages._close };
 			//_show(_render(image, msg, buttons));
 		},
-		_close = function() {
+		_close = function () {
 			// fa scomparire l'elemento e toglie overlay scuro
 			return true;
 		},
-		warning = function(msg) {
+		warning = function (msg) {
 			// pensata come piccolo messaggio in un angolo dello schermo che scompare da solo e non richiede interazione
 			WINDOW.alert(msg);
 		},
-		confirm = function(msg) {
+		confirm = function (msg) {
 			// in realtà creeremo una finestra ad hoc gestita con show, close, hide
 			return WINDOW.confirm(msg);
 		},
-		alert = function(msg) {
+		alert = function (msg) {
 			WINDOW.alert(msg);
 		},
-		custom = function(msg, buttons) {
+		custom = function (msg, buttons) {
 
 		};
 		return {
@@ -2004,9 +2020,9 @@ var App = (function() {
 		}
 	})(),
 
-	Init = function() {
+	Init = function () {
 		// qui ci sarà il driver lato client che legge l'url corrente e si inizializza e crea la pagina di conseguenza
-		var _onResize = function() {
+		var _onResize = function () {
 			XX = WINDOW.innerWidth;
 			YY = WINDOW.innerHeight;
 			XX2 = XX / 2;
@@ -2015,8 +2031,8 @@ var App = (function() {
 			DYY = 2 * YY;
 		};
 		_onResize();
-		_$dark = $('#darkOverlay');
-		_$spinner = $('#spinner');
+		_darkOverlay = _$('#darkOverlay');
+		_spinner = _$('#spinner');
 		_mouseWheelEvent = Info.firefox ? "DOMMouseScroll" : "mousewheel";
 		WINDOW.addEventListener("resize", _onResize, true);
 		DOCUMENT.body.addEventListener("mousedown", preventDefault, true);
