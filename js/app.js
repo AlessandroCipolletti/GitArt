@@ -102,7 +102,11 @@ var App = (function () {
 			"genericError"				: "Errore che 2 palle",
 			"editorSaveError"			: "Oooops :( Ora non &egrave; possibile salvare. Riprova pi&ugrave; tardi",
 			"socketError"				: "Errore di connessione nel Socket",
-			"editorSaveConfirm"			: "Dopo aver salvato non potrai più modificare il disegno. Confermi?"
+			"editorSaveConfirm"			: "Dopo aver salvato non potrai più modificare il disegno. Confermi?",
+			"disableNullElement": "Utils.disableElements called with undefined",
+			"enableNullElement": "Utils.enableElements called with undefined",
+			"fadeInNullElement": "Utils.fadeInElements called with undefined",
+			"fadeOutNullElement": "Utils.fadeOutElements called with undefined"
 		};
 		_labels["eng"] = {
 
@@ -170,30 +174,14 @@ var App = (function () {
 			} else
 				fn(els);
 		},
-		_fadeInEl = function (el) {
-			el.classList.remove("fadeOut");
-			el.classList.add("fadeIn");
-		},
 		fadeInElements = function (els) {
 			_iterable(els, _fadeInEl);
-		},
-		_fadeOutEl = function (el) {
-			el.classList.remove("fadeIn");
-			el.classList.add("fadeOut");
 		},
 		fadeOutElements = function (els) {
 			_iterable(els, _fadeOutEl);
 		},
-		_enableEl = function (el) {
-			el.classList.add("enabled");
-			el.classList.remove("disabled");
-		},
 		enableElements = function (els) {
 			_iterable(els, _enableEl);
-		},
-		_disableEl = function (el) {
-			el.classList.add("disabled");
-			el.classList.remove("enabled");
 		},
 		disableElements = function (els) {
 			_iterable(els, _disableEl);
@@ -234,6 +222,65 @@ var App = (function () {
 				hide: hide
 			};
 		})();
+		if (Config.debug) {
+			var _fadeInEl = function (el) {
+				if (el) {
+					el.classList.remove("fadeOut", "displayNone");
+					el.classList.add("fade", "fadeIn");
+				} else {
+					Utils.logError(label["fadeInNullElement"]);
+				}
+			};
+			var _fadeOutEl = function (el) {
+				if (el) {
+					el.classList.remove("fadeIn");
+					el.classList.add("fade", "fadeOut");
+				} else {
+					Utils.logError(label["fadeOutNullElement"]);
+				}
+			};
+			var _enableEl = function (el) {
+				if (el) {
+					el.classList.add("enabled");
+					el.classList.remove("disabled");
+				} else {
+					Utils.logError(label["enableNullElement"]);
+				}
+			};
+			var _disableEl = function (el) {
+				if (el) {
+					el.classList.add("disabled");
+					el.classList.remove("enabled");
+				} else {
+					Utils.logError(label["disableNullElement"]);
+				}
+			};
+		} else {
+			var _fadeInEl = function (el) {
+				if (el) {
+					el.classList.remove("fadeOut");
+					el.classList.add("fade", "fadeIn");
+				}
+			};
+			var _fadeOutEl = function (el) {
+				if (el) {
+					el.classList.remove("fadeIn");
+					el.classList.add("fade", "fadeOut");
+				}
+			};
+			var _enableEl = function (el) {
+				if (el) {
+					el.classList.add("enabled");
+					el.classList.remove("disabled");
+				}
+			};
+			var _disableEl = function (el) {
+				if (el) {
+					el.classList.add("disabled");
+					el.classList.remove("enabled");
+				}
+			};
+		}
 		return {
 			CK				: checkError,
 			isEmpty			: isEmpty,
@@ -392,7 +439,7 @@ var App = (function () {
 			};
 		})(),
 		_tooltip = (function () {
-		  var _dom, _close, _like, _comments, _share, _save, _userImage, _title, _userName, _drawContainer, _location, _likeTot, _commentsTot, _shareTot,
+		  var _dom, _close, _like, _comments, _share, _save, _userImage, _title, _userName, _drawContainer, _likeTot, _commentsTot, _shareTot,
 		    _selectedId, _idUser, _location, _previewWidth = 170, _previewHeight = 130,
 		  init = function () {
 		    _dom = _domGet("#dashboardTooltip");
@@ -426,7 +473,7 @@ var App = (function () {
 		      var draw = _cache.get(_selectedId);
 		      if (!draw) return;
 
-		      _location = draw.location;
+		      //_location = draw.location;
 		      _title.innerHTML = "Titolo Disegno";
 		      _userName.innerHTML = draw.user.name;
 		      _userImage.style.backgroundImage = "url('https://graph.facebook.com/" + draw.user.fb.id + "/picture?type=large')";
@@ -515,8 +562,8 @@ var App = (function () {
 			_deltaVisibleCoordY = DYY / z;
 		},
 		_initDom = function () {
-			_dom = DOCUMENT.querySelector("#dashboard");
-			_zoomLabel = DOCUMENT.querySelector("#zoomLabel");
+			_dom = _domGet("#dashboard");
+			_zoomLabel = _domGet("#zoomLabel");
 			_initDomGroup();
 			_buttonEditor = _domGet("#showEditor");
 			_allDom = _domGetAll("#showEditor, #zoomLabel, #zoomLabelCont");
@@ -984,7 +1031,7 @@ var App = (function () {
 		    _imagePicker.onload = function () {
 		      _context.drawImage(_imagePicker, 0, 0, width, height);
 		      _imagePicker.onload = undefined;
-		    }
+		    };
 		    _imagePicker.src = "img/colors.png";
 		    _imageSelector.src = "img/selector.png";
 		  },
@@ -1106,7 +1153,6 @@ var App = (function () {
 			_optionClear.innerHTML = label["Svuota"];
 			_disableElements(_optionRestore);
 			_sizeToolPreview = _domGet("#sizeToolPreview");
-			_domGet("#toolSize a").innerHTML = label["Dimensione"];
 			_closeButton = _domGet("#editorOptions .close");
 			_sizeToolLabel = _domGet("#sizeToolLabel");
 			_sizeToolContainer = _domGet("#sizeToolContainer");
@@ -1135,7 +1181,7 @@ var App = (function () {
 			_brushTool.addEventListener("mousedown", _editorMenuActions[1]);
 			_pencilTool.addEventListener("mousedown", _editorMenuActions[2]);
 			_eraserTool.addEventListener("mousedown", _editorMenuActions[3]);
-			_pickerTooladdEventListener("mousedown", _editorMenuActions[4]);
+			_pickerTool.addEventListener("mousedown", _editorMenuActions[4]);
 			_randomColorButton.addEventListener("mousedown", _editorMenuActions[5]);
 			_editorUndo.addEventListener("mousedown", _editorMenuActions[6]);
 			_editorRedo.addEventListener("mousedown", _editorMenuActions[7]);
@@ -1187,7 +1233,7 @@ var App = (function () {
 			var length = _grayscaleColors.length;
 			for (var i = 0; i < length; i++) {
 				var div = DOCUMENT.createElement("div");
-				div.css("background-color", _grayscaleColors[i]);
+				div.style.backgroundColor = _grayscaleColors[i];
 				_grayscaleContainer.appendChild(div);
 			}
 			_pencilColor = _grayscaleColors[_pencilColorID];
@@ -1267,7 +1313,7 @@ var App = (function () {
 		_selectBrush = function () {
 			if (_toolSelected !== 0) {
 				_toolSelected = 0; 			// PENNELLO
-				_dom.classList.remove("usePencil useEraser usePicker");
+				_dom.classList.remove("usePencil", "useEraser", "usePicker");
 				_dom.classList.add("useBrush");
 				_deselectMenuTool();
 				_brushTool.classList.add("selected");
@@ -1282,7 +1328,7 @@ var App = (function () {
 		_selectPencil = function () {
 			if (_toolSelected !== 1) {
 				_toolSelected = 1;			// MATITA
-				_dom.classList.remove("useBrush useEraser usePicker");
+				_dom.classList.remove("useBrush", "useEraser", "usePicker");
 				_dom.classList.add("usePencil");
 				_deselectMenuTool();
 				_pencilTool.classList.add("selected");
@@ -1296,7 +1342,7 @@ var App = (function () {
 		_selectEraser = function () {
 			if (_toolSelected !== 2) {
 				_toolSelected = 2;			// GOMMA
-				_dom.classList.remove("usePencil useBrush usePicker");
+				_dom.classList.remove("usePencil", "useBrush", "usePicker");
 				_dom.classList.add("useEraser");
 				_deselectMenuTool();
 				_eraserTool.classList.add("selected");
@@ -1309,10 +1355,10 @@ var App = (function () {
 		_selectPicker = function () {
 			if (_toolSelected !== 3) {
 				_toolSelected = 3;			// PIPETTA
-				_dom.classList.remove("usePencil useEraser useBrush");
+				_dom.classList.remove("usePencil", "useEraser", "useBrush");
 				_dom.classList.add("usePicker");
 				_deselectMenuTool();
-				_pickerToolclassList.add("selected");
+				_pickerTool.classList.add("selected");
 				_pickerToolColor2.style.backgroundColor = _randomColor ? "white" : _color;
 				_pickerToolPreview.classList.remove("displayNone");
 				_sizeToolContainer.classList.add("displayNone");
@@ -1582,15 +1628,14 @@ var App = (function () {
 		},
 		show = function (x,y) {
 			var _tot = _step.length - _currentStep - 1;
-			if (!_isInit)
-				_init();
+			!_isInit && _init();
 			_dom.classList.add("semiTransparent");
 			Dashboard.overshadow();
 			_addEvents();
 			Utils.fadeInElements(_editorContainer);
 			_colorPicker.show();
 			if (!_draft.data)
-				_disableElements(_domGet("#editorRestore"));
+				_disableElements(_domGet("#optionRestore"));
 			if (_step.length - _currentStep <= 1)
 				_disableElements(_editorUndo);
 			if (_currentStep === 0)

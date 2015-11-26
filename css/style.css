@@ -7,15 +7,14 @@
 	display: none;
 }
 
+.fade {
+	transition: opacity 400ms;
+}
 .fadeIn {
-  transition: opacity 400ms;
+  opacity: 1;
 }
 .fadeOut {
   opacity: 0;
-}
-
-#editorMenu, #editor, #colorPickerCont, #darkOverlay, #editorSmallTool, #pickerToolPreview, #sizePickerCont, #sizeToolContainer, #pencilGrayscaleCont, #spinner {
-	display: none;
 }
 
 a, span, p, nobr, b, small, big, div, svg, canvas, body, img, button, table, td {
