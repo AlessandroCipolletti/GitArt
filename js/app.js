@@ -102,11 +102,7 @@ var App = (function () {
 			"genericError"				: "Errore che 2 palle",
 			"editorSaveError"			: "Oooops :( Ora non &egrave; possibile salvare. Riprova pi&ugrave; tardi",
 			"socketError"				: "Errore di connessione nel Socket",
-			"editorSaveConfirm"			: "Dopo aver salvato non potrai più modificare il disegno. Confermi?",
-			"disableNullElement": "Utils.disableElements called with undefined",
-			"enableNullElement": "Utils.enableElements called with undefined",
-			"fadeInNullElement": "Utils.fadeInElements called with undefined",
-			"fadeOutNullElement": "Utils.fadeOutElements called with undefined"
+			"editorSaveConfirm"			: "Dopo aver salvato non potrai più modificare il disegno. Confermi?"
 		};
 		_labels["eng"] = {
 
@@ -168,11 +164,38 @@ var App = (function () {
 		},
 		_iterable = function (els, fn) {
 			if (els.length) {
-				for (var i = els.length; i--; ) {
+				for (var i = els.length; i--; )
 					fn(els[i]);
-				}
 			} else
 				fn(els);
+		},
+		_fadeInEl = function (el) {
+			if (el) {
+				el.classList.remove("displayNone");
+				el.classList.add("fadeIn");
+				el.classList.remove("fadeOut");
+			}
+		},
+		_fadeOutEl = function (el) {
+			if (el) {
+				el.classList.add("fadeOut");
+				el.classList.remove("fadeIn");
+				setTimeout(function () {
+					el.classList.add("displayNone");
+				}, 400);
+			}
+		},
+		_enableEl = function (el) {
+			if (el) {
+				el.classList.add("enabled");
+				el.classList.remove("disabled");
+			}
+		},
+		_disableEl = function (el) {
+			if (el) {
+				el.classList.add("disabled");
+				el.classList.remove("enabled");
+			}
 		},
 		fadeInElements = function (els) {
 			_iterable(els, _fadeInEl);
@@ -222,65 +245,6 @@ var App = (function () {
 				hide: hide
 			};
 		})();
-		if (Config.debug) {
-			var _fadeInEl = function (el) {
-				if (el) {
-					el.classList.remove("fadeOut", "displayNone");
-					el.classList.add("fade", "fadeIn");
-				} else {
-					Utils.logError(label["fadeInNullElement"]);
-				}
-			};
-			var _fadeOutEl = function (el) {
-				if (el) {
-					el.classList.remove("fadeIn");
-					el.classList.add("fade", "fadeOut");
-				} else {
-					Utils.logError(label["fadeOutNullElement"]);
-				}
-			};
-			var _enableEl = function (el) {
-				if (el) {
-					el.classList.add("enabled");
-					el.classList.remove("disabled");
-				} else {
-					Utils.logError(label["enableNullElement"]);
-				}
-			};
-			var _disableEl = function (el) {
-				if (el) {
-					el.classList.add("disabled");
-					el.classList.remove("enabled");
-				} else {
-					Utils.logError(label["disableNullElement"]);
-				}
-			};
-		} else {
-			var _fadeInEl = function (el) {
-				if (el) {
-					el.classList.remove("fadeOut");
-					el.classList.add("fade", "fadeIn");
-				}
-			};
-			var _fadeOutEl = function (el) {
-				if (el) {
-					el.classList.remove("fadeIn");
-					el.classList.add("fade", "fadeOut");
-				}
-			};
-			var _enableEl = function (el) {
-				if (el) {
-					el.classList.add("enabled");
-					el.classList.remove("disabled");
-				}
-			};
-			var _disableEl = function (el) {
-				if (el) {
-					el.classList.add("disabled");
-					el.classList.remove("enabled");
-				}
-			};
-		}
 		return {
 			CK				: checkError,
 			isEmpty			: isEmpty,
@@ -595,7 +559,7 @@ var App = (function () {
 				requestAnimationFrame(_animZoom);
 			}
 		},
-		_buttonEditorClick = function () {
+		_buttonEditorClick = function (e) {
 			if (_animationZoom) return;
 			CurrentUser.doLogin().then(function () {
 				_animationZoom = true;
@@ -1210,7 +1174,7 @@ var App = (function () {
 			_brushTool.removeEventListener("mousedown", _editorMenuActions[1]);
 			_pencilTool.removeEventListener("mousedown", _editorMenuActions[2]);
 			_eraserTool.removeEventListener("mousedown", _editorMenuActions[3]);
-			_pickerToolremoveEventListener("mousedown", _editorMenuActions[4]);
+			_pickerTool.removeEventListener("mousedown", _editorMenuActions[4]);
 			_randomColorButton.removeEventListener("mousedown", _editorMenuActions[5]);
 			_editorUndo.removeEventListener("mousedown", _editorMenuActions[6]);
 			_editorRedo.removeEventListener("mousedown", _editorMenuActions[7]);

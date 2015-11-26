@@ -7,23 +7,27 @@
 	display: none;
 }
 
-.fade {
-	transition: opacity 400ms;
-}
 .fadeIn {
   opacity: 1;
+	transition: opacity 400ms;
 }
 .fadeOut {
   opacity: 0;
+	transition: opacity 400ms;
 }
 
-a, span, p, nobr, b, small, big, div, svg, canvas, body, img, button, table, td {
+
+* {
 	margin: 0px;
 	padding: 0px;
 	font-family: disegnato !important;
 	letter-spacing: 1px;
 	user-select: none;
+	opacity: 1;
+
 }
+
+
 body {
 	overflow: hidden;
 }
