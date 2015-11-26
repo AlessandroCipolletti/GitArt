@@ -1,3 +1,4 @@
+"use strict";
 var App = (function () {
 	var DOCUMENT = document,
 		_domGet = function (selector) {
@@ -49,8 +50,8 @@ var App = (function () {
 			debug: true,
 			socketUrl: "http://46.252.150.61:5000",
 			fb: {
-				appId: '1448620825449065',
-				apiVersion: 'v2.2'
+				appId: "1448620825449065",
+				apiVersion: "v2.2"
 			},
 			workers: {
 				blur:		"file blur.js",
@@ -61,21 +62,21 @@ var App = (function () {
 
 	Info = (function () {
 		var get_len = function (len) {
-			return 'ita'; 	// TODO da implementare per filtrare le lingue non supportate, e restituire il formato a 3 caratteri
+			return "ita"; 	// TODO da implementare per filtrare le lingue non supportate, e restituire il formato a 3 caratteri
 		};
 		return {
 			name 		: "Social.Art",
 			version 	: "0.5",
 			lenguage	: get_len(WINDOW.navigator.language),
-			macOS		: navigator.platform.toUpperCase().indexOf('MAC') !== -1,
+			macOS		: navigator.platform.toUpperCase().indexOf("MAC") !== -1,
 			firefox		: /Firefox/i.test(navigator.userAgent)
 		}
 	})(),
 
 	label = (function (len) {
 		var _labels = {};
-		_labels['ita'] = {
-			'closePrevent'				: 'Salva una bozza prima di uscire!',
+		_labels["ita"] = {
+			"closePrevent"				: "Salva una bozza prima di uscire!",
 			"Dimensione"				: "Dimensione",
 			"Matita"					: "Matita",
 			"Pennello"					: "Pennello",
@@ -103,7 +104,7 @@ var App = (function () {
 			"socketError"				: "Errore di connessione nel Socket",
 			"editorSaveConfirm"			: "Dopo aver salvato non potrai più modificare il disegno. Confermi?"
 		};
-		_labels['eng'] = {
+		_labels["eng"] = {
 
 		};
 		var _lingua = _labels[len] || {};
@@ -142,7 +143,7 @@ var App = (function () {
 			return _checkError.setFunc(func).setError(error).exec(params);
 		},
 		isEmpty = function (value) {
-			return ((typeof value == 'undefined' || value === null || value === '' || value === false || value === [] || value === {} || value === NaN || value === undefined) ? true : false);
+			return ((typeof value == "undefined" || value === null || value === "" || value === false || value === [] || value === {} || value === NaN || value === undefined) ? true : false);
 		},
 		areEmpty = function (obj) {
 			var res = false;
@@ -161,39 +162,41 @@ var App = (function () {
 		cancelEvent = function (e) {
 			e.preventDefault();
 		},
+		_iterable = function (els, fn) {
+			if (els.length) {
+				for (var i = els.length; i--; ) {
+					fn(els[i]);
+				}
+			} else
+				fn(els);
+		},
 		_fadeInEl = function (el) {
 			el.classList.remove("fadeOut");
 			el.classList.add("fadeIn");
 		},
 		fadeInElements = function (els) {
-			if (els.length) {
-				for (var i = els.length; i--; ) {
-					_fadeInEl(els[i]);
-				}
-			} else {
-				_fadeInEl(els);
-			}
+			_iterable(els, _fadeInEl);
 		},
 		_fadeOutEl = function (el) {
 			el.classList.remove("fadeIn");
 			el.classList.add("fadeOut");
 		},
 		fadeOutElements = function (els) {
-			if (els.length) {
-				for (var i = els.length; i--; ) {
-					_fadeOutEl(els[i]);
-				}
-			} else {
-				_fadeInOut(els);
-			}
+			_iterable(els, _fadeOutEl);
 		},
-		enableElement = function (el) {
+		_enableEl = function (el) {
 			el.classList.add("enabled");
 			el.classList.remove("disabled");
 		},
-		disableElement = function (el) {
+		enableElements = function (els) {
+			_iterable(els, _enableEl);
+		},
+		_disableEl = function (el) {
 			el.classList.add("disabled");
 			el.classList.remove("enabled");
+		},
+		disableElements = function (els) {
+			_iterable(els, _disableEl);
 		},
 		logError = function (msg) {
 			console.log(msg);
@@ -237,8 +240,8 @@ var App = (function () {
 			areEmpty		: areEmpty,
 			getRemoteData	: getRemoteData,
 			cancelEvent		: cancelEvent,
-			enableElement	: enableElement,
-			disableElement	: disableElement,
+			enableElements	: enableElements,
+			disableElements	: disableElements,
 			fadeInElements: fadeInElements,
 			fadeOutElements: fadeOutElements,
 			setSpinner		: setSpinner,
@@ -266,7 +269,7 @@ var App = (function () {
 					io: io(url)
 				};
 				_socket.io.on("error", function () {
-					console.log(label['socketError']);
+					console.log(label["socketError"]);
 				});
 				_socket.io.on("disconnect", function () {
 					console.log("socket disconnect");
@@ -319,7 +322,7 @@ var App = (function () {
 	})(),
 
 	Dashboard = (function () {
-		var _dom, _imageGroup = {}, _buttonEditor, _zoomLabel, _coordsLabel, _allDom, _canvasForClick = DOCUMENT.createElement("canvas"), _contextForClick = _canvasForClick.getContext('2d'), _imageForDraw =  new Image(),
+		var _dom, _imageGroup = {}, _buttonEditor, _zoomLabel, _coordsLabel, _allDom, _canvasForClick = DOCUMENT.createElement("canvas"), _contextForClick = _canvasForClick.getContext("2d"), _imageForDraw =  new Image(),
 		_isDebug = Config.debug, _draggable = true, _isMouseDown = false, _zoomable = true, _isLoading = false, _timeoutForSpinner = false, _idsImagesOnDashboard = [], _idsImagesOnScreen = [], _cacheNeedsUpdate = true,
 		_zoomScaleLevelsDown = [ 1, 0.88, 0.7744, 0.681472, 0.59969536, 0.5277319168, 0.464404086783, 0.408675596397, 0.359634524806, 0.316478381829, 0.278500976009, 0.245080858888, 0.215671155822, 0.189790617123, 0.167015743068, 0.146973853900, 0.129336991432, 0.113816552460, 0.100158566165, 0.088139538225 ],
 		_zoomScaleLevelsUp = [ 1, 1.136363636364, 1.291322314050, 1.467411720511, 1.667513318762, 1.894901498594, 2.153297157493, 2.446928588060, 2.780600668250, 3.159773486648, 3.590651689372, 4.080286010650, 4.636688648466, 5.268964373257, 5.987459515065, 6.803931267119, 7.731740076272, 8.786068268491, 9.984168486921, 11.34564600787 ],
@@ -392,7 +395,7 @@ var App = (function () {
 		  var _dom, _close, _like, _comments, _share, _save, _userImage, _title, _userName, _drawContainer, _location, _likeTot, _commentsTot, _shareTot,
 		    _selectedId, _idUser, _location, _previewWidth = 170, _previewHeight = 130,
 		  init = function () {
-		    _dom = _domGet('#dashboardTooltip');
+		    _dom = _domGet("#dashboardTooltip");
 		    _close = _domGet(".close", _dom);
 		    _userImage = _domGet("#tooltipUserImage");
 		    _title = _domGet("#tooltipTitle");
@@ -424,13 +427,13 @@ var App = (function () {
 		      if (!draw) return;
 
 		      _location = draw.location;
-		      _title.innerHTML("Titolo Disegno");
-		      _userName.innerHTML(draw.user.name);
+		      _title.innerHTML = "Titolo Disegno";
+		      _userName.innerHTML = draw.user.name;
 		      _userImage.style.backgroundImage = "url('https://graph.facebook.com/" + draw.user.fb.id + "/picture?type=large')";
-		      _location.innerHTML("Paris, France");
-		      _likeTot.innerHTML("421 Mi Piace");
-		      _commentsTot.innerHTML("32 Commenti");
-		      _shareTot.innerHTML("23 Condivisioni");
+		      _location.innerHTML = "Paris, France";
+		      _likeTot.innerHTML = "421 Mi Piace";
+		      _commentsTot.innerHTML = "32 Commenti";
+		      _shareTot.innerHTML = "23 Condivisioni";
 
 		      var scale = draw.pxw / draw.pxh,
 		          w, h;
@@ -441,7 +444,7 @@ var App = (function () {
 		        h = _canvasForClick.height = _previewHeight;
 		        w = _canvasForClick.width = round(_previewHeight * scale);
 		      }
-		      _imageForDraw.src = _imageForDraw.src = draw.data.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+		      _imageForDraw.src = _imageForDraw.src = draw.data.getAttributeNS("http://www.w3.org/1999/xlink", "href");
 		      _contextForClick.drawImage(_imageForDraw, 0, 0, w, h);
 		      _drawContainer.style.paddingTop = (_previewHeight - h) / 2 + "px";
 		      _drawContainer.appendChild(_canvasForClick);
@@ -495,13 +498,13 @@ var App = (function () {
 				_imageGroup.matrix = null;
 			}
 			var g = DOCUMENT.createElementNS("http://www.w3.org/2000/svg", "g");
-			var origin = document.createElementNS("http://www.w3.org/2000/svg", 'rect');
-			g.setAttribute('id', 'imageGroup');
-			origin.setAttributeNS(null, 'x', 0);
-			origin.setAttributeNS(null, 'y', 0);
-			origin.setAttributeNS(null, 'height', '1');
-			origin.setAttributeNS(null, 'width', '1');
-			origin.setAttributeNS(null, 'fill', '#FFF');
+			var origin = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+			g.setAttribute("id", "imageGroup");
+			origin.setAttributeNS(null, "x", 0);
+			origin.setAttributeNS(null, "y", 0);
+			origin.setAttributeNS(null, "height", "1");
+			origin.setAttributeNS(null, "width", "1");
+			origin.setAttributeNS(null, "fill", "#FFF");
 			g.appendChild(origin);
 			_dom.appendChild(g);
 			_imageGroup.tag = g;
@@ -517,15 +520,15 @@ var App = (function () {
 			_initDomGroup();
 			_buttonEditor = _domGet("#showEditor");
 			_allDom = _domGetAll("#showEditor, #zoomLabel, #zoomLabelCont");
-			_buttonEditor.style.display = "block";
+			_buttonEditor.classList.remove("displayNone");
 			if (_isDebug) {
-				_domGet("#dashboardCoords").style.display = "block";
+				_domGet("#dashboardCoords").classList.remove("displayNone");
 				_coordsLabel = _domGet("#dashboardCoords span");
 				_updateCoordsLabel(_currentX, _currentY);
 			}
 		},
 		_updateCoordsLabel = _isDebug ? function (x, y) {
-			_coordsLabel.innerHTML("(" + x + ", " + y + ")");
+			_coordsLabel.innerHTML = "(" + x + ", " + y + ")";
 		} : function (){},
 		_updateCurrentCoords = function (x, y) {
 			_currentX = x;
@@ -572,7 +575,7 @@ var App = (function () {
 					_contextForClick.clearRect(0, 0, _canvasForClick.width, _canvasForClick.height);
 					_canvasForClick.width = draw.pxw;
 					_canvasForClick.height = draw.pxh;
-					_imageForDraw.src = draw.data.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+					_imageForDraw.src = draw.data.getAttributeNS("http://www.w3.org/1999/xlink", "href");
 					_contextForClick.drawImage(_imageForDraw, 0, 0, draw.pxw, draw.pxh);
 					if (_contextForClick.getImageData(x - draw.pxx, y - draw.pxy, 1, 1).data[3] > 0) {
 						selectedID = draw.id;
@@ -650,7 +653,7 @@ var App = (function () {
 			} else {
 				_cacheNeedsUpdate = true;
 			}
-			_zoomLabel.textContent = [round(100 - (95 / _zoomMax) * (level - 1)), "%"].join('');
+			_zoomLabel.textContent = [round(100 - (95 / _zoomMax) * (level - 1)), "%"].join("");
 		},
 		_drag = function (dx, dy, forceLoad) {	// OK. dx dy sono le differenze in px, non in coordinate (bisogna tenere conto dello zoom)
 			if (dx === 0 && dy === 0) return;
@@ -700,10 +703,10 @@ var App = (function () {
 				_drawExist && _removeDraw(draw.id, true);
 				var _newDraw = DOCUMENT.createElementNS("http://www.w3.org/2000/svg", "image");
 				_newDraw.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", draw.base64);
-				_newDraw.setAttribute('x', round(((draw.x - _currentX) * z + XX2 - _imageGroup.pxx) / z, _decimals));
-				_newDraw.setAttribute('y', round(((_currentY - draw.y) * z + YY2 - _imageGroup.pxy) / z, _decimals));
-				_newDraw.setAttribute('width', draw.w);
-				_newDraw.setAttribute('height', draw.h);
+				_newDraw.setAttribute("x", round(((draw.x - _currentX) * z + XX2 - _imageGroup.pxx) / z, _decimals));
+				_newDraw.setAttribute("y", round(((_currentY - draw.y) * z + YY2 - _imageGroup.pxy) / z, _decimals));
+				_newDraw.setAttribute("width", draw.w);
+				_newDraw.setAttribute("height", draw.h);
 				_newDraw.id = draw.id;
 				draw.base64 = undefined;
 				delete draw.minX;
@@ -824,14 +827,14 @@ var App = (function () {
 			if (e.button !== 0) return false;
 			_isMouseDown = true;
 			_tooltip.hide();
-			_dom.classList.add('dragging');
+			_dom.classList.add("dragging");
 			_mouseX = _clickX = e.pageX;
 			_mouseY = _clickY = e.pageY;
 			_imageGroup.matrix = _imageGroup.tag.getCTM();
 		},
 		__mousemove = function () {
 			_drag(this[0], this[1], false);
-			_mouseX = this[2];	// questo init lo metto qui perché se ci sono dei mousemove che vanno persi nell'attesa di requestAnimationFrame, i delta cords non vanno persi
+			_mouseX = this[2];	// questo init lo metto qui perché se ci sono dei mousemove che vanno persi nell"attesa di requestAnimationFrame, i delta cords non vanno persi
 			_mouseY = this[3];
 			_draggable = true;
 		},
@@ -850,7 +853,7 @@ var App = (function () {
 			_mouseX = 0;
 			_mouseY = 0;
 			_isMouseDown = false;
-			_dom.classList.remove('dragging');
+			_dom.classList.remove("dragging");
 		},
 		_mouseup = function (e) {
 			if (e.button !== 0) return false;
@@ -888,28 +891,28 @@ var App = (function () {
 			else if (e.keyCode === 40) _drag(0, 1);
 		},
 		_addEvents = function () {
-			_dom.addEventListener('click',			_click,		true);
-			_dom.addEventListener('mousedown',		_mousedown,	true);
-			_dom.addEventListener('mousemove', 		_mousemove,	true);
-			_dom.addEventListener('mouseup',		_mouseup,	true);
-			//_dom.addEventListener('mouseout',		_mouseout,	true);
-			_dom.addEventListener('mouseover',		_mouseover,	true);
+			_dom.addEventListener("click",			_click,		true);
+			_dom.addEventListener("mousedown",		_mousedown,	true);
+			_dom.addEventListener("mousemove", 		_mousemove,	true);
+			_dom.addEventListener("mouseup",		_mouseup,	true);
+			//_dom.addEventListener("mouseout",		_mouseout,	true);
+			_dom.addEventListener("mouseover",		_mouseover,	true);
 			DOCUMENT.addEventListener(_mouseWheelEvent, _mouseWheel,true);
 			_isDebug && DOCUMENT.addEventListener("keydown", _keyDown, false);
 			_buttonEditor.addEventListener("mousedown", _buttonEditorClick);
 		},
 		_removeEvents = function () {
-			_dom.removeEventListener('click',			_click,		true);
-			_dom.removeEventListener('mousedown',		_mousedown,	true);
-			_dom.removeEventListener('mousemove', 		_mousemove,	true);
-			_dom.removeEventListener('mouseup',			_mouseup,	true);
-			//_dom.removeEventListener('mouseout',		_mouseout,	true);
-			_dom.removeEventListener('mouseover',		_mouseover,	true);
+			_dom.removeEventListener("click",			_click,		true);
+			_dom.removeEventListener("mousedown",		_mousedown,	true);
+			_dom.removeEventListener("mousemove", 		_mousemove,	true);
+			_dom.removeEventListener("mouseup",			_mouseup,	true);
+			//_dom.removeEventListener("mouseout",		_mouseout,	true);
+			_dom.removeEventListener("mouseover",		_mouseover,	true);
 			_dom.removeEventListener(_mouseWheelEvent, 	_mouseWheel,true);
 			_isDebug && DOCUMENT.removeEventListener("keydown", _keyDown, false);
 			_buttonEditor.removeEventListener("mousedown", _buttonEditorClick);
 		},
-		overshadow = function () {	// mette in secondo piano e blocca la dashboard per mostrare l'editor
+		overshadow = function () {	// mette in secondo piano e blocca la dashboard per mostrare l"editor
 			_draggable = _zoomable = false;
 			_removeEvents();
 			_tooltip.hide();
@@ -957,14 +960,14 @@ var App = (function () {
 
 	Editor = (function () {
 		var _dom, _context, _editorContainer, _allMenuTools, _brushTool, _pencilTool, _eraserTool, _pickerTool, _editorUndo, _editorRedo, _editorHide,
-		_$options, _$pickerToolPreview, _$pickerToolColor, _$pickerToolColor2, _$randomColorButton, _$editorSave, _$sizeToolContainer, _$grayscaleContainer, _$grayscalePointer,
-		_$editorShowOptions, _$optionDraft, _$optionRestore, _$optionSquare, _$optionExport, _$optionClear, _$closeButtons,
-		_minX, _minY, _maxX, _maxY, _oldX, _oldY, _mouseX = 0, _mouseY = 0, _numUndoStep = 31, _currentStep = 0, _oldMidX, _oldMidY, _$sizeToolPreview, _$sizeToolLabel,
+		_options, _pickerToolPreview, _pickerToolColor, _pickerToolColor2, _randomColorButton, _editorSave, _sizeToolContainer, _grayscaleContainer, _grayscalePointer,
+		_editorShowOptions, _optionDraft, _optionRestore, _optionSquare, _optionExport, _optionClear, _closeButton,
+		_minX, _minY, _maxX, _maxY, _oldX, _oldY, _mouseX = 0, _mouseY = 0, _numUndoStep = 31, _currentStep = 0, _oldMidX, _oldMidY, _sizeToolPreview, _sizeToolLabel,
 		_isInit, _isMouseDown, _isPressedShift, _restored = false, _randomColor = true, _overlay = false, _grayscaleIsScrolling = false, _isSaving = false,
 		_draft = {}, _step = [], _toolSelected = 0, _editorMenuActions = [], _editorMenuActionsLength = 0, _savedDraw = {}, socket = Socket,
 		_color, _size, _pencilSize = 2, _pencilColor = "", _pencilColorID = 12, _brushSize = 50, _eraserSize = 50, _brushColor, _maxToolSize = 200,
 		_grayscaleColors = ["#FFF", "#EEE", "#DDD", "#CCC", "#BBB", "#AAA", "#999", "#888", "#777", "#666", "#555", "#444", "#333", "#222", "#111", "#000"],
-		utils = Utils, _enableElement = utils.enableElement, _disableElement = utils.disableElement, _currentUser = {},
+		_enableElements = Utils.enableElements, _disableElements = Utils.disableElements, _currentUser = {},
 		_labelAnnulla = label["Annulla"], _labelRipeti = label["Ripeti"],
 
 		_colorPicker = (function () {	// sottomodulo di editor per gestire il color-picker
@@ -986,16 +989,16 @@ var App = (function () {
 		    _imageSelector.src = "img/selector.png";
 		  },
 		  addEvents = function () {
-		    DOCUMENT.addEventListener('mouseup', _mouseup, true);
-		    _dom.addEventListener('mousedown', _mousedown, true);
-		    _dom.addEventListener('mousemove', _mousemove, true);
-		    _dom.addEventListener('mouseout', _mouseout, true);
+		    DOCUMENT.addEventListener("mouseup", _mouseup, true);
+		    _dom.addEventListener("mousedown", _mousedown, true);
+		    _dom.addEventListener("mousemove", _mousemove, true);
+		    _dom.addEventListener("mouseout", _mouseout, true);
 		  },
 		  removeEvents = function () {
-		    DOCUMENT.removeEventListener('mouseup',	_mouseup,	true);
-		    _dom.removeEventListener('mousedown',	_mousedown,	true);
-		    _dom.removeEventListener('mousemove', _mousemove,	true);
-		    _dom.removeEventListener('mouseout', _mouseout,	true);
+		    DOCUMENT.removeEventListener("mouseup",	_mouseup,	true);
+		    _dom.removeEventListener("mousedown",	_mousedown,	true);
+		    _dom.removeEventListener("mousemove", _mousemove,	true);
+		    _dom.removeEventListener("mouseout", _mouseout,	true);
 		  },
 		  _update = function () {
 		    var px, __color;
@@ -1070,45 +1073,45 @@ var App = (function () {
 		__init = function () {
 			_dom = DOCUMENT.querySelector("#editor");
 			_context = _dom.getContext("2d");
-			_dom = $("#editor");
-			_$options = $("#editorOptions");
-			_$pickerToolPreview = $("#pickerToolPreview");
-			_$pickerToolColor = $("#pickerToolColor");
-			_$pickerToolColor2 = $("#pickerToolColor2");
+			_dom = _domGet("#editor");
+			_options = _domGet("#editorOptions");
+			_pickerToolPreview = _domGet("#pickerToolPreview");
+			_pickerToolColor = _domGet("#pickerToolColor");
+			_pickerToolColor2 = _domGet("#pickerToolColor2");
 			_editorContainer = _domGet("#editorContainer");
 			_dom.width = XX;
 			_dom.height = YY;
 			_editorMenuActions = [_hide, _selectBrush, _selectPencil, _selectEraser, _selectPicker, _selectRandomColor, _undo, _redo, _save, _showOptions];
 			_editorMenuActionsLength = _editorMenuActions.length;
 			_brushTool = _domGet("#editorMenu1");
-			_pencilTool = $("#editorMenu2");
-			_eraserTool = $("#editorMenu3");
-			_pickerTool = $("#editorMenu4");
-			_$randomColorButton = $("#editorMenu5");
-			_editorUndo = $("#editorMenu6");
-			_editorRedo = $("#editorMenu7");
-			_$editorSave = $("#editorMenu8");
-			_$editorShowOptions = $("#editorMenu9");
-			_editorHide = $("#editorMenu0");
+			_pencilTool = _domGet("#editorMenu2");
+			_eraserTool = _domGet("#editorMenu3");
+			_pickerTool = _domGet("#editorMenu4");
+			_randomColorButton = _domGet("#editorMenu5");
+			_editorUndo = _domGet("#editorMenu6");
+			_editorRedo = _domGet("#editorMenu7");
+			_editorSave = _domGet("#editorMenu8");
+			_editorShowOptions = _domGet("#editorMenu9");
+			_editorHide = _domGet("#editorMenu0");
 			_allMenuTools = _domGetAll("#editorMenu1, #editorMenu2, #editorMenu3, #editorMenu4");
-			_$optionDraft = $("#optionDraft");
-			_$optionDraft.innerHTML(label['SalvaBozza']);
-			_$optionRestore = $("#optionRestore");
-			_$optionRestore.innerHTML(label['Ripristina']);
-			_$optionSquare = $("#optionSquare");
-			_$optionSquare.innerHTML(label['FoglioQuadretti']);
-			_$optionExport = $("#optionExport");
-			_$optionExport.innerHTML(label['Esporta']);
-			_$optionClear = $("#optionClear");
-			_$optionClear.innerHTML(label['Svuota']);
-			_disableElement(_$optionRestore);
-			_$sizeToolPreview = $("#sizeToolPreview");
-			_domGet("#toolSize a").innerHTML(label['Dimensione']);
-			_$closeButtons = $("#editorOptions .close");
-			_$sizeToolLabel = $("#sizeToolLabel");
-			_$sizeToolContainer = $("#sizeToolContainer");
-			_$grayscaleContainer = $("#pencilGrayscaleCont");
-			_$grayscalePointer = $("#grayscalePointer");
+			_optionDraft = _domGet("#optionDraft");
+			_optionDraft.innerHTML = label["SalvaBozza"];
+			_optionRestore = _domGet("#optionRestore");
+			_optionRestore.innerHTML = label["Ripristina"];
+			_optionSquare = _domGet("#optionSquare");
+			_optionSquare.innerHTML = label["FoglioQuadretti"];
+			_optionExport = _domGet("#optionExport");
+			_optionExport.innerHTML = label["Esporta"];
+			_optionClear = _domGet("#optionClear");
+			_optionClear.innerHTML = label["Svuota"];
+			_disableElements(_optionRestore);
+			_sizeToolPreview = _domGet("#sizeToolPreview");
+			_domGet("#toolSize a").innerHTML = label["Dimensione"];
+			_closeButton = _domGet("#editorOptions .close");
+			_sizeToolLabel = _domGet("#sizeToolLabel");
+			_sizeToolContainer = _domGet("#sizeToolContainer");
+			_grayscaleContainer = _domGet("#pencilGrayscaleCont");
+			_grayscalePointer = _domGet("#grayscalePointer");
 		},
 		_init = function () {
 			if (!_isInit) {
@@ -1123,75 +1126,73 @@ var App = (function () {
 			}
 		},
 		_addEvents = function () {
-			_dom.addEventListener('mouseup', _mouseend,	true);
-			_dom.addEventListener('mousedown', _mousedown,	true);
-			DOCUMENT.addEventListener('mousemove', _mousemove,	true);
-			DOCUMENT.addEventListener('mouseout', 	_mouseend,	true);
+			_dom.addEventListener("mouseup", _mouseend,	true);
+			_dom.addEventListener("mousedown", _mousedown,	true);
+			DOCUMENT.addEventListener("mousemove", _mousemove,	true);
+			DOCUMENT.addEventListener("mouseout", 	_mouseend,	true);
 			DOCUMENT.addEventListener("keydown", _keyDown, false);
 			DOCUMENT.addEventListener("keyup", _keyUp, false);
 			_brushTool.addEventListener("mousedown", _editorMenuActions[1]);
 			_pencilTool.addEventListener("mousedown", _editorMenuActions[2]);
 			_eraserTool.addEventListener("mousedown", _editorMenuActions[3]);
 			_pickerTooladdEventListener("mousedown", _editorMenuActions[4]);
-			_$randomColorButton.addEventListener("mousedown", _editorMenuActions[5]);
+			_randomColorButton.addEventListener("mousedown", _editorMenuActions[5]);
 			_editorUndo.addEventListener("mousedown", _editorMenuActions[6]);
 			_editorRedo.addEventListener("mousedown", _editorMenuActions[7]);
-			_$editorSave.addEventListener("mousedown", _editorMenuActions[8]);
-			_$editorShowOptions.addEventListener("mousedown", _editorMenuActions[9]);
+			_editorSave.addEventListener("mousedown", _editorMenuActions[8]);
+			_editorShowOptions.addEventListener("mousedown", _editorMenuActions[9]);
 			_editorHide.addEventListener("mousedown", _editorMenuActions[0]);
-			_$optionDraft.addEventListener("click", _draft);
-			_$optionRestore.addEventListener("click", _restore);
-			_$optionSquare.addEventListener("click", _toggleBackground);
-			_$optionExport.addEventListener("click", _export);
-			_$optionClear.addEventListener("click", clear);
-			_$closeButtons.addEventListener("click", _hideOptions);
+			_optionDraft.addEventListener("click", _draft);
+			_optionRestore.addEventListener("click", _restore);
+			_optionSquare.addEventListener("click", _toggleBackground);
+			_optionExport.addEventListener("click", _export);
+			_optionClear.addEventListener("click", clear);
+			_closeButton.addEventListener("click", _hideOptions);
 			_colorPicker.addEvents();
-			(Config.debug === false) && (WINDOW.onbeforeunload = function () { return label['closePrevent']; });
+			(Config.debug === false) && (WINDOW.onbeforeunload = function () { return label["closePrevent"]; });
 			WINDOW.addEventListener("resize", _onResize, true);
 			_dom.addEventListener(_mouseWheelEvent, _mouseWheel, true);
-			_$sizeToolContainer[0].addEventListener(_mouseWheelEvent, _mouseWheel, true);
+			_sizeToolContainer.addEventListener(_mouseWheelEvent, _mouseWheel, true);
 		},
 		_removeEvents = function () {
-			_dom.removeEventListener('mouseup',	_mouseend);
-			_dom.removeEventListener('mousedown', _mousedown);
-			DOCUMENT.removeEventListener('mousemove', 	_mousemove);
-			DOCUMENT.removeEventListener('mouseout', 	_mouseend);
+			_dom.removeEventListener("mouseup",	_mouseend);
+			_dom.removeEventListener("mousedown", _mousedown);
+			DOCUMENT.removeEventListener("mousemove", 	_mousemove);
+			DOCUMENT.removeEventListener("mouseout", 	_mouseend);
 			DOCUMENT.removeEventListener("keydown", _keyDown, false);
 			DOCUMENT.removeEventListener("keyup", 	_keyUp, false);
 			_brushTool.removeEventListener("mousedown", _editorMenuActions[1]);
 			_pencilTool.removeEventListener("mousedown", _editorMenuActions[2]);
 			_eraserTool.removeEventListener("mousedown", _editorMenuActions[3]);
 			_pickerToolremoveEventListener("mousedown", _editorMenuActions[4]);
-			_$randomColorButton.removeEventListener("mousedown", _editorMenuActions[5]);
+			_randomColorButton.removeEventListener("mousedown", _editorMenuActions[5]);
 			_editorUndo.removeEventListener("mousedown", _editorMenuActions[6]);
 			_editorRedo.removeEventListener("mousedown", _editorMenuActions[7]);
-			_$editorSave.removeEventListener("mousedown", _editorMenuActions[8]);
-			_$editorShowOptions.removeEventListener("mousedown", _editorMenuActions[9]);
+			_editorSave.removeEventListener("mousedown", _editorMenuActions[8]);
+			_editorShowOptions.removeEventListener("mousedown", _editorMenuActions[9]);
 			_editorHide.removeEventListener("mousedown", _editorMenuActions[0]);
-			_$optionDraft.removeEventListener("click", _draft);
-			_$optionRestore.removeEventListener("click", _restore);
-			_$optionSquare.removeEventListener("click", _toggleBackground);
-			_$optionExport.removeEventListener("click", _export);
-			_$optionClear.removeEventListener("click", clear);
-			_$closeButtons.removeEventListener("click", _hideOptions);
+			_optionDraft.removeEventListener("click", _draft);
+			_optionRestore.removeEventListener("click", _restore);
+			_optionSquare.removeEventListener("click", _toggleBackground);
+			_optionExport.removeEventListener("click", _export);
+			_optionClear.removeEventListener("click", clear);
+			_closeButton.removeEventListener("click", _hideOptions);
 			_colorPicker.removeEvents();
 			WINDOW.onbeforeunload = undefined;
 			WINDOW.removeEventListener("resize", _onResize);
 			_dom.removeEventListener(_mouseWheelEvent, _mouseWheel, true);
-			_$sizeToolContainer[0].addEventListener(_mouseWheelEvent, _mouseWheel, true);
+			_sizeToolContainer.removeEventListener(_mouseWheelEvent, _mouseWheel, true);
 		},
 		_initGrayscale = function () {
 			var length = _grayscaleColors.length;
 			for (var i = 0; i < length; i++) {
-				var div = $('<div>');
-				div.css('background-color', _grayscaleColors[i]);
-				_$grayscaleContainer.appendChild(div);
+				var div = DOCUMENT.createElement("div");
+				div.css("background-color", _grayscaleColors[i]);
+				_grayscaleContainer.appendChild(div);
 			}
 			_pencilColor = _grayscaleColors[_pencilColorID];
-			_$grayscalePointer.css({
-				'top': _pencilColorID * 20 + 2 + 'px',
-				'border-color':	["transparent transparent transparent ", _pencilColor].join('')
-			});
+			_grayscalePointer.style.top = _pencilColorID * 20 + 2 + "px";
+			_grayscalePointer.style.borderColor = "transparent transparent transparent " + _pencilColor;
 		},
 		_saveLayer = function () {
 			return {
@@ -1213,10 +1214,10 @@ var App = (function () {
 			if (_step.length > _numUndoStep)
 				_step.splice(_numUndoStep, _step.length);
 			if (_step.length > 1)
-				_enableElement(_editorUndo);
+				_enableElements(_editorUndo);
 			else
-				_disableElement(_editorUndo);
-			_disableElement(_editorRedo);
+				_disableElements(_editorUndo);
+			_disableElements(_editorRedo);
 		},
 		_restoreStep = function (step) {
 			_context.putImageData(step.data, step.minX, step.minY);
@@ -1270,9 +1271,9 @@ var App = (function () {
 				_dom.classList.add("useBrush");
 				_deselectMenuTool();
 				_brushTool.classList.add("selected");
-				_context.globalCompositeOperation = 'source-over';
-				_$pickerToolPreview.hide();
-				_$sizeToolContainer.hide();
+				_context.globalCompositeOperation = "source-over";
+				_pickerToolPreview.classList.add("displayNone");
+				_sizeToolContainer.classList.add("displayNone");
 			}
 			_size = _brushSize;
 			_color = _brushColor;
@@ -1285,9 +1286,9 @@ var App = (function () {
 				_dom.classList.add("usePencil");
 				_deselectMenuTool();
 				_pencilTool.classList.add("selected");
-				_context.globalCompositeOperation = 'source-over';
-				_$pickerToolPreview.hide();
-				_$sizeToolContainer.hide();
+				_context.globalCompositeOperation = "source-over";
+				_pickerToolPreview.classList.add("displayNone");
+				_sizeToolContainer.classList.add("displayNone");
 			}
 			_color = _pencilColor;
 			_size = _pencilSize;
@@ -1299,9 +1300,9 @@ var App = (function () {
 				_dom.classList.add("useEraser");
 				_deselectMenuTool();
 				_eraserTool.classList.add("selected");
-				_context.globalCompositeOperation = 'destination-out';
-				_$pickerToolPreview.hide();
-				_$sizeToolContainer.hide();
+				_context.globalCompositeOperation = "destination-out";
+				_pickerToolPreview.classList.add("displayNone");
+				_sizeToolContainer.classList.add("displayNone");
 			}
 			_size = _eraserSize;
 		},
@@ -1312,9 +1313,9 @@ var App = (function () {
 				_dom.classList.add("usePicker");
 				_deselectMenuTool();
 				_pickerToolclassList.add("selected");
-				_$pickerToolColor2.css("background-color", _randomColor ? "white" : _color);
-				_$pickerToolPreview.show();
-				_$sizeToolContainer.hide();
+				_pickerToolColor2.style.backgroundColor = _randomColor ? "white" : _color;
+				_pickerToolPreview.classList.remove("displayNone");
+				_sizeToolContainer.classList.add("displayNone");
 			}
 			_color = _brushColor;
 		},
@@ -1323,17 +1324,17 @@ var App = (function () {
 				if (_toolSelected === 3)
 					_selectBrush();
 				_randomColor = true;
-				_$randomColorButton.classList.add("selected");
+				_randomColorButton.classList.add("selected");
 			}
 			_getColor();
 		},
 		_updatePickerTool = function () {
 			var px = _context.getImageData(_mouseX, _mouseY, 1, 1).data, __color = px[3] === 0 ? "white" : "rgb(" + px[0] + "," + px[1] + "," + px[2] + ")";
-			_$pickerToolColor.css("background-color", __color);
+			_pickerToolColor.style.backgroundColor = __color;
 			if (_isMouseDown && px[3] > 0) {
 				_brushColor = __color;
-				_$randomColorButton.classList.remove("selected");
-				_$pickerToolColor2.css("background-color", __color);
+				_randomColorButton.classList.remove("selected");
+				_pickerToolColor2.style.backgroundColor = __color;
 				_randomColor = false;
 				_colorPicker.setColor(__color);
 			}
@@ -1389,8 +1390,8 @@ var App = (function () {
 		},
 		_mousedown = function (e) {
 			var x = e.clientX, y = e.clientY;
-			_$sizeToolContainer.hide();
-			_$grayscaleContainer.hide();
+			_sizeToolContainer.classList.add("displayNone");
+			_grayscaleContainer.classList.add("displayNone");
 			if (e.button === 0 && !_overlay) {
 				_isMouseDown = true;
 				if (_toolSelected === 3)
@@ -1470,13 +1471,13 @@ var App = (function () {
 			if (_isMouseDown || [0, 1, 2].indexOf(_toolSelected) === -1) return;
 			var wheelY = Info.firefox ? -e.detail : e.wheelDeltaY;
 			if (_toolSelected === 1) { // matita, quindi color picker a scrollbar
-				_$grayscaleContainer.show();
+				_grayscaleContainer.classList.remove("displayNone");
 				_grayscaleScroll(_getMouseWheelDelta(wheelY));
 			} else {	// pennello o gomma, quindi size picker a cerchio
 				var size = _toolSelected === 0 ? _brushSize : _eraserSize;
 				if ((wheelY > 0 && size < _maxToolSize) || (wheelY < 0 && size > 1))
 					_setToolSize(_toolSelected, size + _getMouseWheelDelta(wheelY));
-				_$sizeToolContainer.show();
+				_sizeToolContainer.classList.remove("displayNone");
 			}
 		},
 		__grayscaleScroll = function () {
@@ -1490,10 +1491,8 @@ var App = (function () {
 			else
 				_pencilColorID = MATH.max(_pencilColorID - 1, 0);
 			_color = _pencilColor = _grayscaleColors[_pencilColorID];
-			_$grayscalePointer.css({
-				'top':			_pencilColorID * 20 + 2 + 'px',
-				'border-color':	["transparent transparent transparent ", _pencilColor].join('')
-			});
+			_grayscalePointer.style.top = _pencilColorID * 20 + 2 + "px";
+			_grayscalePointer.style.borderColor = "transparent transparent transparent " + _pencilColor;
 			setTimeout(__grayscaleScroll, 100);
 		},
 		_setToolSize = function (tool, size) {
@@ -1505,16 +1504,14 @@ var App = (function () {
 			} else if (tool === 2) {
 				_size = _eraserSize = size;
 			} else return;
-			var sizepx = [size, 'px'].join(''),
-				size2 = ['-', size / 2, 'px'].join('');
-			_$sizeToolLabel.innerHTML(sizepx);
-			_$sizeToolPreview.css({
-				width:				sizepx,
-				height:				sizepx,
-				'margin-top':		size2,
-				'margin-left':		size2,
-				'background-color':	(tool === 0 && !_randomColor ? _color : "white")
-			});
+			var sizepx = size + "px",
+				size2 = "-" + (size / 2) + "px";
+			_sizeToolLabel.innerHTML = sizepx;
+			_sizeToolPreview.style.width = sizepx;
+			_sizeToolPreview.style.height = sizepx;
+			_sizeToolPreview.style.marginTop = size2;
+			_sizeToolPreview.style.marginLeft = size2;
+			_sizeToolPreview.style.backgroundColor = (tool === 0 && !_randomColor ? _color : "white");
 		},
 		_getColor = function () {
 			if (_randomColor && _toolSelected === 0) {
@@ -1533,30 +1530,30 @@ var App = (function () {
 			if (_dom.classList.contains("squares")) {
 				_dom.classList.remove("squares");
 				_dom.classList.add("lines");
-				_$optionSquare.innerHTML(label['FoglioBianco']);
+				_optionSquare.innerHTML = label["FoglioBianco"];
 			} else if (_dom.classList.contains("lines")) {
 				_dom.classList.remove("lines");
-				_$optionSquare.innerHTML(label['FoglioQuadretti']);
+				_optionSquare.innerHTML = label["FoglioQuadretti"];
 			} else {
 				_dom.classList.add("squares");
-				_$optionSquare.innerHTML(label['FoglioRighe']);
+				_optionSquare.innerHTML = label["FoglioRighe"];
 			}
 		},
 		_showOptions = function () {
 			_overlay = true;
-			utils.overlay.show(_darkClick);
-			_$options.stop().fadeIn("fast");
-			_$pickerToolPreview.fadeOut("fast");
-			_$sizeToolContainer.fadeOut("fast");
+			Utils.overlay.show(_darkClick);
+			Utils.fadeInElements(_options);
+			Utils.fadeOutElements(_pickerToolPreview);
+			Utils.fadeOutElements(_sizeToolContainer);
 		},
 		_hideOptions = function () {
 			_overlay = false;
-			_$options.stop().fadeOut("fast");
-			utils.overlay.hide();
-			_$sizeToolContainer.fadeOut("fast");
+			Utils.fadeOutElements(_options);
+			Utils.overlay.hide();
+			Utils.fadeOutElements(_sizeToolContainer);
 			if (_toolSelected === 3) {
-				_$pickerToolColor2.css("background-color", _randomColor ? "white" : _color);
-				_$pickerToolPreview.fadeIn("fast");
+				_pickerToolColor2.style.backgroundColor = _randomColor ? "white" : _color
+				Utils.fadeInElements(_pickerToolPreview);
 			}
 		},
 		_undo = function (e) {
@@ -1567,8 +1564,8 @@ var App = (function () {
 				_clear();
 				_restoreStep(step);
 				if (!_tot)
-					_disableElement(_editorUndo);
-				_enableElement(_editorRedo);
+					_disableElements(_editorUndo);
+				_enableElements(_editorRedo);
 				_restored = false;
 			}
 		},
@@ -1578,26 +1575,26 @@ var App = (function () {
 				var step = _step[_currentStep];
 				_clear();
 				_restoreStep(step);
-				_enableElement(_editorUndo);
+				_enableElements(_editorUndo);
 				if (_currentStep <= 0)
-					_disableElement(_editorRedo);
+					_disableElements(_editorRedo);
 			}
 		},
 		show = function (x,y) {
 			var _tot = _step.length - _currentStep - 1;
 			if (!_isInit)
 				_init();
-			_dom.classList.add('semiTransparent');
+			_dom.classList.add("semiTransparent");
 			Dashboard.overshadow();
 			_addEvents();
 			Utils.fadeInElements(_editorContainer);
 			_colorPicker.show();
 			if (!_draft.data)
-				_disableElement($("#editorRestore"));
+				_disableElements(_domGet("#editorRestore"));
 			if (_step.length - _currentStep <= 1)
-				_disableElement(_editorUndo);
+				_disableElements(_editorUndo);
 			if (_currentStep === 0)
-				_disableElement(_editorRedo);
+				_disableElements(_editorRedo);
 			(_toolSelected === 0) && _getColor();
 		},
 		_hide = function () {
@@ -1610,7 +1607,7 @@ var App = (function () {
 		_draft = function () {
 			if (_maxX !== -1 || _maxY !== -1) {
 				_draft = _saveLayer();
-				_enableElement(_$optionRestore);
+				_enableElements(_optionRestore);
 			}
 		},
 		_restore = function () {
@@ -1625,7 +1622,7 @@ var App = (function () {
 				_oldY = _draft.oldY;
 				_saveStep();
 				_restored = true;
-				//_disableElement($("#optionRestore"));
+				//_disableElements(_domGet("#optionRestore"));
 				//_draft = {};
 			}
 		},
@@ -1636,7 +1633,7 @@ var App = (function () {
 			_currentUser = {};
 		},
 		onSocketMessage = function (data) {	// OK - qui riceviamo le risposte ai salvataggi
-			utils.setSpinner(false);
+			Utils.setSpinner(false);
 			_isSaving = false;
 			data = JSON.parse(data);
 			if (data.ok) {
@@ -1649,7 +1646,7 @@ var App = (function () {
 				_currentStep = 0;
 				_saveStep();
 				_draft = {};
-				_dom.classList.remove('semiTransparent');
+				_dom.classList.remove("semiTransparent");
 				_hide();
 			} else {
 				Messages.error(label["editorSaveError"]);
@@ -1660,17 +1657,17 @@ var App = (function () {
 				draw.userId = _currentUser.id;
 				socket.emit("editor save", draw);
 			} else {
-				Messages.alert(label['genericError']);
-				utils.setSpinner(false);
+				Messages.alert(label["genericError"]);
+				Utils.setSpinner(false);
 			}
 		},
 		_save = function () { 	// OK
 			if (_maxX === -1 || _maxY === -1) {
 				Messages.alert(label["nothingToSave"]);
 			} else {
-				if (Messages.confirm(label['editorSaveConfirm'])) {
+				if (Messages.confirm(label["editorSaveConfirm"])) {
 					_isSaving = true;
-					utils.setSpinner(true, true);
+					Utils.setSpinner(true, true);
 					_savedDraw = _saveLayer();
 					var _coords = Dashboard.getCoords(),
 						_tempCanvas = DOCUMENT.createElement("canvas");
@@ -1714,8 +1711,8 @@ var App = (function () {
 				_currentStep = 0;
 				//_draft = {};
 				_saveStep();
-				_disableElement($("#editorUndo, #editorRedo"));
-				//_editorUndo.innerHTML(_labelAnnulla);
+				_disableElements(_domGetAll("#editorUndo, #editorRedo"));
+				//_editorUndo.innerHTML = _labelAnnulla;
 			}
 		},
 		_onResize = function () {
@@ -1725,7 +1722,7 @@ var App = (function () {
 			if (rgb) {
 				_brushColor = _color= rgb;
 				_randomColor = false;
-				_$randomColorButton.classList.remove("selected");
+				_randomColorButton.classList.remove("selected");
 			} else {
 				_randomColor = true;
 				_getColor();
@@ -1744,7 +1741,7 @@ var App = (function () {
 			onUserLogin: onUserLogin,
 			onUserLogout: onUserLogout /*,
 			hide	: hide,
-			save	: function (data) { return utils.CK(save,	"Error: editor cannot save. ",	data) },
+			save	: function (data) { return Utils.CK(save,	"Error: editor cannot save. ",	data) },
 			*/
 		}
 	})(),
@@ -1844,12 +1841,12 @@ var App = (function () {
 	})(),
 
 	CurrentUser = (function () {
-		var _$popup, _$closeButtons, socket = Socket,
-			utils = Utils, _logged = false, _userInfo = {}, _callbackLoginOK = false, _callbackLoginKO = false,
+		var _popup, _closeButton, socket = Socket,
+			_logged = false, _userInfo = {}, _callbackLoginOK = false, _callbackLoginKO = false,
 		init = function () {
-			_$popup = $("#socialLoginPopup");
-			_$closeButtons = $("#socialLoginPopup .close");
-			_$closeButtons.addEventListener("click", _hideLogin);
+			_popup = _domGet("#socialLoginPopup");
+			_closeButton = _domGet("#socialLoginPopup .close");
+			_closeButton.addEventListener("click", _hideLogin);
 			_facebook.init();
 		},
 		isLogged = function () {
@@ -1887,12 +1884,12 @@ var App = (function () {
 			}
 		},
 		_showLogin = function () {
-			utils.overlay.show(_hideLogin);
-			_$popup.stop().fadeIn("fast");
+			Utils.overlay.show(_hideLogin);
+			Utils.fadeInElements(_popup);
 		},
 		_hideLogin = function () {
-			utils.overlay.hide();
-			_$popup.stop().fadeOut("fast");
+			Utils.overlay.hide();
+			Utils.fadeOutElements(_popup);
 			if (_callbackLoginOK !== false) {
 				_callbackLoginKO(false);
 				_callbackLoginOK = _callbackLoginKO = false;
@@ -1939,28 +1936,28 @@ var App = (function () {
 		      js = d.createElement(s); js.id = id;
 		      js.src = "//connect.facebook.net/en_US/sdk.js";
 		      fjs.parentNode.insertBefore(js, fjs);
-		    }(document, 'script', 'facebook-jssdk'));
+		    }(document, "script", "facebook-jssdk"));
 		    _loginButton = _domGet("#fbLogin");
 		    _loginButton.querySelector("img").addEventListener("click", function () {
 		      var fb = FB;
-		      fb && fb.login(_loginCallback, { scope: 'public_profile,email' });
+		      fb && fb.login(_loginCallback, { scope: "public_profile,email" });
 		    });
 		    _logged = _domGet("#fbLogged");
 		    _status = _domGet("#fbStatus");
 		  },
 		  _getUserInfo = function () {
-		    FB.api('/me', function (response) {
-		      console.log('User Info: ', response);
-		      _status.innerHTML(label["loggedAs"] + response.name);
+		    FB.api("/me", function (response) {
+		      console.log("User Info: ", response);
+		      _status.innerHTML = label["loggedAs"] + response.name;
 		      // TODO qui devo cercare con le api di fb le altre info che voglio salvare, tipo l'immagine di profilo
 		      //graph.facebook.com/{{fid}}/picture?type=large
 		      _login("fb", response);
 		    });
 		  },
 		  _loginCallback = function (response) {
-		    console.log('Login', response);
-		    _status.innerHTML('');
-		    if (response.status === 'connected') {
+		    console.log("Login", response);
+		    _status.innerHTML = "";
+		    if (response.status === "connected") {
 		      _logged.classList.remove("displayNone");
 		      _loginButton.classList.add("displayNone");
 		      _getUserInfo();
@@ -1997,12 +1994,12 @@ var App = (function () {
 		},
 		_show = function (html) {
 			// oscura lo sfondo e fa comparire l'elemento dom
-			_dom.innerHTML(html);
+			_dom.innerHTML = html;
 			return true;
 		},
 		error = function (msg) {
 			var image = '<img src="" class="">';		// logo di errore
-			var buttons = { 'OK': Messages._close };
+			var buttons = { "OK": Messages._close };
 			//_show(_render(image, msg, buttons));
 		},
 		loading = function (msg) {
@@ -2013,7 +2010,7 @@ var App = (function () {
 		},
 		info = function (msg) {
 			var image = '<img src="" class="">';		// logo info
-			var buttons = { 'Annulla': Messages._close };
+			var buttons = { "Annulla": Messages._close };
 			//_show(_render(image, msg, buttons));
 		},
 		_close = function () {
@@ -2057,8 +2054,8 @@ var App = (function () {
 			DYY = 2 * YY;
 		};
 		_onResize();
-		_darkOverlay = _domGet('#darkOverlay');
-		_spinner = _domGet('#spinner');
+		_darkOverlay = _domGet("#darkOverlay");
+		_spinner = _domGet("#spinner");
 		_mouseWheelEvent = Info.firefox ? "DOMMouseScroll" : "mousewheel";
 		WINDOW.addEventListener("resize", _onResize, true);
 		DOCUMENT.body.addEventListener("mousedown", preventDefault, true);
