@@ -172,8 +172,10 @@ var App = (function () {
 		_fadeInEl = function (el) {
 			if (el) {
 				el.classList.remove("displayNone");
-				el.classList.add("fadeIn");
-				el.classList.remove("fadeOut");
+				requestAnimationFrame(function () {
+					el.classList.add("fadeIn");
+					el.classList.remove("fadeOut");
+				});
 			}
 		},
 		_fadeOutEl = function (el) {
