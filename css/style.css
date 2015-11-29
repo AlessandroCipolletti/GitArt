@@ -7,17 +7,27 @@
 	display: none;
 }
 
-#editorMenu, #editor, #colorPickerCont, #darkOverlay, #editorSmallTool, #pickerToolPreview, #sizePickerCont, #sizeToolContainer, #pencilGrayscaleCont, #spinner {
-	display: none;
+.fadeIn {
+  opacity: 1;
+	transition: opacity 400ms;
+}
+.fadeOut {
+  opacity: 0;
+	transition: opacity 400ms;
 }
 
-a, span, p, nobr, b, small, big, div, svg, canvas, body, img, button, table, td {
+
+* {
 	margin: 0px;
 	padding: 0px;
 	font-family: disegnato !important;
 	letter-spacing: 1px;
 	user-select: none;
+	opacity: 1;
+
 }
+
+
 body {
 	overflow: hidden;
 }
@@ -63,7 +73,7 @@ body {
 	}
 	#spinner li:nth-child(2) {
 	    background: #CCCCFF;
-	    top: 50%; 
+	    top: 50%;
 	    right: 0;
 	    margin-top: -.1em; /* Height/2 */
 		-webkit-transform-origin: -150% 50%;
@@ -76,7 +86,7 @@ body {
 	#spinner li:nth-child(3) {
 	    background: #007FFF;
 	    bottom: 0;
-	    left: 50%; 
+	    left: 50%;
 	    margin-left: -.1em; /* Width/2 */
 		-webkit-transform-origin: 50% -150%;
 		-moz-transform-origin: 50% -150%;
@@ -87,7 +97,7 @@ body {
 	}
 	#spinner li:nth-child(4) {
 	    background: #F7E89F;
-	    top: 50%; 
+	    top: 50%;
 	    left: 0;
 	    margin-top: -.1em; /* Height/2 */
 		-webkit-transform-origin: 250% 50%;
@@ -639,7 +649,7 @@ body {
 		font-size: 17px;
 		opacity: 0.7;
 	}
-	
+
 	#dashboardCoords {
 		position: absolute;
 		height: 20px;
@@ -648,7 +658,7 @@ body {
 		left: calc(50% - 10px);
 		display: none;
 		z-index: -100;
-	}	
+	}
 		#dashboardCoords * {
 			float: left;
 		}
@@ -847,7 +857,7 @@ body {
 /*	-----------------------------------------------------------------------------------------------------------------------------
 
 	*****************************************************************************************************************************
-	SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL 
+	SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL SOCIAL
 	*****************************************************************************************************************************
 */
 

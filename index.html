@@ -5,7 +5,6 @@
 	<meta http-equiv="charset" content="utf-8">
 	<meta charset="UTF-8" />
 	<link rel="stylesheet" href="css/style.css" type="text/css" charset="utf-8"/>
-	<script src="js/jquery.js"></script>
 	<script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
 	<script charset="utf-8" type="text/javascript" src="js/app.js"></script>
 
@@ -14,7 +13,6 @@
 			position: absolute;
 			bottom: 20px;
 			left: 20px;
-			display: none;
 		}
 		#fblogin {
 			z-index: 10000;
@@ -51,8 +49,8 @@
 		<div class="close"><img src="img/icon/x.png"></div>
 	</div>
 
-	<div id="darkOverlay"></div>
-	<ul id="spinner">
+	<div id="darkOverlay" class="displayNone fadeOut"></div>
+	<ul id="spinner" class="displayNone">
 		<li></li>
 		<li></li>
 		<li></li>
@@ -80,7 +78,7 @@
 			<rect id="zoomLabelCont" x="-10" y="-10" rx="10" ry="10" width="70" height="60"></rect>
 			<text id="zoomLabel" x="15" y="30">100%</text>
 		</svg>
-		<a id="showEditor" class="button">Disegna</a>
+		<a id="showEditor" class="button displayNone">Disegna</a>
 		<span id="dashboardTooltip">
 			<div class="close"><img src="img/icon/x.png"></div>
 			<div id="tooltipUserImage"></div>
@@ -104,7 +102,7 @@
 		</div>
 	</div>
 	<!-- EDITOR EDITOR EDITOR EDITOR EDITOR EDITOR -->
-	<div id="editorContainer">
+	<div id="editorContainer" class="displayNone fadeOut">
 		<canvas id="editor" class="useBrush"></canvas>
 		<div id="editorMenu">
 			<div><a id="editorMenu1" class="enabled selected"><div></div></a></div>
@@ -119,19 +117,19 @@
 			<div><a id="editorMenu0" class="enabled"><div></div></a></div>
 		</div>
 		<!-- TOOLS TOOLS TOOLS TOOLS TOOLS TOOLS TOOLS TOOLS TOOLS TOOLS -->
-		<div id="pickerToolPreview">
+		<div id="pickerToolPreview" class="displayNone">
 			<div id="pickerToolColor"></div>
 			<div id="pickerToolColor2"></div>
 		</div>
-		<div id="sizeToolContainer">
+		<div id="sizeToolContainer" class="displayNone">
 			<div id="sizeToolPreview"></div>
 			<a id="sizeToolLabel"></a>
 		</div>
-		<div id="pencilGrayscaleCont">
+		<div id="pencilGrayscaleCont" class="displayNone">
 			<div id="grayscalePointer"></div>
 		</div>
 		<!-- INIZIO COLOR PICKER -->
-		<div id="colorPickerCont">
+		<div id="colorPickerCont" class="displayNone">
 			<canvas id="colorPicker" width="285" height="180"></canvas>
 			<div id="colorPreview" ></div><br>
 		</div>
